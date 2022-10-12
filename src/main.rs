@@ -1,14 +1,10 @@
-use adw::prelude::*;
+mod application;
+mod ui;
 
-use adw::{ActionRow, Application, ApplicationWindow, HeaderBar, StyleManager, ColorScheme};
-use adw::gtk::{Box, ListBox, Orientation, SelectionMode};
+use application::info::Info;
 
-const TITLE: &str = "LogicRs";
-const DEFAULT_WIDTH: i32 = 1280;
-const DEFAULT_HEIGHT: i32 = 720;
-
-fn main() {
-    let application = Application::builder()
+fn main() -> Result<(), ()> {
+    /*let application = Application::builder()
         .application_id("com.spydr06.LogicRs")
         .build();
 
@@ -55,5 +51,10 @@ fn main() {
         window.show();
     });
 
-    application.run();
+    application.run();*/
+
+    let info = Info::new().title("Logic Rs").default_size(1366, 768);
+
+    let mut application = application::Application::new(info);
+    application.run()
 }
