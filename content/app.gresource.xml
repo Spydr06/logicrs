@@ -2,5 +2,7 @@
 <gresources>
     <gresource prefix="app">
         <file compressed="true">main-window.ui</file>
+        <file compressed="true">module-list.ui</file>
+        <file compressed="true">circuit-view.ui</file>
     </gresource>
 </gresources>

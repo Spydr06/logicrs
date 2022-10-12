@@ -8,12 +8,12 @@ use gtk::{
 use super::template::*;
 
 wrapper! {
-    pub struct MainWindow(ObjectSubclass<MainWindowTemplate>)
+    pub struct CircuitView(ObjectSubclass<CircuitViewTemplate>)
         @extends gtk::ApplicationWindow, Window, Widget,
         @implements ActionGroup, ActionMap, Accessible, Buildable, ConstraintTarget, Native, Root, ShortcutManager;
 }
 
-impl MainWindow {
+impl CircuitView {
     pub fn new(app: &adw::Application) -> Self {
         Object::new(&[("application", app)]).expect("failed to create window")
     }
