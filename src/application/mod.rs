@@ -30,12 +30,9 @@ impl Application {
         };
     }
 
-    pub fn run(&mut self) -> Result<(), ()> {
+    pub fn run(&mut self) {
         self.running = true;
-
         self.adw_app.run();
-
-        Ok(())
     }
 
     pub fn get_adw_app(&self) -> &adw::Application {

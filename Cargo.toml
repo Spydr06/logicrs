@@ -25,3 +25,16 @@ version = "0.4.8"
 [dependencies.glib]
 package = "glib"
 version = "0.15.12"
+
+[dependencies.gl]
+package = "glium"
+version = "0.32.1"
+default-features = false
+
+[dependencies.epoxy]
+package = "epoxy"
+version = "0.1.0"
+
+[dependencies.libloading]
+package = "libloading"
+version = "0.7.3"
