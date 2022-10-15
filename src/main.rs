@@ -2,13 +2,12 @@ mod application;
 mod renderer;
 mod ui;
 
-use application::info::Info;
+use adw::prelude::ApplicationExtManual;
+use application::Application;
 
 fn main() {
     unsafe { renderer::prelude::load_gl_pointers() };
 
-    let info = Info::new().title("Logic Rs").default_size(1366, 768);
-
-    let mut application = application::Application::new(info);
-    application.run();
+    let application = Application::new();
+    std::process::exit(application.run());
 }

@@ -20,7 +20,7 @@ use gtk::{
         widget::{CompositeTemplate, WidgetClassSubclassExt},
     },
     Accessible, Box, Buildable, Button, CompositeTemplate, ConstraintTarget, Native, Root,
-    ShortcutManager, TemplateChild, Widget, Window,
+    ShortcutManager, TemplateChild, Widget,
 };
 
 wrapper! {

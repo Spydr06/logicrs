@@ -1,5 +1,3 @@
-use glib::{wrapper, Object};
-
 use adw::{self, subclass::prelude::AdwApplicationWindowImpl, ApplicationWindow, Leaflet};
 
 use glib::{
@@ -9,6 +7,7 @@ use glib::{
         types::{ObjectSubclass, ObjectSubclassExt},
         InitializingObject,
     },
+    wrapper, Object,
 };
 
 use gtk::{
@@ -28,6 +27,8 @@ use super::{
     module_list::{ModuleList, ModuleListTemplate},
 };
 
+use crate::application::Application;
+
 wrapper! {
     pub struct MainWindow(ObjectSubclass<MainWindowTemplate>)
         @extends gtk::ApplicationWindow, Window, Widget,
@@ -35,7 +36,7 @@ wrapper! {
 }
 
 impl MainWindow {
-    pub fn new(app: &adw::Application) -> Self {
+    pub fn new(app: &Application) -> Self {
         Object::new(&[("application", app)]).expect("failed to create window")
     }
 }

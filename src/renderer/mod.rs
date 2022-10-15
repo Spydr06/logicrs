@@ -92,7 +92,7 @@ impl Renderer {
             ]
         };
 
-        frame.clear_color(0., 0., 0., 1.0);
+        frame.clear_color(0., 0., 0., 0.);
         frame
             .draw(
                 &self.vertex_buffer,

@@ -13,6 +13,11 @@
                 <property name="title">Modules</property>
               </object>
             </property>
+            <child>
+              <object class="GtkButton" id="new_module_button">
+                <property name="icon-name">list-add-symbolic</property>
+              </object>
+            </child>
           </object>
         </child>
         <child>

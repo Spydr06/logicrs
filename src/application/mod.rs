@@ -1,45 +1,25 @@
-pub mod info;
+mod template;
 
-use crate::application::info::Info;
-use crate::ui;
+use gtk::{gio, glib};
 
-use adw;
-use adw::prelude::*;
-use gtk::gio::resources_register_include;
+glib::wrapper! {
+    pub struct Application(ObjectSubclass<template::ApplicationTemplate>) @extends gio::Application, gtk::Application, @implements gio::ActionGroup, gio::ActionMap;
+}
 
-pub struct Application {
-    info: Info,
-    running: bool,
-    adw_app: adw::Application,
+impl Default for Application {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Application {
-    pub fn new(info: Info) -> Self {
-        resources_register_include!("logicrs.gresource").expect("Failed to register resources.");
-
-        let adw_app = adw::Application::builder()
-            .application_id(info.get_app_id())
-            .build();
-
-        adw_app.connect_activate(ui::build_ui);
-
-        return Self {
-            info,
-            running: false,
-            adw_app,
-        };
-    }
-
-    pub fn run(&mut self) {
-        self.running = true;
-        self.adw_app.run();
-    }
-
-    pub fn get_adw_app(&self) -> &adw::Application {
-        &self.adw_app
-    }
-
-    pub fn info(&self) -> &Info {
-        &self.info
+    pub fn new() -> Self {
+        gio::resources_register_include!("logicrs.gresource")
+            .expect("Failed to register resources.");
+        glib::Object::new(&[
+            ("application-id", &"org.gtk_rs.application-subclass"),
+            ("flags", &gio::ApplicationFlags::empty()),
+        ])
+        .unwrap()
     }
 }
