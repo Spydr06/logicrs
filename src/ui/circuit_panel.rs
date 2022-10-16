@@ -1,3 +1,5 @@
+use crate::application::Application;
+
 use super::circuit_view::CircuitView;
 
 use adw::{self, HeaderBar};
@@ -30,7 +32,7 @@ wrapper! {
 }
 
 impl CircuitPanel {
-    pub fn new(app: &adw::Application) -> Self {
+    pub fn new(app: &Application) -> Self {
         Object::new(&[("application", app)]).expect("failed to create window")
     }
 }

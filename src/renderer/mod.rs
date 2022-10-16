@@ -78,10 +78,8 @@ impl Renderer {
     }
 
     pub fn draw(&self) {
-        let mut frame = Frame::new(
-            self.context.clone(),
-            self.context.get_framebuffer_dimensions(),
-        );
+        let dimensions = self.context.get_framebuffer_dimensions();
+        let mut frame = Frame::new(self.context.clone(), dimensions);
 
         let uniforms = uniform! {
             matrix: [

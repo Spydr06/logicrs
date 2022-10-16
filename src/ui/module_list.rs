@@ -1,13 +1,13 @@
 use adw::{self, HeaderBar};
 
 use glib::{
-    clone, object_subclass,
+    object_subclass,
     subclass::{
         object::{ObjectImpl, ObjectImplExt},
         types::ObjectSubclass,
         InitializingObject,
     },
-    wrapper, IsA,
+    wrapper,
 };
 
 use gtk::{
@@ -16,15 +16,12 @@ use gtk::{
         prelude::{BoxImpl, WidgetImpl},
         widget::{CompositeTemplate, WidgetClassSubclassExt},
     },
-    traits::{ButtonExt, GtkApplicationExt, GtkWindowExt},
-    Accessible, Box, Buildable, Button, CompositeTemplate, ConstraintTarget, Inhibit, Orientable,
+    Accessible, Box, Buildable, Button, CompositeTemplate, ConstraintTarget, Orientable,
     TemplateChild, Widget,
 };
 
-use adw::prelude::DialogExtManual;
-use std::{cell::RefCell, rc::Rc};
-
-use crate::application::{self, Application};
+use crate::application::Application;
+use super::dialogs;
 
 wrapper! {
     pub struct ModuleList(ObjectSubclass<ModuleListTemplate>)
@@ -32,15 +29,9 @@ wrapper! {
         @implements Accessible, Buildable, ConstraintTarget, Orientable;
 }
 
-impl Default for ModuleList {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl ModuleList {
-    pub fn new() -> Self {
-        glib::Object::new(&[]).expect("Failed to create an instance of ModuleList")
+    pub fn new(app: &Application) -> Self {
+        glib::Object::new(&[("application", app)]).expect("Failed to create an instance of ModuleList")
     }
 }
 
@@ -73,47 +64,9 @@ impl ObjectImpl for ModuleListTemplate {
     fn constructed(&self, obj: &Self::Type) {
         self.parent_constructed(obj);
 
-        let dialog_window = Rc::new(
-            gtk::ApplicationWindow::builder()
-                .title("New Module")
-                .default_width(350)
-                .default_height(70)
-                .visible(false)
-                .resizable(false)
-                .build(),
-        );
-
-        self.new_module_button
-            .get()
-            .connect_clicked(clone!(@strong dialog_window =>
-                move |_| {
-                    gtk::glib::MainContext::default().spawn_local(new_module_dialog(Rc::clone(&dialog_window)));
-                }
-            ));
-
-        dialog_window.connect_close_request(move |dialog_window| {
-            if let Some(application) = dialog_window.application() {
-                application.remove_window(dialog_window);
-            }
-            Inhibit(false)
-        });
+        dialogs::new(&self.new_module_button, (350, 70), dialogs::new_module)
     }
 }
 
 impl WidgetImpl for ModuleListTemplate {}
 impl BoxImpl for ModuleListTemplate {}
-
-async fn new_module_dialog<W: IsA<gtk::Window>>(window: Rc<W>) {
-    let question_dialog = gtk::MessageDialog::builder()
-        .transient_for(&*window)
-        .modal(true)
-        .buttons(gtk::ButtonsType::OkCancel)
-        .text("Create a New Module")
-        .resizable(false)
-        .build();
-
-    let answer = question_dialog.run_future().await;
-    question_dialog.close();
-
-    println!("Answer: {}", answer);
-}

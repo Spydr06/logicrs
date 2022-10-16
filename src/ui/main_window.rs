@@ -22,12 +22,11 @@ use gtk::{
     TemplateChild, Widget, Window,
 };
 
+use crate::application::Application;
 use super::{
     circuit_panel::{CircuitPanel, CircuitPanelTemplate},
     module_list::{ModuleList, ModuleListTemplate},
 };
-
-use crate::application::Application;
 
 wrapper! {
     pub struct MainWindow(ObjectSubclass<MainWindowTemplate>)

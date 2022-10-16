@@ -1,4 +1,4 @@
-mod template;
+pub mod template;
 
 use gtk::{gio, glib};
 

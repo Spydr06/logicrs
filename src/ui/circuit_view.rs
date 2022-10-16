@@ -23,7 +23,7 @@ use gtk::{
 
 use std::cell::RefCell;
 
-use crate::renderer::Renderer;
+use crate::{renderer::Renderer, application::Application};
 
 wrapper! {
     pub struct CircuitView(ObjectSubclass<CircuitViewTemplate>)
@@ -32,14 +32,8 @@ wrapper! {
 }
 
 impl CircuitView {
-    pub fn new() -> Self {
-        glib::Object::new(&[]).unwrap()
-    }
-}
-
-impl Default for CircuitView {
-    fn default() -> Self {
-        Self::new()
+    pub fn new(app: &Application) -> Self {
+        glib::Object::new(&[("application", app)]).unwrap()
     }
 }
 
