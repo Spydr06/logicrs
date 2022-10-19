@@ -19,7 +19,7 @@ use gtk::{
         widget::{CompositeTemplate, WidgetClassSubclassExt},
     },
     Accessible, Buildable, CompositeTemplate, ConstraintTarget, Native, Root, ShortcutManager,
-    TemplateChild, Widget, Window,
+    TemplateChild, Widget, Window, traits::GtkWindowExt,
 };
 
 use crate::application::Application;
@@ -36,7 +36,10 @@ wrapper! {
 
 impl MainWindow {
     pub fn new(app: &Application) -> Self {
-        Object::new(&[("application", app)]).expect("failed to create window")
+        Object::new(&[
+                ("application", app),
+                ("title", &"LogicRs"),
+            ]).expect("failed to create window")
     }
 }
 
@@ -72,6 +75,7 @@ impl ObjectSubclass for MainWindowTemplate {
 impl ObjectImpl for MainWindowTemplate {
     fn constructed(&self, obj: &Self::Type) {
         self.parent_constructed(obj);
+        obj.set_title(Some("LogicRs"));
 
         let module_list = self.module_list.get();
         let module_list_template = ModuleListTemplate::from_instance(&module_list);

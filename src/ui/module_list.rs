@@ -64,7 +64,7 @@ impl ObjectImpl for ModuleListTemplate {
     fn constructed(&self, obj: &Self::Type) {
         self.parent_constructed(obj);
 
-        dialogs::new(&self.new_module_button, (350, 70), dialogs::new_module)
+        dialogs::new(&self.new_module_button, (400, 70), dialogs::new_module)
     }
 }
 

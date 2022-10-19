@@ -1,105 +1,124 @@
-pub mod prelude;
+use std::cell::RefCell;
 
-use gl::{
-    implement_vertex, index::PrimitiveType, program, uniform, Frame, IndexBuffer, Surface,
-    VertexBuffer,
+use gtk::{
+    DrawingArea,
+    cairo::{
+        Context,
+        Antialias,
+        Error, FontFace
+    }
 };
 
-use std::rc::Rc;
-
-#[derive(Copy, Clone)]
-pub struct Vertex {
-    position: [f32; 2],
-    color: [f32; 3],
+pub trait Renderable {
+    fn render(&self, context: &Context) -> Result<(), Error>;
 }
 
-implement_vertex!(Vertex, position, color);
+#[derive(Default)]
+struct Data {
+    size: (i32, i32)
+}
+
+impl Data {
+    fn new() -> Self {
+        Self {
+            size: (0, 0)
+        }
+    }
+}
 
 pub struct Renderer {
-    context: Rc<gl::backend::Context>,
-    vertex_buffer: VertexBuffer<Vertex>,
-    index_buffer: IndexBuffer<u16>,
-    program: gl::Program,
+    data: RefCell<Data>,
+    font: FontFace
 }
 
 impl Renderer {
-    pub fn new(context: Rc<gl::backend::Context>) -> Self {
-        let vertex_buffer = VertexBuffer::new(
-            &context,
-            &[
-                Vertex {
-                    position: [-0.5, -0.5],
-                    color: [0., 1., 0.],
-                },
-                Vertex {
-                    position: [0., 0.5],
-                    color: [0., 0., 1.],
-                },
-                Vertex {
-                    position: [0.5, -0.5],
-                    color: [1., 0., 0.],
-                },
-            ],
-        )
-        .unwrap();
-        let index_buffer =
-            IndexBuffer::new(&context, PrimitiveType::TrianglesList, &[0u16, 1, 2]).unwrap();
-        let program = program!(&context, 140 => {
-            vertex: "
-                #version 140
-                uniform mat4 matrix;
-                in vec2 position;
-                in vec3 color;
-                out vec3 vColor;
-                void main() {
-                    gl_Position = vec4(position, 0.0, 1.0) * matrix;
-                    vColor = color;
-                }
-            ",
-
-            fragment: "
-                #version 140
-                in vec3 vColor;
-                out vec4 f_color;
-                void main() {
-                    f_color = vec4(vColor, 1.0);
-                }
-            "
-        },
-        )
-        .unwrap();
-
-        Renderer {
-            context,
-            vertex_buffer,
-            index_buffer,
-            program,
+    pub fn new() -> Self {
+        Self {
+            data: RefCell::new(Data::new()),
+            font: FontFace::toy_create("Cascadia Code", gtk::cairo::FontSlant::Normal, gtk::cairo::FontWeight::Normal).unwrap()
         }
     }
 
-    pub fn draw(&self) {
-        let dimensions = self.context.get_framebuffer_dimensions();
-        let mut frame = Frame::new(self.context.clone(), dimensions);
-
-        let uniforms = uniform! {
-            matrix: [
-                [1., 0., 0., 0.],
-                [0., 1., 0., 0.],
-                [0., 0., 1., 0.],
-                [0., 0., 0., 1f32]
-            ]
-        };
-
-        frame.clear_color(0., 0., 0., 0.);
-        frame
-            .draw(
-                &self.vertex_buffer,
-                &self.index_buffer,
-                &self.program,
-                &uniforms,
-                &Default::default(),
-            )
-            .unwrap();
-        frame.finish().unwrap();
+    fn set_size(&self, size: (i32, i32)) {
+        self.data.borrow_mut().size = size;
     }
+
+    pub fn render_callback(&self, _area: &DrawingArea, context: &Context, width: i32, height: i32) -> Result<(), Error> {
+        self.set_size((width, height));       
+        if width == 0 || height == 0 {
+            return Ok(());
+        }
+
+        println!("renderer::render_callback() called\n  size: ({}, {})", width, height);
+
+        context.set_antialias(Antialias::Default);
+        context.set_source_rgb(0.1, 0.1, 0.1);
+        context.paint()?;
+
+        context.set_font_face(&self.font);
+        context.set_font_size(15.0);
+
+        // render all blocks
+        crate::APPLICATION_DATA.with(|d| -> Result<(), Error> {
+            let data = d.borrow();
+            for block in data.get_blocks() {
+                if block.is_in_area((0, 0, width, height)) {
+                    block.render(context)?;
+                }
+            }
+
+            Ok(())
+        })
+    }
+}
+
+pub fn draw_top_rounded_rect(context: &Context, position: (i32, i32), size: (i32, i32), radius: i32) {
+    context.move_to((position.0 + radius) as f64, position.1 as f64);
+    context.line_to((position.0 + size.0 - radius) as f64, position.1 as f64);
+    context.curve_to(
+        (position.0 + size.0 - radius) as f64, position.1 as f64, 
+        (position.0 + size.0) as f64, position.1 as f64, 
+        (position.0 + size.0) as f64, (position.1 + radius) as f64, 
+    );
+
+    context.line_to((position.0 + size.0) as f64, (position.1 + size.1) as f64);
+    context.line_to(position.0 as f64, (position.1 + size.1) as f64);
+    context.line_to(position.0 as f64, (position.1 + radius) as f64);
+    context.curve_to(
+        position.0 as f64, (position.1 + radius) as f64,
+        position.0 as f64, position.1 as f64,
+        (position.0 + radius) as f64, position.1 as f64
+    );
+}
+
+pub fn draw_rounded_rect(context: &Context, position: (i32, i32), size: (i32, i32), radius: i32) {
+    context.move_to((position.0 + radius) as f64, position.1 as f64);
+
+    context.line_to((position.0 + size.0 - radius) as f64, position.1 as f64);
+    context.curve_to(
+        (position.0 + size.0 - radius) as f64, position.1 as f64, 
+        (position.0 + size.0) as f64, position.1 as f64, 
+        (position.0 + size.0) as f64, (position.1 + radius) as f64, 
+    );
+
+    context.line_to((position.0 + size.0) as f64, (position.1 + size.1 - radius) as f64);
+    context.curve_to(
+        (position.0 + size.0) as f64, (position.1 + size.1 - radius) as f64,
+        (position.0 + size.0) as f64, (position.1 + size.1) as f64,
+        (position.0 + size.0 - radius) as f64, (position.1 + size.1) as f64,
+    );
+
+    context.line_to((position.0 + radius) as f64, (position.1 + size.1) as f64);
+    context.curve_to(
+        (position.0 + radius) as f64, (position.1 + size.1) as f64,
+        position.0 as f64, (position.1 + size.1) as f64,
+        position.0 as f64, (position.1 + size.1 - radius) as f64
+    );
+
+    context.line_to(position.0 as f64, (position.1 + radius) as f64);
+    context.curve_to(
+        position.0 as f64, (position.1 + radius) as f64,
+        position.0 as f64, position.1 as f64,
+        (position.0 + radius) as f64, position.1 as f64
+    );
 }

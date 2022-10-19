@@ -1,4 +1,5 @@
 pub mod template;
+pub mod data;
 
 use gtk::{gio, glib};
 
@@ -17,7 +18,7 @@ impl Application {
         gio::resources_register_include!("logicrs.gresource")
             .expect("Failed to register resources.");
         glib::Object::new(&[
-            ("application-id", &"org.gtk_rs.application-subclass"),
+            ("application-id", &"com.spydr06.logicrs"),
             ("flags", &gio::ApplicationFlags::empty()),
         ])
         .unwrap()
