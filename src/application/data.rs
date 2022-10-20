@@ -1,9 +1,7 @@
 use std::{
-    collections::{
-        HashMap,
-        hash_map::Values
-    },
-    sync::Arc
+    collections::HashMap,
+    sync::Arc,
+    cmp
 };
 
 use crate::{
@@ -17,7 +15,11 @@ use crate::{
 pub struct ApplicationData {
     modules: HashMap<String, Arc<Module>>,
     blocks: Vec<Block>,
+    
+    // selection
     highlighted_block: Option<usize>,
+    multiselect_start: Option<(i32, i32)>,
+    multiselect_end: Option<(i32, i32)>,
 }
 
 impl Default for ApplicationData {
@@ -34,7 +36,9 @@ impl ApplicationData {
         Self {
             modules: HashMap::new(),
             blocks: Vec::new(),
-            highlighted_block: None
+            highlighted_block: None,
+            multiselect_end: None,
+            multiselect_start: None,
         }
     }
 
@@ -71,6 +75,22 @@ impl ApplicationData {
         self.blocks.get_mut(index)
     }
 
+    pub fn set_multiselect_start(&mut self, position: Option<(i32, i32)>) {
+        self.multiselect_start = position;
+    }
+
+    pub fn multiselect_start(&self) -> Option<(i32, i32)> {
+        self.multiselect_start
+    }
+
+    pub fn set_multiselect_end(&mut self, position: Option<(i32, i32)>) {
+        self.multiselect_end = position;
+    }
+
+    pub fn multiselect_end(&self) -> Option<(i32, i32)> {
+        self.multiselect_end
+    }
+
     pub fn get_block_at(&self, position: (i32, i32)) -> Option<usize> {
         for (i, block) in self.blocks.iter().enumerate() {
             if block.touches(position) {
@@ -89,10 +109,7 @@ impl ApplicationData {
     }
 
     pub fn unhighlight(&mut self) {
-        if let Some(old_index) = self.highlighted_block {
-            self.blocks.get_mut(old_index).unwrap().set_highlighted(false);
-        }
-
+        self.blocks.iter_mut().for_each(|v| v.set_highlighted(false));
         self.highlighted_block = None;
     }
 
@@ -103,5 +120,26 @@ impl ApplicationData {
 
         self.highlighted_block = Some(index);
         self.blocks.get_mut(index).unwrap().set_highlighted(true);
+    }
+
+    pub fn highlight_all_selected(&mut self) {
+        if self.multiselect_start.is_none() || self.multiselect_end.is_none() {
+            return;
+        }
+
+        
+        let selection_start = self.multiselect_start.unwrap();
+        let selection_end = self.multiselect_end.unwrap();
+
+        let x1 = cmp::min(selection_start.0, selection_end.0);
+        let y1 = cmp::min(selection_start.1, selection_end.1);
+        let x2 = cmp::max(selection_start.0, selection_end.0);
+        let y2 = cmp::max(selection_start.1, selection_end.1);
+        
+        for block in self.blocks.iter_mut() {
+            if block.is_in_area((x1, y1, x2, y2)) {
+                block.set_highlighted(true);
+            }
+        }
     }
 }

@@ -1,4 +1,7 @@
-use std::cell::RefCell;
+use std::{
+    cell::RefCell,
+    cmp
+};
 
 use gtk::{
     DrawingArea,
@@ -49,7 +52,7 @@ impl Renderer {
             return Ok(());
         }
 
-        println!("renderer::render_callback() called\n  size: ({}, {})", width, height);
+        //println!("renderer::render_callback() called\n  size: ({}, {})", width, height);
 
         context.set_antialias(Antialias::Default);
         context.set_source_rgb(0.1, 0.1, 0.1);
@@ -64,6 +67,24 @@ impl Renderer {
             for block in data.get_blocks() {
                 if block.is_in_area((0, 0, width, height)) {
                     block.render(context)?;
+                }
+            }
+
+            // draw selection rectangle
+            if let Some((start_x, start_y)) = data.multiselect_start() {
+                if let Some((end_x, end_y)) = data.multiselect_end() {
+                    let x = cmp::min(start_x, end_x);
+                    let y = cmp::min(start_y, end_y);
+                    let w = cmp::max(start_x, end_x) - x;
+                    let h = cmp::max(start_y, end_y) - y;
+
+                    context.rectangle(x as f64, y as f64, w as f64, h as f64);
+                    context.set_source_rgba(0.2078, 0.5176, 0.894, 0.3);
+                    context.fill()?;
+
+                    context.rectangle(x as f64, y as f64, w as f64, h as f64);
+                    context.set_source_rgba(0.2078, 0.5176, 0.894, 0.7);
+                    context.stroke()?;
                 }
             }
 

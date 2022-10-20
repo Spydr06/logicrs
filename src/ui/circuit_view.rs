@@ -99,16 +99,23 @@ impl WidgetImpl for CircuitViewTemplate {
                 gesture.set_state(gtk::EventSequenceState::Claimed);
                 crate::APPLICATION_DATA.with(|data| {
                     let mut data = data.borrow_mut();
-                    match data.get_block_at((x as i32, y as i32)) {
+                    let position = (x as i32, y as i32);
+                    
+                    data.unhighlight();
+                    
+                    match data.get_block_at(position) {
                         Some(index) => {
                             data.highlight(index);
                             if let Some(block) = data.get_block_mut(index) {
                                 block.set_start_pos(block.position());
                             }
                         }
-                        None => data.unhighlight()
+                        None => {
+                            data.set_multiselect_start(Some(position));
+                            data.set_multiselect_end(Some(position));
+                        }
                     }
-
+                    
                     w.queue_draw();
                 });
             });
@@ -118,11 +125,20 @@ impl WidgetImpl for CircuitViewTemplate {
                 gesture.set_state(gtk::EventSequenceState::Claimed);
                 crate::APPLICATION_DATA.with(|data| {
                     let mut data = data.borrow_mut();
-                    if let Some(block) = data.get_highlighted_mut() {
-                        let (start_x, start_y) = block.start_pos();
-                        block.set_position((start_x + x as i32, start_y + y as i32));
-                        w.queue_draw();
+                    match data.get_highlighted_mut() {
+                        Some(block) => {
+                            let (start_x, start_y) = block.start_pos();
+                            block.set_position((start_x + x as i32, start_y + y as i32));
+                            w.queue_draw();
+                        }
+                        None => {
+                            if let Some((start_x, start_y)) = data.multiselect_start() {
+                                data.set_multiselect_end(Some((start_x + x as i32, start_y + y as i32)));
+                                w.queue_draw();
+                            }
+                        }
                     }
+
                 });
             });
 
@@ -135,11 +151,19 @@ impl WidgetImpl for CircuitViewTemplate {
 
                 crate::APPLICATION_DATA.with(|data| {
                     let mut data = data.borrow_mut();
-                    if let Some(block) = data.get_highlighted_mut() {
-                        let (start_x, start_y) = block.start_pos();
-                        block.set_position((start_x + x as i32, start_y + y as i32));
-                       w.queue_draw();
+                    match data.get_highlighted_mut() { 
+                        Some(block) => {
+                            let (start_x, start_y) = block.start_pos();
+                            block.set_position((start_x + x as i32, start_y + y as i32));
+                        },
+                        None => {
+                            data.highlight_all_selected();
+                            data.set_multiselect_start(None);
+                            data.set_multiselect_end(None);
+                        }
                     }
+
+                    w.queue_draw()
                 });
             });
 
