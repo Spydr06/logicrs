@@ -20,7 +20,9 @@ use crate::{
 pub struct Block {
     module: Arc<Module>,
     position: (i32, i32),
-    size: (i32, i32)
+    start_pos: (i32, i32), // starting position of drag movements
+    size: (i32, i32),
+    highlighted: bool,
 }
 
 impl Block {    
@@ -30,7 +32,9 @@ impl Block {
         Self {
             module,
             position,
-            size: (75, cmp::max(num_inputs, num_outputs) * 25 + 50)
+            start_pos: (0, 0),
+            size: (75, cmp::max(num_inputs, num_outputs) * 25 + 50),
+            highlighted: false
         }
     }
 
@@ -43,9 +47,41 @@ impl Block {
         )
     }
 
-    fn draw_connection(&self, context: &Context, position: (i32, i32)) -> Result<(), Error> {
+    pub fn touches(&self, point: (i32, i32)) -> bool {
+        point.0 > self.position.0 && point.0 < self.position.0 + self.size.0 &&
+        point.1 > self.position.1 && point.1 < self.position.1 + self.size.1
+    }
+
+    pub fn set_highlighted(&mut self, highlighted: bool) {
+        self.highlighted = highlighted;
+    }
+
+    pub fn highlighted(&self) -> bool {
+        self.highlighted
+    }
+
+    pub fn set_position(&mut self, position: (i32, i32)) {
+        self.position = position;
+    }
+
+    pub fn position(&self) -> (i32, i32) {
+        self.position
+    }
+
+    pub fn set_start_pos(&mut self, start_pos: (i32, i32)) {
+        self.start_pos = start_pos
+    }
+
+    pub fn start_pos(&self) -> (i32, i32) {
+        self.start_pos
+    }
+
+    fn draw_connector(&self, context: &Context, position: (i32, i32)) -> Result<(), Error> {
         context.arc(position.0 as f64, position.1 as f64, 6., 0., 2. * PI);
-        context.set_source_rgb(0.23, 0.23, 0.23);
+        match self.highlighted {
+            true => context.set_source_rgb(0.2078, 0.5176, 0.894),
+            false => context.set_source_rgb(0.23, 0.23, 0.23)       
+        }
         context.fill()?;
     
         context.arc(position.0 as f64, position.1 as f64, 5., 0., 2. * PI);
@@ -54,7 +90,6 @@ impl Block {
         
         Ok(())
     }
-    
 }
 
 
@@ -74,17 +109,20 @@ impl Renderable for Block {
         context.show_text(self.module.get_name().as_str())?;
 
         renderer::draw_rounded_rect(context, self.position, self.size, 5);
-        context.set_source_rgb(0.23, 0.23, 0.23);        
+        match self.highlighted {
+            true => context.set_source_rgb(0.2078, 0.5176, 0.894),
+            false => context.set_source_rgb(0.23, 0.23, 0.23)       
+        }
         context.stroke()?;
 
         let num_inputs = self.module.get_num_inputs();
         for i in 0..num_inputs {
-            self.draw_connection(context, (self.position.0, self.position.1 + 25 * i + 50))?;
+            self.draw_connector(context, (self.position.0, self.position.1 + 25 * i + 50))?;
         }
 
         let num_outputs = self.module.get_num_outputs();
         for i in 0..num_outputs {
-            self.draw_connection(context, (self.position.0 + self.size.0, self.position.1 + 25 * i + 50))?;
+            self.draw_connector(context, (self.position.0 + self.size.0, self.position.1 + 25 * i + 50))?;
         }
 
         Ok(())

@@ -15,21 +15,22 @@ use glib::{
 
 use gtk::{
     gio::{ActionGroup, ActionMap},
-    prelude::{InitializingWidgetExt, DrawingAreaExtManual},
+    prelude::{InitializingWidgetExt, DrawingAreaExtManual, GestureDragExt},
     subclass::{
         prelude::{WidgetImpl, DrawingAreaImpl},
         widget::{CompositeTemplate, WidgetImplExt},
     },
+    gdk,
     Accessible, Buildable, CompositeTemplate, ConstraintTarget, Native, Root,
-    ShortcutManager, Widget, DrawingArea,
+    ShortcutManager, Widget, DrawingArea, GestureClick, GestureDrag, traits::{WidgetExt, GestureExt}
 };
 
-use crate::{application::Application, renderer::{self, Renderer}};
+use crate::{application::Application, renderer::Renderer};
 
 wrapper! {
     pub struct CircuitView(ObjectSubclass<CircuitViewTemplate>)
         @extends DrawingArea, Widget,
-        @implements ActionGroup, ActionMap, Accessible, Buildable, ConstraintTarget, Native, Root, ShortcutManager;
+        @implements ActionGroup, ActionMap, Accessible, Buildable, ConstraintTarget, Native, Root, ShortcutManager, GestureClick, GestureDrag;
 }
 
 impl CircuitView {
@@ -80,13 +81,72 @@ impl WidgetImpl for CircuitViewTemplate {
 
         *self.renderer.borrow_mut() = Some(Arc::new(Renderer::new()));
 
-        let renderer = self.get_renderer().unwrap();
-        widget.set_draw_func(move |area: &DrawingArea, context: &gtk::cairo::Context, width: i32, height: i32| {
-            if let Err(err) = renderer.render_callback(area, context, width, height) {
-                eprintln!("Error rendering CircuitView: {}", err);
-                panic!();
-            }
-        });
+        {
+            let renderer = self.get_renderer().unwrap();
+            widget.set_draw_func(move |area: &DrawingArea, context: &gtk::cairo::Context, width: i32, height: i32| {
+                if let Err(err) = renderer.render_callback(area, context, width, height) {
+                    eprintln!("Error rendering CircuitView: {}", err);
+                    panic!();
+                }
+            });
+        }
+
+        {
+            let gesture_drag = GestureDrag::builder().button(gdk::ffi::GDK_BUTTON_PRIMARY as u32).build();
+
+            let w = widget.to_owned();
+            gesture_drag.connect_drag_begin(move |gesture, x, y| {
+                gesture.set_state(gtk::EventSequenceState::Claimed);
+                crate::APPLICATION_DATA.with(|data| {
+                    let mut data = data.borrow_mut();
+                    match data.get_block_at((x as i32, y as i32)) {
+                        Some(index) => {
+                            data.highlight(index);
+                            if let Some(block) = data.get_block_mut(index) {
+                                block.set_start_pos(block.position());
+                            }
+                        }
+                        None => data.unhighlight()
+                    }
+
+                    w.queue_draw();
+                });
+            });
+
+            let w = widget.to_owned();
+            gesture_drag.connect_drag_update(move |gesture, x, y| {
+                gesture.set_state(gtk::EventSequenceState::Claimed);
+                crate::APPLICATION_DATA.with(|data| {
+                    let mut data = data.borrow_mut();
+                    if let Some(block) = data.get_highlighted_mut() {
+                        let (start_x, start_y) = block.start_pos();
+                        block.set_position((start_x + x as i32, start_y + y as i32));
+                        w.queue_draw();
+                    }
+                });
+            });
+
+            let w = widget.to_owned();
+            gesture_drag.connect_drag_end(move |gesture, x, y| {
+                gesture.set_state(gtk::EventSequenceState::Claimed);
+                if x == 0. && y == 0. {
+                    return;
+                }
+
+                crate::APPLICATION_DATA.with(|data| {
+                    let mut data = data.borrow_mut();
+                    if let Some(block) = data.get_highlighted_mut() {
+                        let (start_x, start_y) = block.start_pos();
+                        block.set_position((start_x + x as i32, start_y + y as i32));
+                       w.queue_draw();
+                    }
+                });
+            });
+
+            widget.add_controller(&gesture_drag);
+        }
+
+        
     }
 
     fn unrealize(&self, widget: &Self::Type) {

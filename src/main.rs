@@ -40,6 +40,5 @@ fn main() {
     });
 
     let application = Application::new();
-
     std::process::exit(application.run());
 }
