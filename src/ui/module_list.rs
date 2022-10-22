@@ -43,7 +43,7 @@ impl ModuleList {
 }
 
 #[derive(CompositeTemplate, Default)]
-#[template(resource = "/app/module-list.ui")]
+#[template(resource = "/content/module-list.ui")]
 pub struct ModuleListTemplate {
     #[template_child]
     pub header_bar: TemplateChild<HeaderBar>,
@@ -91,28 +91,25 @@ impl BoxImpl for ModuleListTemplate {}
 fn new_list_item(module: Arc<Module>) -> ListBoxRow {
     let label = Label::builder()
         .label(module.get_name().as_str())
-        .margin_bottom(12)
-        .margin_top(12)
-        .margin_start(12)
-        .margin_end(12)
         .build();
-
+    
     let item = ListBoxRow::builder()
         .child(&label)
         .build();
-    
+        
     let click_gesture = GestureClick::builder()
         .button(gdk::ffi::GDK_BUTTON_PRIMARY as u32)
         .build();
-
+        
     click_gesture.connect_pressed(move |_, _, _, _| {
         crate::APPLICATION_DATA.with(|data| {
             let mut data = data.borrow_mut();
             data.add_block(Block::new(module.clone(), (0, 0)));
         });
     });
-
+    
     item.add_controller(&click_gesture);
+    item.add_css_class("module-list-item");
     
     item
 }

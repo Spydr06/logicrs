@@ -45,7 +45,7 @@ impl CircuitView {
 }
 
 #[derive(CompositeTemplate, Default)]
-#[template(resource = "/app/circuit-view.ui")]
+#[template(resource = "/content/circuit-view.ui")]
 pub struct CircuitViewTemplate {
     renderer: RefCell<Option<Arc<Renderer>>>
 }
@@ -110,10 +110,11 @@ impl WidgetImpl for CircuitViewTemplate {
                     
                     match data.get_block_at(position) {
                         Some(index) => {
-                            data.highlight(index);
                             if let Some(block) = data.get_block_mut(index) {
                                 block.set_start_pos(block.position());
+                                block.set_highlighted(true);
                             }
+                            data.set_selection(Selection::Single(index));
                         }
                         None => {
                             data.set_selection(Selection::Area(Some(position), Some(position)));
@@ -129,19 +130,20 @@ impl WidgetImpl for CircuitViewTemplate {
                 gesture.set_state(gtk::EventSequenceState::Claimed);
                 crate::APPLICATION_DATA.with(|data| {
                     let mut data = data.borrow_mut();
-                    match data.get_highlighted_mut() {
-                        Some(block) => {
+                    match data.selection() {
+                        Selection::Single(index) => {
+                            let block = data.get_block_mut(index).unwrap();
                             let (start_x, start_y) = block.start_pos();
                             block.set_position((start_x + x as i32, start_y + y as i32));
                             w.queue_draw();
                         }
-                        None => {
-                            let area_start = data.selection().area_start();
+                        Selection::Area(area_start, _) => {
                             if let Some((start_x, start_y)) = area_start {
                                 data.set_selection(Selection::Area(area_start, Some((start_x + x as i32, start_y + y as i32))));
                                 w.queue_draw();
                             }
                         }
+                        Selection::None => {}
                     }
 
                 });
@@ -156,15 +158,17 @@ impl WidgetImpl for CircuitViewTemplate {
 
                 crate::APPLICATION_DATA.with(|data| {
                     let mut data = data.borrow_mut();
-                    match data.get_highlighted_mut() { 
-                        Some(block) => {
+                    match data.selection() { 
+                        Selection::Single(index) => {
+                            let block = data.get_block_mut(index).unwrap();
                             let (start_x, start_y) = block.start_pos();
                             block.set_position((start_x + x as i32, start_y + y as i32));
                         },
-                        None => {
+                        Selection::Area(_, _) => {
                             data.highlight_area();
                             data.set_selection(Selection::None);
                         }
+                        Selection::None => {}
                     }
 
                     w.queue_draw()

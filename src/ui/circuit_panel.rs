@@ -38,7 +38,7 @@ impl CircuitPanel {
 }
 
 #[derive(CompositeTemplate, Default)]
-#[template(resource = "/app/circuit-panel.ui")]
+#[template(resource = "/content/circuit-panel.ui")]
 pub struct CircuitPanelTemplate {
     #[template_child]
     pub header_bar: TemplateChild<HeaderBar>,

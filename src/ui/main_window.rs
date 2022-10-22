@@ -44,7 +44,7 @@ impl MainWindow {
 }
 
 #[derive(CompositeTemplate, Default)]
-#[template(resource = "/app/main-window.ui")]
+#[template(resource = "/content/main-window.ui")]
 pub struct MainWindowTemplate {
     #[template_child]
     pub leaflet: TemplateChild<Leaflet>,

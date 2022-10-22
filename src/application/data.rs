@@ -104,7 +104,14 @@ impl ApplicationData {
     }
 
     pub fn set_selection(&mut self, selection: Selection) {
-        self.selection = selection;
+        if let Selection::Single(index) = selection {
+            let last = self.blocks.len() - 1;
+            self.blocks.swap(index, last);
+            self.selection = Selection::Single(last);    
+        }
+        else {
+            self.selection = selection;
+        }
     }
 
     pub fn selection(&self) -> Selection {
@@ -121,25 +128,9 @@ impl ApplicationData {
         None
     }
 
-    pub fn get_highlighted_mut(&mut self) -> Option<&mut Block> {
-        match self.selection {
-            Selection::Single(index) => self.blocks.get_mut(index),
-            _ => None
-        }
-    }
-
     pub fn unhighlight(&mut self) {
         self.blocks.iter_mut().for_each(|v| v.set_highlighted(false));
         self.selection = Selection::None
-    }
-
-    pub fn highlight(&mut self, index: usize) {
-        if let Selection::Single(old_index) = self.selection {
-            self.blocks.get_mut(old_index).unwrap().set_highlighted(false);
-        }
-
-        self.selection = Selection::Single(index);
-        self.blocks.get_mut(index).unwrap().set_highlighted(true);
     }
 
     pub fn highlight_area(&mut self) {

@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<gresources>
-  <gresource prefix="app">
-    <file compressed="true">main-window.ui</file>
-    <file compressed="true">module-list.ui</file>
-    <file compressed="true">circuit-view.ui</file>
-    <file compressed="true">circuit-panel.ui</file>
-  </gresource>
-</gresources>

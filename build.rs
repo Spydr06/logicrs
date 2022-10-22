@@ -1,5 +1,5 @@
 use adw::gio::compile_resources;
 
 fn main() {
-    compile_resources("content", "content/app.gresource.xml", "logicrs.gresource")
+    compile_resources(".", "logicrs.gresource.xml", "logicrs.gresource")
 }
