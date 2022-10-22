@@ -20,6 +20,11 @@
                 <property name="title">Circuit</property>
               </object>
             </property>
+            <child>
+              <object class="GtkButton" id="context_button">
+                <property name="icon-name">view-more</property>
+              </object>
+            </child>
           </object>
         </child>
         <child>

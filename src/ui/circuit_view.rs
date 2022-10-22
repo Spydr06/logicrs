@@ -15,27 +15,32 @@ use glib::{
 
 use gtk::{
     gio::{ActionGroup, ActionMap},
-    prelude::{InitializingWidgetExt, DrawingAreaExtManual, GestureDragExt},
+    prelude::{InitializingWidgetExt, DrawingAreaExtManual, GestureDragExt, BoxExt, ButtonExt},
     subclass::{
-        prelude::{WidgetImpl, DrawingAreaImpl},
-        widget::{CompositeTemplate, WidgetImplExt},
+        prelude::{WidgetImpl, BoxImpl},
+        widget::{CompositeTemplate, WidgetImplExt, WidgetClassSubclassExt},
     },
     gdk,
     Accessible, Buildable, CompositeTemplate, ConstraintTarget, Native, Root,
-    ShortcutManager, Widget, DrawingArea, GestureClick, GestureDrag, traits::{WidgetExt, GestureExt}
+    ShortcutManager, Widget, DrawingArea, GestureClick, GestureDrag, traits::{WidgetExt, GestureExt},
+    Box, TemplateChild, Revealer, Button
 };
 
 use crate::{
     application::{
         Application,
         data::Selection
-    }, renderer::Renderer
+    }, 
+    renderer::{
+        self,
+        Renderer
+    }
 };
 
 wrapper! {
     pub struct CircuitView(ObjectSubclass<CircuitViewTemplate>)
-        @extends DrawingArea, Widget,
-        @implements ActionGroup, ActionMap, Accessible, Buildable, ConstraintTarget, Native, Root, ShortcutManager, GestureClick, GestureDrag;
+        @extends Box, Widget,
+        @implements ActionGroup, ActionMap, Accessible, Buildable, ConstraintTarget, Native, Root, ShortcutManager;
 }
 
 impl CircuitView {
@@ -47,15 +52,47 @@ impl CircuitView {
 #[derive(CompositeTemplate, Default)]
 #[template(resource = "/content/circuit-view.ui")]
 pub struct CircuitViewTemplate {
-    renderer: RefCell<Option<Arc<Renderer>>>
+    #[template_child]
+    drawing_area: TemplateChild<DrawingArea>,
+
+    #[template_child]
+    zoom_in: TemplateChild<Button>,
+
+    #[template_child]
+    zoom_out: TemplateChild<Button>,
+
+    #[template_child]
+    zoom_reset: TemplateChild<Button>,
+
+    renderer: RefCell<Option<Arc<Renderer>>>,
 }
 
 impl CircuitViewTemplate {
-    fn get_renderer(&self) -> Option<Arc<Renderer>> {
-        match self.renderer.take() {
+    fn renderer(&self) -> Option<Arc<Renderer>> {
+        match self.renderer.borrow().as_ref() {
             Some(renderer) => Some(renderer.clone()),
             None => None
         }
+    }
+
+    fn setup_buttons(&self) {
+        let borrowed = self.renderer.borrow();
+        let renderer = borrowed.as_ref().unwrap();
+        let r = renderer.clone();
+        self.zoom_reset.connect_clicked(move |_| {
+            r.set_scale(renderer::DEFAULT_SCALE);
+            println!("scale: {}%", r.scale() * 100.);
+        });
+        let r = renderer.clone();
+        self.zoom_in.connect_clicked(move |_| {
+            r.set_scale(r.scale() * 1.1);
+            println!("scale: {}%", r.scale() * 100.);
+        });
+        let r = renderer.clone();
+        self.zoom_out.connect_clicked(move |_| {
+            r.set_scale(r.scale() / 1.1);
+            println!("scale: {}%", r.scale() * 100.);
+        });
     }
 }
 
@@ -63,7 +100,7 @@ impl CircuitViewTemplate {
 impl ObjectSubclass for CircuitViewTemplate {
     const NAME: &'static str = "CircuitView";
     type Type = CircuitView;
-    type ParentType = DrawingArea;
+    type ParentType = Box;
 
     fn class_init(my_class: &mut Self::Class) {
         Self::bind_template(my_class);
@@ -85,21 +122,20 @@ impl WidgetImpl for CircuitViewTemplate {
         self.parent_realize(widget);
 
         *self.renderer.borrow_mut() = Some(Arc::new(Renderer::new()));
+        self.setup_buttons();
 
-        {
-            let renderer = self.get_renderer().unwrap();
-            widget.set_draw_func(move |area: &DrawingArea, context: &gtk::cairo::Context, width: i32, height: i32| {
-                if let Err(err) = renderer.render_callback(area, context, width, height) {
-                    eprintln!("Error rendering CircuitView: {}", err);
-                    panic!();
-                }
-            });
-        }
+        let renderer = self.renderer().unwrap();
+        self.drawing_area.set_draw_func(move |area: &DrawingArea, context: &gtk::cairo::Context, width: i32, height: i32| {
+            if let Err(err) = renderer.render_callback(area, context, width, height) {
+                eprintln!("Error rendering CircuitView: {}", err);
+                panic!();
+            }
+        });
 
         {
             let gesture_drag = GestureDrag::builder().button(gdk::ffi::GDK_BUTTON_PRIMARY as u32).build();
 
-            let w = widget.to_owned();
+            let area = self.drawing_area.to_owned();
             gesture_drag.connect_drag_begin(move |gesture, x, y| {
                 gesture.set_state(gtk::EventSequenceState::Claimed);
                 crate::APPLICATION_DATA.with(|data| {
@@ -121,11 +157,11 @@ impl WidgetImpl for CircuitViewTemplate {
                         }
                     }
                     
-                    w.queue_draw();
+                    area.queue_draw();
                 });
             });
 
-            let w = widget.to_owned();
+            let area = self.drawing_area.to_owned();
             gesture_drag.connect_drag_update(move |gesture, x, y| {
                 gesture.set_state(gtk::EventSequenceState::Claimed);
                 crate::APPLICATION_DATA.with(|data| {
@@ -135,12 +171,12 @@ impl WidgetImpl for CircuitViewTemplate {
                             let block = data.get_block_mut(index).unwrap();
                             let (start_x, start_y) = block.start_pos();
                             block.set_position((start_x + x as i32, start_y + y as i32));
-                            w.queue_draw();
+                            area.queue_draw();
                         }
                         Selection::Area(area_start, _) => {
                             if let Some((start_x, start_y)) = area_start {
                                 data.set_selection(Selection::Area(area_start, Some((start_x + x as i32, start_y + y as i32))));
-                                w.queue_draw();
+                                area.queue_draw();
                             }
                         }
                         Selection::None => {}
@@ -149,7 +185,7 @@ impl WidgetImpl for CircuitViewTemplate {
                 });
             });
 
-            let w = widget.to_owned();
+            let area = self.drawing_area.to_owned();
             gesture_drag.connect_drag_end(move |gesture, x, y| {
                 gesture.set_state(gtk::EventSequenceState::Claimed);
                 if x == 0. && y == 0. {
@@ -171,11 +207,11 @@ impl WidgetImpl for CircuitViewTemplate {
                         Selection::None => {}
                     }
 
-                    w.queue_draw()
+                    area.queue_draw()
                 });
             });
 
-            widget.add_controller(&gesture_drag);
+            self.drawing_area.add_controller(&gesture_drag);
         }
     }
 
@@ -184,4 +220,4 @@ impl WidgetImpl for CircuitViewTemplate {
     }
 }
 
-impl DrawingAreaImpl for CircuitViewTemplate {}
+impl BoxImpl for CircuitViewTemplate {}

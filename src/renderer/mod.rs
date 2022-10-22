@@ -12,26 +12,38 @@ use gtk::{
     }
 };
 
+pub const DEFAULT_SCALE: f64 = 1.;
+
 pub trait Renderable {
     fn render(&self, context: &Context) -> Result<(), Error>;
 }
 
 #[derive(Default)]
 struct Data {
-    size: (i32, i32)
+    size: (i32, i32),
+    scale: f64,
 }
 
 impl Data {
     fn new() -> Self {
         Self {
-            size: (0, 0)
+            size: (0, 0),
+            scale: DEFAULT_SCALE
         }
+    }
+
+    fn scale(&self) -> f64 {
+        self.scale
+    }
+
+    fn set_scale(&mut self, scale: f64) {
+        self.scale = scale;
     }
 }
 
 pub struct Renderer {
     data: RefCell<Data>,
-    font: FontFace
+    font: FontFace,
 }
 
 impl Renderer {
@@ -44,6 +56,14 @@ impl Renderer {
 
     fn set_size(&self, size: (i32, i32)) {
         self.data.borrow_mut().size = size;
+    }
+
+    pub fn scale(&self) -> f64 {
+        self.data.borrow().scale()
+    }
+
+    pub fn set_scale(&self, scale: f64) {
+        self.data.borrow_mut().set_scale(scale);
     }
 
     pub fn render_callback(&self, _area: &DrawingArea, context: &Context, width: i32, height: i32) -> Result<(), Error> {

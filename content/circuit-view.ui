@@ -1,7 +1,92 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="CircuitView" parent="GtkDrawingArea">
+  <template class="CircuitView" parent="GtkBox">
     <property name="hexpand">True</property>
     <property name="vexpand">True</property>
+    <child>
+      <object class="GtkOverlay" id="overlay">
+        <property name="hexpand">True</property>
+        <property name="vexpand">True</property>
+        
+        <property name="child">
+          <!-- The Circuit will be rendered here -->
+          <object class="GtkDrawingArea" id="drawing_area">
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
+          </object>
+        </property>
+        
+        <!-- Overlay Widgets -->
+        <child type="overlay">
+          <object class="GtkBox" id="osd_box">
+            <property name="halign">end</property>
+            <property name="valign">start</property>
+            <property name="orientation">vertical</property>
+            <property name="spacing">4</property>
+            <style>
+              <class name="osd-box"></class>
+            </style>
+            <child>
+              <object class="GtkBox">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="halign">end</property>
+                <property name="valign">start</property>
+                <property name="orientation">vertical</property>
+                <property name="homogeneous">True</property>
+                <property name="valign">GTK_ALIGN_FILL</property>
+                <style>
+                  <class name="linked"/>
+                </style>
+                <child>
+                  <object class="GtkButton" id="zoom_in">
+                    <property name="focusable">1</property>
+                    <property name="receives_default">1</property>
+                    <property name="tooltip-text" translatable="yes">Zoom in</property>
+                    <property name="icon-name">zoom-in-symbolic</property>
+                    <style>
+                      <class name="osd"/>
+                      <class name="zoom-button"/>
+                      <class name="linked"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="zoom_out">
+                    <property name="focusable">1</property>
+                    <property name="receives_default">1</property>
+                    <property name="tooltip-text" translatable="yes">Zoom out</property>
+                    <property name="icon_name">zoom-out-symbolic</property>
+                    <style>
+                      <class name="osd"/>
+                      <class name="zoom-button"/>
+                      <class name="linked"/>
+                    </style>
+                  </object>
+                </child>
+                <style>
+                  <class name="osd"/>
+                  <class name="zoom-box"/>
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="zoom_reset">
+                <property name="focusable">1</property>
+                <property name="receives_default">1</property>
+                <property name="halign">end</property>
+                <property name="valign">start</property>
+                <property name="tooltip-text" translatable="yes">Reset zoom and panning</property>
+                <property name="icon_name">zoom-original-symbolic</property>
+                <style>
+                  <class name="osd"/>
+                  <class name="zoom-reset-button"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
   </template>
 </interface>

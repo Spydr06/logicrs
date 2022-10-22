@@ -10,5 +10,6 @@
   <!-- CSS Style files -->
   <gresource>
     <file compressed="true">style/style.css</file>
+    <file compressed="true">style/overlay.css</file>
   </gresource>
 </gresources>

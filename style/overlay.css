@@ -1,0 +1,20 @@
+.zoom-box, .zoom-reset-button {
+    border-radius: 7px;
+}
+
+.zoom-button {
+    background-color: transparent;
+}
+
+.zoom-button:hover, .zoom-reset-button:hover {
+    background-color: #202020;
+}
+
+.osd-box {
+    margin-top: 8px;
+    margin-right: 8px;
+}
+
+.osd {
+    opacity: 50;
+}
