@@ -2,7 +2,7 @@
 
 <h1>LogicRs</h1>
 
-[📑 Documentation](https://github.com/spydr06/cspydr/wiki) |
+[📑 Documentation](https://github.com/spydr06/logicrs/wiki) |
 [💾 Installation](./INSTALL.md) |
 [🤝 Contributing](./CONTRIBUTING.md) |
 [📜 License](./LICENSE) |
