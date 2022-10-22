@@ -71,8 +71,8 @@ impl Renderer {
             }
 
             // draw selection rectangle
-            if let Some((start_x, start_y)) = data.multiselect_start() {
-                if let Some((end_x, end_y)) = data.multiselect_end() {
+            if let Some((start_x, start_y)) = data.selection().area_start() {
+                if let Some((end_x, end_y)) = data.selection().area_end() {
                     let x = cmp::min(start_x, end_x);
                     let y = cmp::min(start_y, end_y);
                     let w = cmp::max(start_x, end_x) - x;

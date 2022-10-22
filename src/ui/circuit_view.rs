@@ -25,7 +25,12 @@ use gtk::{
     ShortcutManager, Widget, DrawingArea, GestureClick, GestureDrag, traits::{WidgetExt, GestureExt}
 };
 
-use crate::{application::Application, renderer::Renderer};
+use crate::{
+    application::{
+        Application,
+        data::Selection
+    }, renderer::Renderer
+};
 
 wrapper! {
     pub struct CircuitView(ObjectSubclass<CircuitViewTemplate>)
@@ -111,8 +116,7 @@ impl WidgetImpl for CircuitViewTemplate {
                             }
                         }
                         None => {
-                            data.set_multiselect_start(Some(position));
-                            data.set_multiselect_end(Some(position));
+                            data.set_selection(Selection::Area(Some(position), Some(position)));
                         }
                     }
                     
@@ -132,8 +136,9 @@ impl WidgetImpl for CircuitViewTemplate {
                             w.queue_draw();
                         }
                         None => {
-                            if let Some((start_x, start_y)) = data.multiselect_start() {
-                                data.set_multiselect_end(Some((start_x + x as i32, start_y + y as i32)));
+                            let area_start = data.selection().area_start();
+                            if let Some((start_x, start_y)) = area_start {
+                                data.set_selection(Selection::Area(area_start, Some((start_x + x as i32, start_y + y as i32))));
                                 w.queue_draw();
                             }
                         }
@@ -157,9 +162,8 @@ impl WidgetImpl for CircuitViewTemplate {
                             block.set_position((start_x + x as i32, start_y + y as i32));
                         },
                         None => {
-                            data.highlight_all_selected();
-                            data.set_multiselect_start(None);
-                            data.set_multiselect_end(None);
+                            data.highlight_area();
+                            data.set_selection(Selection::None);
                         }
                     }
 
@@ -169,8 +173,6 @@ impl WidgetImpl for CircuitViewTemplate {
 
             widget.add_controller(&gesture_drag);
         }
-
-        
     }
 
     fn unrealize(&self, widget: &Self::Type) {

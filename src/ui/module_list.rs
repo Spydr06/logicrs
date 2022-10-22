@@ -11,16 +11,23 @@ use glib::{
 };
 
 use gtk::{
+    gdk,
     prelude::InitializingWidgetExt,
     subclass::{
         prelude::{BoxImpl, WidgetImpl},
         widget::{CompositeTemplate, WidgetClassSubclassExt},
     },
     Accessible, Box, Buildable, Button, CompositeTemplate, ConstraintTarget, Orientable,
-    TemplateChild, Widget,
+    TemplateChild, Widget, ListBox, ListBoxRow, Label, traits::WidgetExt, GestureClick
 };
 
-use crate::application::Application;
+use std::sync::Arc;
+
+use crate::{
+    application::Application,
+    modules::Module,
+    simulator::block::Block
+};
 use super::dialogs;
 
 wrapper! {
@@ -43,6 +50,9 @@ pub struct ModuleListTemplate {
 
     #[template_child]
     pub new_module_button: TemplateChild<Button>,
+
+    #[template_child]
+    pub list_box: TemplateChild<ListBox>
 }
 
 #[object_subclass]
@@ -64,9 +74,45 @@ impl ObjectImpl for ModuleListTemplate {
     fn constructed(&self, obj: &Self::Type) {
         self.parent_constructed(obj);
 
-        dialogs::new(&self.new_module_button, (400, 70), dialogs::new_module)
+        dialogs::new(&self.new_module_button, (400, 70), dialogs::new_module);
+
+        crate::APPLICATION_DATA.with(|data| {
+            let data = data.borrow();
+            for (_, v) in data.modules().iter() {
+                self.list_box.append(&new_list_item(v.clone()));
+            }
+        });
     }
 }
 
 impl WidgetImpl for ModuleListTemplate {}
 impl BoxImpl for ModuleListTemplate {}
+
+fn new_list_item(module: Arc<Module>) -> ListBoxRow {
+    let label = Label::builder()
+        .label(module.get_name().as_str())
+        .margin_bottom(12)
+        .margin_top(12)
+        .margin_start(12)
+        .margin_end(12)
+        .build();
+
+    let item = ListBoxRow::builder()
+        .child(&label)
+        .build();
+    
+    let click_gesture = GestureClick::builder()
+        .button(gdk::ffi::GDK_BUTTON_PRIMARY as u32)
+        .build();
+
+    click_gesture.connect_pressed(move |_, _, _, _| {
+        crate::APPLICATION_DATA.with(|data| {
+            let mut data = data.borrow_mut();
+            data.add_block(Block::new(module.clone(), (0, 0)));
+        });
+    });
+
+    item.add_controller(&click_gesture);
+    
+    item
+}

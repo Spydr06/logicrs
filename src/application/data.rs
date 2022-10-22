@@ -12,14 +12,41 @@ use crate::{
     simulator::block::Block
 };
 
+#[derive(Clone, Copy)]
+pub enum Selection {
+    Single(usize),
+    Area(Option<(i32, i32)>, Option<(i32, i32)>),
+    None
+}
+
+impl Selection {
+    pub fn is_area(self) -> bool {
+        match self {
+            Self::Area(_, _) => true,
+            _ => false
+        }
+    }
+
+    pub fn area_start(self) -> Option<(i32, i32)> {
+        match self {
+            Self::Area(start, _) => start,
+            _ => None
+        }
+    }
+
+    pub fn area_end(self) -> Option<(i32, i32)> {
+        match self {
+            Self::Area(_, end) => end,
+            _ => None
+        }
+    }
+}
+
 pub struct ApplicationData {
     modules: HashMap<String, Arc<Module>>,
     blocks: Vec<Block>,
-    
-    // selection
-    highlighted_block: Option<usize>,
-    multiselect_start: Option<(i32, i32)>,
-    multiselect_end: Option<(i32, i32)>,
+
+    selection: Selection
 }
 
 impl Default for ApplicationData {
@@ -36,14 +63,11 @@ impl ApplicationData {
         Self {
             modules: HashMap::new(),
             blocks: Vec::new(),
-            highlighted_block: None,
-            multiselect_end: None,
-            multiselect_start: None,
+            selection: Selection::None
         }
     }
 
-    pub fn add_module(&mut self, module: Module) -> &mut Self
-    {
+    pub fn add_module(&mut self, module: Module) -> &mut Self {
         self.modules.insert(module.get_name().clone(), Arc::new(module));
         self
     }
@@ -57,6 +81,10 @@ impl ApplicationData {
             Some(module) => Some(module.clone()),
             None => None
         }
+    }
+
+    pub fn modules(&self) -> &HashMap<String, Arc<Module>> {
+        &self.modules
     }
 
     pub fn add_block(&mut self, block: Block) {
@@ -75,24 +103,16 @@ impl ApplicationData {
         self.blocks.get_mut(index)
     }
 
-    pub fn set_multiselect_start(&mut self, position: Option<(i32, i32)>) {
-        self.multiselect_start = position;
+    pub fn set_selection(&mut self, selection: Selection) {
+        self.selection = selection;
     }
 
-    pub fn multiselect_start(&self) -> Option<(i32, i32)> {
-        self.multiselect_start
-    }
-
-    pub fn set_multiselect_end(&mut self, position: Option<(i32, i32)>) {
-        self.multiselect_end = position;
-    }
-
-    pub fn multiselect_end(&self) -> Option<(i32, i32)> {
-        self.multiselect_end
+    pub fn selection(&self) -> Selection {
+        self.selection
     }
 
     pub fn get_block_at(&self, position: (i32, i32)) -> Option<usize> {
-        for (i, block) in self.blocks.iter().enumerate() {
+        for (i, block) in self.blocks.iter().enumerate().rev() {
             if block.touches(position) {
                 return Some(i);
             }
@@ -102,43 +122,44 @@ impl ApplicationData {
     }
 
     pub fn get_highlighted_mut(&mut self) -> Option<&mut Block> {
-        match self.highlighted_block {
-            Some(index) => self.blocks.get_mut(index),
-            None => None
+        match self.selection {
+            Selection::Single(index) => self.blocks.get_mut(index),
+            _ => None
         }
     }
 
     pub fn unhighlight(&mut self) {
         self.blocks.iter_mut().for_each(|v| v.set_highlighted(false));
-        self.highlighted_block = None;
+        self.selection = Selection::None
     }
 
     pub fn highlight(&mut self, index: usize) {
-        if let Some(old_index) = self.highlighted_block {
+        if let Selection::Single(old_index) = self.selection {
             self.blocks.get_mut(old_index).unwrap().set_highlighted(false);
         }
 
-        self.highlighted_block = Some(index);
+        self.selection = Selection::Single(index);
         self.blocks.get_mut(index).unwrap().set_highlighted(true);
     }
 
-    pub fn highlight_all_selected(&mut self) {
-        if self.multiselect_start.is_none() || self.multiselect_end.is_none() {
-            return;
-        }
+    pub fn highlight_area(&mut self) {
+        if let Selection::Area(selection_start, selection_end) = self.selection {
+            if selection_start.is_none() || selection_end.is_none() {
+                return;
+            }
 
-        
-        let selection_start = self.multiselect_start.unwrap();
-        let selection_end = self.multiselect_end.unwrap();
+            let selection_start = selection_start.unwrap();
+            let selection_end = selection_end.unwrap();
 
-        let x1 = cmp::min(selection_start.0, selection_end.0);
-        let y1 = cmp::min(selection_start.1, selection_end.1);
-        let x2 = cmp::max(selection_start.0, selection_end.0);
-        let y2 = cmp::max(selection_start.1, selection_end.1);
-        
-        for block in self.blocks.iter_mut() {
-            if block.is_in_area((x1, y1, x2, y2)) {
-                block.set_highlighted(true);
+            let x1 = cmp::min(selection_start.0, selection_end.0);
+            let y1 = cmp::min(selection_start.1, selection_end.1);
+            let x2 = cmp::max(selection_start.0, selection_end.0);
+            let y2 = cmp::max(selection_start.1, selection_end.1);
+            
+            for block in self.blocks.iter_mut() {
+                if block.is_in_area((x1, y1, x2, y2)) {
+                    block.set_highlighted(true);
+                }
             }
         }
     }
