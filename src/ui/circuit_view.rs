@@ -1,7 +1,4 @@
-use std::{
-    cell::RefCell,
-    sync::Arc
-};
+use std::{cell::RefCell, sync::{Arc, Mutex}};
 
 use glib::{
     object_subclass,
@@ -15,15 +12,15 @@ use glib::{
 
 use gtk::{
     gio::{ActionGroup, ActionMap},
-    prelude::{InitializingWidgetExt, DrawingAreaExtManual, GestureDragExt, BoxExt, ButtonExt},
+    prelude::{InitializingWidgetExt, DrawingAreaExtManual, GestureDragExt, ButtonExt},
     subclass::{
         prelude::{WidgetImpl, BoxImpl},
         widget::{CompositeTemplate, WidgetImplExt, WidgetClassSubclassExt},
     },
     gdk,
     Accessible, Buildable, CompositeTemplate, ConstraintTarget, Native, Root,
-    ShortcutManager, Widget, DrawingArea, GestureClick, GestureDrag, traits::{WidgetExt, GestureExt},
-    Box, TemplateChild, Revealer, Button
+    ShortcutManager, Widget, DrawingArea, GestureDrag, traits::{WidgetExt, GestureExt},
+    Box, TemplateChild, Button
 };
 
 use crate::{
@@ -33,7 +30,7 @@ use crate::{
     }, 
     renderer::{
         self,
-        Renderer
+        Renderer, CairoRenderer
     }
 };
 
@@ -64,11 +61,11 @@ pub struct CircuitViewTemplate {
     #[template_child]
     zoom_reset: TemplateChild<Button>,
 
-    renderer: RefCell<Option<Arc<Renderer>>>,
+    renderer: RefCell<Option<Arc<Mutex<CairoRenderer>>>>,
 }
 
 impl CircuitViewTemplate {
-    fn renderer(&self) -> Option<Arc<Renderer>> {
+    fn renderer(&self) -> Option<Arc<Mutex<CairoRenderer>>> {
         match self.renderer.borrow().as_ref() {
             Some(renderer) => Some(renderer.clone()),
             None => None
@@ -76,22 +73,25 @@ impl CircuitViewTemplate {
     }
 
     fn setup_buttons(&self) {
-        let borrowed = self.renderer.borrow();
-        let renderer = borrowed.as_ref().unwrap();
+        let renderer = self.renderer().unwrap();
         let r = renderer.clone();
         self.zoom_reset.connect_clicked(move |_| {
-            r.set_scale(renderer::DEFAULT_SCALE);
-            println!("scale: {}%", r.scale() * 100.);
+            r.lock().unwrap().set_scale(renderer::DEFAULT_SCALE);
+            //println!("scale: {}%", r.lock().unwrap().scale() * 100.);
         });
         let r = renderer.clone();
         self.zoom_in.connect_clicked(move |_| {
-            r.set_scale(r.scale() * 1.1);
-            println!("scale: {}%", r.scale() * 100.);
+            let mut r = r.lock().unwrap();
+            let scale = r.scale();
+            r.set_scale(scale * 1.1);
+            //println!("scale: {}%", scale * 100.);
         });
         let r = renderer.clone();
         self.zoom_out.connect_clicked(move |_| {
-            r.set_scale(r.scale() / 1.1);
-            println!("scale: {}%", r.scale() * 100.);
+            let mut r = r.lock().unwrap();
+            let scale = r.scale();
+            r.set_scale(scale / 1.1);
+            //println!("scale: {}%", scale * 100.);
         });
     }
 }
@@ -121,12 +121,12 @@ impl WidgetImpl for CircuitViewTemplate {
     fn realize(&self, widget: &Self::Type) {
         self.parent_realize(widget);
 
-        *self.renderer.borrow_mut() = Some(Arc::new(Renderer::new()));
+        *self.renderer.borrow_mut() = Some(Arc::new(Mutex::new(CairoRenderer::new())));
         self.setup_buttons();
 
         let renderer = self.renderer().unwrap();
         self.drawing_area.set_draw_func(move |area: &DrawingArea, context: &gtk::cairo::Context, width: i32, height: i32| {
-            if let Err(err) = renderer.render_callback(area, context, width, height) {
+            if let Err(err) = renderer.lock().unwrap().render_callback(area, context, width, height) {
                 eprintln!("Error rendering CircuitView: {}", err);
                 panic!();
             }

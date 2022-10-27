@@ -3,15 +3,12 @@ use std::{
     f64::consts::PI,
     cmp
 };
-use gtk::cairo::{
-    Context,
-    Error
-};
+use gtk::cairo::Error;
 
 use crate::{
     modules::Module,
     renderer::{
-        self,
+        Renderer,
         Renderable
     }
 };
@@ -76,17 +73,18 @@ impl Block {
         self.start_pos
     }
 
-    fn draw_connector(&self, context: &Context, position: (i32, i32)) -> Result<(), Error> {
-        context.arc(position.0 as f64, position.1 as f64, 6., 0., 2. * PI);
+    fn draw_connector(&self, renderer: &impl Renderer, position: (i32, i32)) -> Result<(), Error> {
+        renderer.arc(position, 6., 0., 2. * PI);
         match self.highlighted {
-            true => context.set_source_rgb(0.2078, 0.5176, 0.894),
-            false => context.set_source_rgb(0.23, 0.23, 0.23)       
-        }
-        context.fill()?;
+            true => renderer.set_color(0.2078, 0.5176, 0.894, 1.),
+            false => renderer.set_color(0.23, 0.23, 0.23, 1.)       
+        };
+        
+        renderer.fill()?;
     
-        context.arc(position.0 as f64, position.1 as f64, 5., 0., 2. * PI);
-        context.set_source_rgb(0.5, 0.1, 0.7);
-        context.fill()?;
+        renderer.arc(position, 5., 0., 2. * PI);
+        renderer.set_color(0.5, 0.1, 0.7, 1.);
+        renderer.fill()?;
         
         Ok(())
     }
@@ -94,35 +92,35 @@ impl Block {
 
 
 impl Renderable for Block {
-    fn render(&self, context: &Context) -> Result<(), Error> {
-        renderer::draw_rounded_rect(context, self.position, self.size, 5);
+    fn render(&self, renderer: &impl Renderer) -> Result<(), Error> {
+        renderer.rounded_rect(self.position, self.size, 5);
 
-        context.set_source_rgb(0.13, 0.13, 0.13);
-        context.fill()?;
+        renderer.set_color(0.13, 0.13, 0.13, 1.);
+        renderer.fill()?;
 
-        renderer::draw_top_rounded_rect(context, self.position, (self.size.0, 25), 5);
-        context.set_source_rgb(0.23, 0.23, 0.23);        
-        context.fill()?;
+        renderer.top_rounded_rect(self.position, (self.size.0, 25), 5);
+        renderer.set_color(0.23, 0.23, 0.23, 1.);        
+        renderer.fill()?;
 
-        context.move_to(self.position.0 as f64 + 5., self.position.1 as f64 + 18.);
-        context.set_source_rgb(1., 1., 1.);
-        context.show_text(self.module.get_name().as_str())?;
+        renderer.move_to((self.position.0 + 5, self.position.1 + 18));
+        renderer.set_color(1., 1., 1., 1.);
+        renderer.show_text(self.module.get_name().as_str())?;
 
-        renderer::draw_rounded_rect(context, self.position, self.size, 5);
+        renderer.rounded_rect(self.position, self.size, 5);
         match self.highlighted {
-            true => context.set_source_rgb(0.2078, 0.5176, 0.894),
-            false => context.set_source_rgb(0.23, 0.23, 0.23)       
-        }
-        context.stroke()?;
+            true => renderer.set_color(0.2078, 0.5176, 0.894, 1.),
+            false => renderer.set_color(0.23, 0.23, 0.23, 1.)    
+        };
+        renderer.stroke()?;
 
         let num_inputs = self.module.get_num_inputs();
         for i in 0..num_inputs {
-            self.draw_connector(context, (self.position.0, self.position.1 + 25 * i + 50))?;
+            self.draw_connector(renderer, (self.position.0, self.position.1 + 25 * i + 50))?;
         }
 
         let num_outputs = self.module.get_num_outputs();
         for i in 0..num_outputs {
-            self.draw_connector(context, (self.position.0 + self.size.0, self.position.1 + 25 * i + 50))?;
+            self.draw_connector(renderer, (self.position.0 + self.size.0, self.position.1 + 25 * i + 50))?;
         }
 
         Ok(())
