@@ -29,6 +29,7 @@ pub trait Renderer {
     fn top_rounded_rect(&self, position: (i32, i32), size: (i32, i32), radius: i32) -> &Self;
     fn arc(&self, position: (i32, i32), radius: f64, angle1: f64, angle2: f64) -> &Self;
     fn move_to(&self, position: (i32, i32)) -> &Self;
+    fn curve_to(&self, start: (i32, i32), mid: (i32, i32), end: (i32, i32)) -> &Self;
 
     // drawing functions
     fn fill(&self) -> Result<(), Error>;

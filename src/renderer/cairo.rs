@@ -119,6 +119,17 @@ impl Renderer for CairoRenderer {
         self
     }
 
+    fn curve_to(&self, start: (i32, i32), mid: (i32, i32), end: (i32, i32)) -> &Self {
+        if let Some(context) = &self.context {
+            context.curve_to(
+                start.0 as f64, start.1 as f64, 
+                mid.0 as f64, mid.1 as f64, 
+                end.0 as f64, end.1 as f64
+            );
+        }
+        self
+    }
+
     fn show_text<'a>(&self, text: &'a str) -> Result<(), Error> {
         match &self.context {
             Some(context) => context.show_text(text),
@@ -136,7 +147,7 @@ impl Renderer for CairoRenderer {
 
     fn rounded_rect(&self, position: (i32, i32), size: (i32, i32), radius: i32) -> &Self {
         if let Some(context) = &self.context {    
-        context.move_to((position.0 + radius) as f64, position.1 as f64);
+            self.move_to((position.0 + radius, position.1));
 
             context.line_to((position.0 + size.0 - radius) as f64, position.1 as f64);
             context.curve_to(
@@ -172,7 +183,7 @@ impl Renderer for CairoRenderer {
 
     fn top_rounded_rect(&self, position: (i32, i32), size: (i32, i32), radius: i32) -> &Self {
         if let Some(context) = &self.context {    
-        context.move_to((position.0 + radius) as f64, position.1 as f64);
+            context.move_to((position.0 + radius) as f64, position.1 as f64);
             context.line_to((position.0 + size.0 - radius) as f64, position.1 as f64);
             context.curve_to(
                 (position.0 + size.0 - radius) as f64, position.1 as f64, 
