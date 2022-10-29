@@ -1,4 +1,4 @@
-use std::{cell::RefCell, sync::{Arc, Mutex}};
+use std::{cell::RefCell, sync::Arc};
 
 use glib::{
     object_subclass,
@@ -61,11 +61,11 @@ pub struct CircuitViewTemplate {
     #[template_child]
     zoom_reset: TemplateChild<Button>,
 
-    renderer: RefCell<Option<Arc<Mutex<CairoRenderer>>>>,
+    renderer: RefCell<Option<Arc<RefCell<CairoRenderer>>>>,
 }
 
 impl CircuitViewTemplate {
-    fn renderer(&self) -> Option<Arc<Mutex<CairoRenderer>>> {
+    fn renderer(&self) -> Option<Arc<RefCell<CairoRenderer>>> {
         match self.renderer.borrow().as_ref() {
             Some(renderer) => Some(renderer.clone()),
             None => None
@@ -75,22 +75,28 @@ impl CircuitViewTemplate {
     fn setup_buttons(&self) {
         let renderer = self.renderer().unwrap();
         let r = renderer.clone();
+        let w = self.drawing_area.to_owned();
         self.zoom_reset.connect_clicked(move |_| {
-            r.lock().unwrap().set_scale(renderer::DEFAULT_SCALE);
+            r.borrow_mut().set_scale(renderer::DEFAULT_SCALE);
+            w.queue_draw();
             //println!("scale: {}%", r.lock().unwrap().scale() * 100.);
         });
         let r = renderer.clone();
+        let w = self.drawing_area.to_owned();
         self.zoom_in.connect_clicked(move |_| {
-            let mut r = r.lock().unwrap();
+            let mut r = r.borrow_mut();
             let scale = r.scale();
             r.set_scale(scale * 1.1);
+            w.queue_draw();
             //println!("scale: {}%", scale * 100.);
         });
         let r = renderer.clone();
+        let w = self.drawing_area.to_owned();
         self.zoom_out.connect_clicked(move |_| {
-            let mut r = r.lock().unwrap();
+            let mut r = r.borrow_mut();
             let scale = r.scale();
             r.set_scale(scale / 1.1);
+            w.queue_draw();
             //println!("scale: {}%", scale * 100.);
         });
     }
@@ -121,12 +127,12 @@ impl WidgetImpl for CircuitViewTemplate {
     fn realize(&self, widget: &Self::Type) {
         self.parent_realize(widget);
 
-        *self.renderer.borrow_mut() = Some(Arc::new(Mutex::new(CairoRenderer::new())));
+        *self.renderer.borrow_mut() = Some(Arc::new(RefCell::new(CairoRenderer::new())));
         self.setup_buttons();
 
         let renderer = self.renderer().unwrap();
         self.drawing_area.set_draw_func(move |area: &DrawingArea, context: &gtk::cairo::Context, width: i32, height: i32| {
-            if let Err(err) = renderer.lock().unwrap().render_callback(area, context, width, height) {
+            if let Err(err) = renderer.borrow_mut().render_callback(area, context, width, height) {
                 eprintln!("Error rendering CircuitView: {}", err);
                 panic!();
             }
@@ -136,12 +142,14 @@ impl WidgetImpl for CircuitViewTemplate {
             let gesture_drag = GestureDrag::builder().button(gdk::ffi::GDK_BUTTON_PRIMARY as u32).build();
 
             let area = self.drawing_area.to_owned();
+            let renderer = self.renderer().unwrap();
             gesture_drag.connect_drag_begin(move |gesture, x, y| {
                 gesture.set_state(gtk::EventSequenceState::Claimed);
                 crate::APPLICATION_DATA.with(|data| {
                     let mut data = data.borrow_mut();
-                    let position = (x as i32, y as i32);
-                    
+                    let scale = renderer.borrow().scale();
+                    let position = ((x / scale) as i32, (y / scale) as i32);
+                
                     data.unhighlight();
                     
                     match data.get_block_at(position) {
@@ -162,20 +170,24 @@ impl WidgetImpl for CircuitViewTemplate {
             });
 
             let area = self.drawing_area.to_owned();
+            let renderer = self.renderer().unwrap();
             gesture_drag.connect_drag_update(move |gesture, x, y| {
                 gesture.set_state(gtk::EventSequenceState::Claimed);
                 crate::APPLICATION_DATA.with(|data| {
                     let mut data = data.borrow_mut();
+                    let scale = renderer.borrow().scale();
+                    let position = ((x / scale) as i32, (y / scale) as i32);
+
                     match data.selection() {
                         Selection::Single(index) => {
                             let block = data.get_block_mut(index).unwrap();
                             let (start_x, start_y) = block.start_pos();
-                            block.set_position((start_x + x as i32, start_y + y as i32));
+                            block.set_position((start_x + position.0, start_y + position.1));
                             area.queue_draw();
                         }
                         Selection::Area(area_start, _) => {
                             if let Some((start_x, start_y)) = area_start {
-                                data.set_selection(Selection::Area(area_start, Some((start_x + x as i32, start_y + y as i32))));
+                                data.set_selection(Selection::Area(area_start, Some((start_x + position.0, start_y + position.1))));
                                 area.queue_draw();
                             }
                         }
@@ -186,6 +198,7 @@ impl WidgetImpl for CircuitViewTemplate {
             });
 
             let area = self.drawing_area.to_owned();
+            let renderer = self.renderer().unwrap();
             gesture_drag.connect_drag_end(move |gesture, x, y| {
                 gesture.set_state(gtk::EventSequenceState::Claimed);
                 if x == 0. && y == 0. {
@@ -194,11 +207,14 @@ impl WidgetImpl for CircuitViewTemplate {
 
                 crate::APPLICATION_DATA.with(|data| {
                     let mut data = data.borrow_mut();
+                    let scale = renderer.borrow().scale();
+                    let position = ((x / scale) as i32, (y / scale) as i32);
+
                     match data.selection() { 
                         Selection::Single(index) => {
                             let block = data.get_block_mut(index).unwrap();
                             let (start_x, start_y) = block.start_pos();
-                            block.set_position((start_x + x as i32, start_y + y as i32));
+                            block.set_position((start_x + position.0, start_y + position.1));
                         },
                         Selection::Area(_, _) => {
                             data.highlight_area();

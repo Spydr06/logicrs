@@ -1,6 +1,8 @@
 use super::*;
 
 pub const DEFAULT_SCALE: f64 = 1.;
+pub const MINIMUM_SCALE: f64 = 0.1;
+pub const MAXIMUM_SCALE: f64 = 2.;
 
 pub struct CairoRenderer {
     size: (i32, i32),
@@ -30,6 +32,8 @@ impl CairoRenderer {
             return Ok(());
         }
 
+        context.scale(self.scale, self.scale);
+
         //println!("renderer::render_callback() called\n  size: ({}, {})", width, height);
 
         context.set_antialias(Antialias::Default);
@@ -43,7 +47,7 @@ impl CairoRenderer {
         crate::APPLICATION_DATA.with(|d| -> Result<(), Error> {
             let data = d.borrow();
             for block in data.get_blocks() {
-                if block.is_in_area((0, 0, width, height)) {
+                if block.is_in_area((0, 0, (width as f64 / self.scale) as i32, (height as f64 / self.scale) as i32)) {
                     block.render(self)?;
                 }
             }
@@ -86,7 +90,7 @@ impl Renderer for CairoRenderer {
     }
 
     fn set_scale(&mut self, scale: f64) -> &mut Self {
-        self.scale = scale;
+        self.scale = scale.clamp(MINIMUM_SCALE, MAXIMUM_SCALE);
         self
     }
 
@@ -112,6 +116,21 @@ impl Renderer for CairoRenderer {
         }
     }
 
+    fn show_text<'a>(&self, text: &'a str) -> Result<(), Error> {
+        match &self.context {
+            Some(context) => context.show_text(text),
+            None => Ok(())
+        }
+    }
+
+    fn arc(&self, position: (i32, i32), radius: f64, angle1: f64, angle2: f64) -> &Self {
+        if let Some(context) = &self.context {
+            context.arc(position.0 as f64, position.1 as f64, radius, angle1, angle2);
+        }
+        
+        self
+    }
+
     fn move_to(&self, position: (i32, i32)) -> &Self {
         if let Some(context) = &self.context {
             context.move_to(position.0 as f64, position.1 as f64);
@@ -130,77 +149,61 @@ impl Renderer for CairoRenderer {
         self
     }
 
-    fn show_text<'a>(&self, text: &'a str) -> Result<(), Error> {
-        match &self.context {
-            Some(context) => context.show_text(text),
-            None => Ok(())
-        }
-    }
-
-    fn arc(&self, position: (i32, i32), radius: f64, angle1: f64, angle2: f64) -> &Self {
+    fn line_to(&self, position: (i32, i32)) -> &Self {
         if let Some(context) = &self.context {
-            context.arc(position.0 as f64, position.1 as f64, radius, angle1, angle2);
+            context.line_to(position.0 as f64, position.1 as f64);
         }
-        
         self
     }
 
     fn rounded_rect(&self, position: (i32, i32), size: (i32, i32), radius: i32) -> &Self {
-        if let Some(context) = &self.context {    
-            self.move_to((position.0 + radius, position.1));
+        self.move_to((position.0 + radius, position.1));
 
-            context.line_to((position.0 + size.0 - radius) as f64, position.1 as f64);
-            context.curve_to(
-                (position.0 + size.0 - radius) as f64, position.1 as f64, 
-                (position.0 + size.0) as f64, position.1 as f64, 
-                (position.0 + size.0) as f64, (position.1 + radius) as f64, 
-            );
-        
-            context.line_to((position.0 + size.0) as f64, (position.1 + size.1 - radius) as f64);
-            context.curve_to(
-                (position.0 + size.0) as f64, (position.1 + size.1 - radius) as f64,
-                (position.0 + size.0) as f64, (position.1 + size.1) as f64,
-                (position.0 + size.0 - radius) as f64, (position.1 + size.1) as f64,
-            );
-        
-            context.line_to((position.0 + radius) as f64, (position.1 + size.1) as f64);
-            context.curve_to(
-                (position.0 + radius) as f64, (position.1 + size.1) as f64,
-                position.0 as f64, (position.1 + size.1) as f64,
-                position.0 as f64, (position.1 + size.1 - radius) as f64
-            );
-        
-            context.line_to(position.0 as f64, (position.1 + radius) as f64);
-            context.curve_to(
-                position.0 as f64, (position.1 + radius) as f64,
-                position.0 as f64, position.1 as f64,
-                (position.0 + radius) as f64, position.1 as f64
-            );
-        }
-
-        self
+        self.line_to((position.0 + size.0 - radius, position.1));
+        self.curve_to(
+            (position.0 + size.0 - radius, position.1), 
+            (position.0 + size.0, position.1), 
+            (position.0 + size.0, position.1 + radius), 
+        );
+    
+        self.line_to((position.0 + size.0, position.1 + size.1 - radius));
+        self.curve_to(
+            (position.0 + size.0, position.1 + size.1 - radius),
+            (position.0 + size.0, position.1 + size.1),
+            (position.0 + size.0 - radius, position.1 + size.1),
+        );
+    
+        self.line_to((position.0 + radius, position.1 + size.1));
+        self.curve_to(
+            (position.0 + radius, position.1 + size.1),
+            (position.0, position.1 + size.1),
+            (position.0, position.1 + size.1 - radius)
+        );
+    
+        self.line_to((position.0, position.1 + radius));
+        self.curve_to(
+            (position.0, position.1 + radius),
+            position,
+            (position.0 + radius, position.1)
+        )
     }
 
     fn top_rounded_rect(&self, position: (i32, i32), size: (i32, i32), radius: i32) -> &Self {
-        if let Some(context) = &self.context {    
-            context.move_to((position.0 + radius) as f64, position.1 as f64);
-            context.line_to((position.0 + size.0 - radius) as f64, position.1 as f64);
-            context.curve_to(
-                (position.0 + size.0 - radius) as f64, position.1 as f64, 
-                (position.0 + size.0) as f64, position.1 as f64, 
-                (position.0 + size.0) as f64, (position.1 + radius) as f64, 
-            );
-        
-            context.line_to((position.0 + size.0) as f64, (position.1 + size.1) as f64);
-            context.line_to(position.0 as f64, (position.1 + size.1) as f64);
-            context.line_to(position.0 as f64, (position.1 + radius) as f64);
-            context.curve_to(
-                position.0 as f64, (position.1 + radius) as f64,
-                position.0 as f64, position.1 as f64,
-                (position.0 + radius) as f64, position.1 as f64
-            );
-        }
-
-        self
+        self.move_to((position.0 + radius, position.1));
+        self.line_to((position.0 + size.0 - radius, position.1));
+        self.curve_to(
+            (position.0 + size.0 - radius, position.1), 
+            (position.0 + size.0, position.1), 
+            (position.0 + size.0, position.1 + radius), 
+        );
+    
+        self.line_to((position.0 + size.0, position.1 + size.1));
+        self.line_to((position.0, position.1 + size.1));
+        self.line_to((position.0, position.1 + radius));
+        self.curve_to(
+            (position.0, position.1 + radius),
+            position,
+            (position.0 + radius, position.1)
+        )
     }
 }
