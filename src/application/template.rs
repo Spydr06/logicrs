@@ -10,7 +10,6 @@ use gtk::{
     StyleContext,
     STYLE_PROVIDER_PRIORITY_APPLICATION
 };
-
 use crate::ui::main_window::MainWindow;
 use std::cell::RefCell;
 
@@ -44,7 +43,6 @@ impl ApplicationImpl for ApplicationTemplate {
             &provider,
             STYLE_PROVIDER_PRIORITY_APPLICATION,
         );
-
 
         // build the application window and UI
         let window = MainWindow::new(application);

@@ -21,8 +21,6 @@ use gtk::{
     TemplateChild, Widget, ListBox, ListBoxRow, Label, traits::WidgetExt, GestureClick
 };
 
-use std::sync::Arc;
-
 use crate::{
     application::Application,
     modules::Module,
@@ -79,7 +77,7 @@ impl ObjectImpl for ModuleListTemplate {
         crate::APPLICATION_DATA.with(|data| {
             let data = data.borrow();
             for (_, v) in data.modules().iter() {
-                self.list_box.append(&new_list_item(v.clone()));
+                self.list_box.append(&new_list_item(v));
             }
         });
     }
@@ -88,9 +86,9 @@ impl ObjectImpl for ModuleListTemplate {
 impl WidgetImpl for ModuleListTemplate {}
 impl BoxImpl for ModuleListTemplate {}
 
-fn new_list_item(module: Arc<Module>) -> ListBoxRow {
+fn new_list_item(module: &Module) -> ListBoxRow {
     let label = Label::builder()
-        .label(module.get_name().as_str())
+        .label(module.name().as_str())
         .build();
     
     let item = ListBoxRow::builder()
@@ -100,11 +98,14 @@ fn new_list_item(module: Arc<Module>) -> ListBoxRow {
     let click_gesture = GestureClick::builder()
         .button(gdk::ffi::GDK_BUTTON_PRIMARY as u32)
         .build();
-        
+    
+    let name = module.name().to_owned();
     click_gesture.connect_pressed(move |_, _, _, _| {
         crate::APPLICATION_DATA.with(|data| {
             let mut data = data.borrow_mut();
-            data.add_block(Block::new(module.clone(), (0, 0)));
+            let module = data.get_module(&name).unwrap();
+            let block = Block::new(&module, (0, 0));
+            data.current_plot_mut().add_block(block);
         });
     });
     

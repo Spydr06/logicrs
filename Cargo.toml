@@ -25,3 +25,11 @@ version = "0.4.8"
 [dependencies.glib]
 package = "glib"
 version = "0.15.12"
+
+[dependencies.serde]
+package = "serde"
+version = "1.0.147"
+features = ["derive"]
+
+[dependencies]
+serde_json = "1.0"

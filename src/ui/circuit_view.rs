@@ -152,9 +152,9 @@ impl WidgetImpl for CircuitViewTemplate {
                 
                     data.unhighlight();
                     
-                    match data.get_block_at(position) {
+                    match data.current_plot().get_block_at(position) {
                         Some(index) => {
-                            if let Some(block) = data.get_block_mut(index) {
+                            if let Some(block) = data.current_plot_mut().get_block_mut(index) {
                                 block.set_start_pos(block.position());
                                 block.set_highlighted(true);
                             }
@@ -180,7 +180,7 @@ impl WidgetImpl for CircuitViewTemplate {
 
                     match data.selection() {
                         Selection::Single(index) => {
-                            let block = data.get_block_mut(index).unwrap();
+                            let block = data.current_plot_mut().get_block_mut(index).unwrap();
                             let (start_x, start_y) = block.start_pos();
                             block.set_position((start_x + position.0, start_y + position.1));
                             area.queue_draw();
@@ -211,7 +211,7 @@ impl WidgetImpl for CircuitViewTemplate {
 
                     match data.selection() { 
                         Selection::Single(index) => {
-                            let block = data.get_block_mut(index).unwrap();
+                            let block = data.current_plot_mut().get_block_mut(index).unwrap();
                             let (start_x, start_y) = block.start_pos();
                             block.set_position((start_x + position.0, start_y + position.1));
                         },

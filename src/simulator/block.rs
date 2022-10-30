@@ -1,5 +1,5 @@
 use std::{
-    sync::{Arc, atomic::{AtomicU32, Ordering}}, 
+    sync::atomic::{AtomicU32, Ordering}, 
     f64,
     cmp
 };
@@ -12,6 +12,7 @@ use crate::{
         Renderable
     }
 };
+use serde::{Serialize, Deserialize};
 
 use super::{Connection, Linkage};
 
@@ -20,19 +21,21 @@ pub enum Connector {
     Output(u8)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Block {
     id: u32,
-    module: Arc<Module>,
     position: (i32, i32),
     start_pos: (i32, i32), // starting position of drag movements
     size: (i32, i32),
     highlighted: bool,
+    num_inputs: u8,
+    num_outputs: u8,
+    name: String,
     connections: Vec<Option<Connection>>
 }
 
 impl Block {
-    pub fn new(module: Arc<Module>, position: (i32, i32)) -> Self {
+    pub fn new(module: &&Module, position: (i32, i32)) -> Self {
         static ID: AtomicU32 = AtomicU32::new(0u32);
 
         let num_inputs = module.get_num_inputs();
@@ -44,11 +47,13 @@ impl Block {
 
         Self {
             id: ID.fetch_add(1u32, Ordering::SeqCst),
-            module,
             position,
             start_pos: (0, 0),
             size: (75, cmp::max(num_inputs, num_outputs) as i32 * 25 + 50),
             highlighted: false,
+            num_inputs,
+            num_outputs,
+            name: module.name().clone(),
             connections,
         }
     }
@@ -148,7 +153,7 @@ impl Renderable for Block {
 
         renderer.move_to((self.position.0 + 5, self.position.1 + 18))
             .set_color(1., 1., 1., 1.)
-            .show_text(self.module.get_name().as_str())?;
+            .show_text(self.name.as_str())?;
 
         renderer.rounded_rect(self.position, self.size, 5);
         match self.highlighted {
@@ -157,13 +162,11 @@ impl Renderable for Block {
         };
         renderer.stroke()?;
 
-        let num_inputs = self.module.get_num_inputs();
-        for i in 0..num_inputs {
+        for i in 0..self.num_inputs {
             self.draw_connector(renderer, (self.position.0, self.position.1 + 25 * i as i32 + 50))?;
         }
 
-        let num_outputs = self.module.get_num_outputs();
-        for i in 0..num_outputs {
+        for i in 0..self.num_outputs {
             self.draw_connector(renderer, (self.position.0 + self.size.0, self.position.1 + 25 * i as i32 + 50))?;
         }
 

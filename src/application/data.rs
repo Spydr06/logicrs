@@ -1,7 +1,8 @@
 use std::{
     collections::HashMap,
-    sync::Arc,
-    cmp
+    io::BufReader,
+    fs::File,
+    cmp, path::Path
 };
 
 use crate::{
@@ -9,10 +10,12 @@ use crate::{
         Module,
         builtin
     },
-    simulator::Block
+    simulator::Plot
 };
 
-#[derive(Clone, Copy)]
+use serde::{Serialize, Deserialize};
+
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub enum Selection {
     Single(u32),
     Area(Option<(i32, i32)>, Option<(i32, i32)>),
@@ -42,9 +45,11 @@ impl Selection {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct ApplicationData {
-    modules: HashMap<String, Arc<Module>>,
-    blocks: HashMap<u32, Block>,
+    modules: HashMap<String, Module>,
+    plots: Vec<Plot>,
+    current_plot: usize,
 
     selection: Selection
 }
@@ -62,13 +67,31 @@ impl ApplicationData {
     pub fn new() -> Self {
         Self {
             modules: HashMap::new(),
-            blocks: HashMap::new(),
+            plots: vec![Plot::new()],
+            current_plot: 0usize,
             selection: Selection::None
         }
     }
 
+    pub fn from_json<P>(path: P) -> Result<Self, String> 
+        where P: AsRef<Path>
+    {
+        let f = File::open(path);
+        if let Err(err) = f {
+            return Err(err.to_string());
+        }
+
+        let reader = BufReader::new(f.unwrap());
+    
+        let result: serde_json::Result<ApplicationData> = serde_json::from_reader(reader);
+        match result {
+            Ok(data) => Ok(data),
+            Err(err) => Err(err.to_string()),
+        }
+    }
+
     pub fn add_module(&mut self, module: Module) -> &mut Self {
-        self.modules.insert(module.get_name().clone(), Arc::new(module));
+        self.modules.insert(module.name().clone(), module);
         self
     }
 
@@ -76,31 +99,28 @@ impl ApplicationData {
         self.modules.contains_key(name)
     }
 
-    pub fn get_module(&self, name: &String) -> Option<Arc<Module>> {
+    pub fn get_module(&self, name: &String) -> Option<&Module> {
         match self.modules.get(name) {
-            Some(module) => Some(module.clone()),
+            Some(module) => Some(module),
             None => None
         }
     }
 
-    pub fn modules(&self) -> &HashMap<String, Arc<Module>> {
+    pub fn modules(&self) -> &HashMap<String, Module> {
         &self.modules
     }
 
-    pub fn add_block(&mut self, block: Block) {
-        self.blocks.insert(block.id(), block);
+    pub fn current_plot(&self) -> &Plot {
+        self.plots.get(self.current_plot).unwrap_or_else(|| {
+            panic!("Invalid plot `{}` selected, when only `{}` exist. THIS IS A BUG.", self.current_plot, self.plots.len());
+        })
     }
 
-    pub fn get_blocks(&self) -> &HashMap<u32, Block> {
-        &self.blocks
-    }
-
-    pub fn get_block(&self, id: u32) -> Option<&Block> {
-        self.blocks.get(&id)
-    }
-
-    pub fn get_block_mut(&mut self, id: u32) -> Option<&mut Block> {
-        self.blocks.get_mut(&id)
+    pub fn current_plot_mut(&mut self) -> &mut Plot {
+        let len = self.plots.len();
+        self.plots.get_mut(self.current_plot).unwrap_or_else(|| {
+            panic!("Invalid plot `{}` selected, when only `{}` exist. THIS IS A BUG.", self.current_plot, len);
+        })
     }
 
     pub fn set_selection(&mut self, selection: Selection) {
@@ -118,18 +138,8 @@ impl ApplicationData {
         self.selection
     }
 
-    pub fn get_block_at(&self, position: (i32, i32)) -> Option<u32> {
-        for (i, block) in self.blocks.iter() {
-            if block.touches(position) {
-                return Some(*i);
-            }
-        }
-
-        None
-    }
-
     pub fn unhighlight(&mut self) {
-        self.blocks.iter_mut().for_each(|(_, v)| v.set_highlighted(false));
+        self.current_plot_mut().blocks_mut().iter_mut().for_each(|(_, v)| v.set_highlighted(false));
         self.selection = Selection::None
     }
 
@@ -147,7 +157,7 @@ impl ApplicationData {
             let x2 = cmp::max(selection_start.0, selection_end.0);
             let y2 = cmp::max(selection_start.1, selection_end.1);
             
-            for (_, block) in self.blocks.iter_mut() {
+            for (_, block) in self.current_plot_mut().blocks_mut().iter_mut() {
                 if block.is_in_area((x1, y1, x2, y2)) {
                     block.set_highlighted(true);
                 }

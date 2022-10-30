@@ -8,14 +8,15 @@ use std::sync::atomic::{
     Ordering
 };
 use gtk::cairo::Error;
+use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Linkage {
     pub block_id: u32,
     pub port: u8,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Connection {
     from: Linkage,
     to: Linkage,
@@ -37,8 +38,8 @@ impl Renderable for Connection {
         crate::APPLICATION_DATA.with(|d| {
             let data = d.borrow();
 
-            let from = data.get_block(self.from.block_id);
-            let to = data.get_block(self.to.block_id);
+            let from = data.current_plot().get_block(self.from.block_id);
+            let to = data.current_plot().get_block(self.to.block_id);
             if from.is_none() || to.is_none() {
                 return Ok(())
             }

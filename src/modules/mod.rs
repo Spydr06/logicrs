@@ -1,6 +1,8 @@
 pub mod builtin;
 
-#[derive(Default, Debug)]
+use serde::{Serialize, Deserialize};
+
+#[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub struct Module {
     name: String,
     num_inputs: u8,
@@ -16,7 +18,7 @@ impl Module {
         }
     }
 
-    pub fn get_name(&self) -> &String {
+    pub fn name(&self) -> &String {
         &self.name
     }
 

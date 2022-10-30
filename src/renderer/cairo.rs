@@ -48,7 +48,7 @@ impl CairoRenderer {
             let data = d.borrow();
 
             context.set_line_width(4.);
-            for (_, block) in data.get_blocks() {
+            for (_, block) in data.current_plot().blocks() {
                 for c in block.connections() {
                     if let Some(connection) = c {
                         connection.render(self)?;
@@ -57,7 +57,7 @@ impl CairoRenderer {
             }
             context.set_line_width(2.);
 
-            for (_, block) in data.get_blocks() {
+            for (_, block) in data.current_plot().blocks() {
                 if block.is_in_area((0, 0, (width as f64 / self.scale) as i32, (height as f64 / self.scale) as i32)) {
                     block.render(self)?;
                 }
