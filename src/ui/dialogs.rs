@@ -24,7 +24,7 @@ fn create_new_module(name: String, num_inputs: i32, num_outputs: i32) -> Result<
 
     println!("Create new Module \"{}\"\nwith: {} inputs\n      {} outputs", name, num_inputs, num_outputs);
     crate::APPLICATION_DATA.with(|data| {
-        data.borrow_mut().add_module(Module::new(name, num_inputs, num_outputs));
+        data.borrow_mut().add_module(Module::new(name, num_inputs as u8, num_outputs as u8));
     });
 
     Ok(())

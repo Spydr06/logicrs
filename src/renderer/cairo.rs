@@ -46,7 +46,18 @@ impl CairoRenderer {
         // render all blocks
         crate::APPLICATION_DATA.with(|d| -> Result<(), Error> {
             let data = d.borrow();
-            for block in data.get_blocks() {
+
+            context.set_line_width(4.);
+            for (_, block) in data.get_blocks() {
+                for c in block.connections() {
+                    if let Some(connection) = c {
+                        connection.render(self)?;
+                    }
+                }
+            }
+            context.set_line_width(2.);
+
+            for (_, block) in data.get_blocks() {
                 if block.is_in_area((0, 0, (width as f64 / self.scale) as i32, (height as f64 / self.scale) as i32)) {
                     block.render(self)?;
                 }
@@ -98,7 +109,13 @@ impl Renderer for CairoRenderer {
         if let Some(context) = &self.context {
             context.set_source_rgba(red, green, blue, alpha)
         }
+        self
+    }
 
+    fn set_line_width(&self, width: f64) -> &Self {
+        if let Some(context) = &self.context {
+            context.set_line_width(width);
+        }
         self
     }
 
@@ -127,7 +144,6 @@ impl Renderer for CairoRenderer {
         if let Some(context) = &self.context {
             context.arc(position.0 as f64, position.1 as f64, radius, angle1, angle2);
         }
-        
         self
     }
 
@@ -154,56 +170,5 @@ impl Renderer for CairoRenderer {
             context.line_to(position.0 as f64, position.1 as f64);
         }
         self
-    }
-
-    fn rounded_rect(&self, position: (i32, i32), size: (i32, i32), radius: i32) -> &Self {
-        self.move_to((position.0 + radius, position.1));
-
-        self.line_to((position.0 + size.0 - radius, position.1));
-        self.curve_to(
-            (position.0 + size.0 - radius, position.1), 
-            (position.0 + size.0, position.1), 
-            (position.0 + size.0, position.1 + radius), 
-        );
-    
-        self.line_to((position.0 + size.0, position.1 + size.1 - radius));
-        self.curve_to(
-            (position.0 + size.0, position.1 + size.1 - radius),
-            (position.0 + size.0, position.1 + size.1),
-            (position.0 + size.0 - radius, position.1 + size.1),
-        );
-    
-        self.line_to((position.0 + radius, position.1 + size.1));
-        self.curve_to(
-            (position.0 + radius, position.1 + size.1),
-            (position.0, position.1 + size.1),
-            (position.0, position.1 + size.1 - radius)
-        );
-    
-        self.line_to((position.0, position.1 + radius));
-        self.curve_to(
-            (position.0, position.1 + radius),
-            position,
-            (position.0 + radius, position.1)
-        )
-    }
-
-    fn top_rounded_rect(&self, position: (i32, i32), size: (i32, i32), radius: i32) -> &Self {
-        self.move_to((position.0 + radius, position.1));
-        self.line_to((position.0 + size.0 - radius, position.1));
-        self.curve_to(
-            (position.0 + size.0 - radius, position.1), 
-            (position.0 + size.0, position.1), 
-            (position.0 + size.0, position.1 + radius), 
-        );
-    
-        self.line_to((position.0 + size.0, position.1 + size.1));
-        self.line_to((position.0, position.1 + size.1));
-        self.line_to((position.0, position.1 + radius));
-        self.curve_to(
-            (position.0, position.1 + radius),
-            position,
-            (position.0 + radius, position.1)
-        )
     }
 }

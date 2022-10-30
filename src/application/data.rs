@@ -9,12 +9,12 @@ use crate::{
         Module,
         builtin
     },
-    simulator::block::Block
+    simulator::Block
 };
 
 #[derive(Clone, Copy)]
 pub enum Selection {
-    Single(usize),
+    Single(u32),
     Area(Option<(i32, i32)>, Option<(i32, i32)>),
     None
 }
@@ -44,7 +44,7 @@ impl Selection {
 
 pub struct ApplicationData {
     modules: HashMap<String, Arc<Module>>,
-    blocks: Vec<Block>,
+    blocks: HashMap<u32, Block>,
 
     selection: Selection
 }
@@ -62,7 +62,7 @@ impl ApplicationData {
     pub fn new() -> Self {
         Self {
             modules: HashMap::new(),
-            blocks: Vec::new(),
+            blocks: HashMap::new(),
             selection: Selection::None
         }
     }
@@ -88,40 +88,40 @@ impl ApplicationData {
     }
 
     pub fn add_block(&mut self, block: Block) {
-        self.blocks.push(block);
+        self.blocks.insert(block.id(), block);
     }
 
-    pub fn get_blocks(&self) -> &Vec<Block> {
+    pub fn get_blocks(&self) -> &HashMap<u32, Block> {
         &self.blocks
     }
 
-    pub fn get_block(&self, index: usize) -> Option<&Block> {
-        self.blocks.get(index)
+    pub fn get_block(&self, id: u32) -> Option<&Block> {
+        self.blocks.get(&id)
     }
 
-    pub fn get_block_mut(&mut self, index: usize) -> Option<&mut Block> {
-        self.blocks.get_mut(index)
+    pub fn get_block_mut(&mut self, id: u32) -> Option<&mut Block> {
+        self.blocks.get_mut(&id)
     }
 
     pub fn set_selection(&mut self, selection: Selection) {
-        if let Selection::Single(index) = selection {
-            let last = self.blocks.len() - 1;
-            self.blocks.swap(index, last);
-            self.selection = Selection::Single(last);    
-        }
-        else {
+        //if let Selection::Single(index) = selection {
+        //    let last = self.blocks.len() - 1;
+        //    self.blocks.swap(index, last);
+        //    self.selection = Selection::Single(last);    
+        //}
+        //else {
             self.selection = selection;
-        }
+        //}
     }
 
     pub fn selection(&self) -> Selection {
         self.selection
     }
 
-    pub fn get_block_at(&self, position: (i32, i32)) -> Option<usize> {
-        for (i, block) in self.blocks.iter().enumerate().rev() {
+    pub fn get_block_at(&self, position: (i32, i32)) -> Option<u32> {
+        for (i, block) in self.blocks.iter() {
             if block.touches(position) {
-                return Some(i);
+                return Some(*i);
             }
         }
 
@@ -129,7 +129,7 @@ impl ApplicationData {
     }
 
     pub fn unhighlight(&mut self) {
-        self.blocks.iter_mut().for_each(|v| v.set_highlighted(false));
+        self.blocks.iter_mut().for_each(|(_, v)| v.set_highlighted(false));
         self.selection = Selection::None
     }
 
@@ -147,7 +147,7 @@ impl ApplicationData {
             let x2 = cmp::max(selection_start.0, selection_end.0);
             let y2 = cmp::max(selection_start.1, selection_end.1);
             
-            for block in self.blocks.iter_mut() {
+            for (_, block) in self.blocks.iter_mut() {
                 if block.is_in_area((x1, y1, x2, y2)) {
                     block.set_highlighted(true);
                 }

@@ -191,9 +191,8 @@ impl WidgetImpl for CircuitViewTemplate {
                                 area.queue_draw();
                             }
                         }
-                        Selection::None => {}
+                        Selection::None => ()
                     }
-
                 });
             });
 
