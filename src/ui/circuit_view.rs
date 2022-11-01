@@ -138,94 +138,29 @@ impl WidgetImpl for CircuitViewTemplate {
             }
         });
 
-        {
-            let gesture_drag = GestureDrag::builder().button(gdk::ffi::GDK_BUTTON_PRIMARY as u32).build();
+        let gesture_drag = GestureDrag::builder().button(gdk::ffi::GDK_BUTTON_PRIMARY as u32).build();
+        let area = self.drawing_area.to_owned();
+        let renderer = self.renderer().unwrap();
+        gesture_drag.connect_drag_begin(move |gesture, x, y| {
+            gesture.set_state(gtk::EventSequenceState::Claimed);
+            drag_begin(&area, renderer.borrow().scale(), x, y)
+        });
 
-            let area = self.drawing_area.to_owned();
-            let renderer = self.renderer().unwrap();
-            gesture_drag.connect_drag_begin(move |gesture, x, y| {
-                gesture.set_state(gtk::EventSequenceState::Claimed);
-                crate::APPLICATION_DATA.with(|data| {
-                    let mut data = data.borrow_mut();
-                    let scale = renderer.borrow().scale();
-                    let position = ((x / scale) as i32, (y / scale) as i32);
-                
-                    data.unhighlight();
-                    
-                    match data.current_plot().get_block_at(position) {
-                        Some(index) => {
-                            if let Some(block) = data.current_plot_mut().get_block_mut(index) {
-                                block.set_start_pos(block.position());
-                                block.set_highlighted(true);
-                            }
-                            data.set_selection(Selection::Single(index));
-                        }
-                        _ => {
-                            data.set_selection(Selection::Area(position, position));
-                        }
-                    }
-                    
-                    area.queue_draw();
-                });
-            });
+        let area = self.drawing_area.to_owned();
+        let renderer = self.renderer().unwrap();
+        gesture_drag.connect_drag_update(move |gesture, x, y| {
+            gesture.set_state(gtk::EventSequenceState::Claimed);
+            drag_update(&area, renderer.borrow().scale(), x, y)
+        });
 
-            let area = self.drawing_area.to_owned();
-            let renderer = self.renderer().unwrap();
-            gesture_drag.connect_drag_update(move |gesture, x, y| {
-                gesture.set_state(gtk::EventSequenceState::Claimed);
-                crate::APPLICATION_DATA.with(|data| {
-                    let mut data = data.borrow_mut();
-                    let scale = renderer.borrow().scale();
-                    let position = ((x / scale) as i32, (y / scale) as i32);
+        let area = self.drawing_area.to_owned();
+        let renderer = self.renderer().unwrap();
+        gesture_drag.connect_drag_end(move |gesture, x, y| {
+            gesture.set_state(gtk::EventSequenceState::Claimed);
+            drag_end(&area, renderer.borrow().scale(), x, y)
+        });
 
-                    match data.selection().clone() {
-                        Selection::Single(index) => {
-                            let block = data.current_plot_mut().get_block_mut(index).unwrap();
-                            let (start_x, start_y) = block.start_pos();
-                            block.set_position((start_x + position.0, start_y + position.1));
-                            area.queue_draw();
-                        }
-                        Selection::Area(area_start, _) => {
-                            data.set_selection(Selection::Area(area_start, (area_start.0 + position.0, area_start.1 + position.1)));
-                            area.queue_draw();
-                        }
-                        _ => ()
-                    }
-                });
-            });
-
-            let area = self.drawing_area.to_owned();
-            let renderer = self.renderer().unwrap();
-            gesture_drag.connect_drag_end(move |gesture, x, y| {
-                gesture.set_state(gtk::EventSequenceState::Claimed);
-                if x == 0. && y == 0. {
-                    return;
-                }
-
-                crate::APPLICATION_DATA.with(|data| {
-                    let mut data = data.borrow_mut();
-                    let scale = renderer.borrow().scale();
-                    let position = ((x / scale) as i32, (y / scale) as i32);
-
-                    match data.selection().clone() { 
-                        Selection::Single(index) => {
-                            let block = data.current_plot_mut().get_block_mut(index).unwrap();
-                            let (start_x, start_y) = block.start_pos();
-                            block.set_position((start_x + position.0, start_y + position.1));
-                        },
-                        Selection::Area(_, _) => {
-                            data.highlight_area();
-                            data.set_selection(Selection::None);
-                        }
-                        _ => {}
-                    }
-
-                    area.queue_draw()
-                });
-            });
-
-            self.drawing_area.add_controller(&gesture_drag);
-        }
+        self.drawing_area.add_controller(&gesture_drag);
     }
 
     fn unrealize(&self, widget: &Self::Type) {
@@ -234,3 +169,73 @@ impl WidgetImpl for CircuitViewTemplate {
 }
 
 impl BoxImpl for CircuitViewTemplate {}
+
+fn drag_begin(area: &DrawingArea, scale: f64, x: f64, y: f64) {
+    crate::APPLICATION_DATA.with(|data| {
+        let mut data = data.borrow_mut();
+        let position = ((x / scale) as i32, (y / scale) as i32);
+    
+        data.unhighlight();
+        
+        match data.current_plot().get_block_at(position) {
+            Some(index) => {
+                if let Some(block) = data.current_plot_mut().get_block_mut(index) {
+                    block.set_start_pos(block.position());
+                    block.set_highlighted(true);
+                }
+                data.set_selection(Selection::Single(index));
+            }
+            _ => {
+                data.set_selection(Selection::Area(position, position));
+            }
+        }
+        
+        area.queue_draw();
+    });
+}
+
+fn drag_update(area: &DrawingArea, scale: f64, x: f64, y: f64) {
+    crate::APPLICATION_DATA.with(|data| {
+        let mut data = data.borrow_mut();
+        let position = ((x / scale) as i32, (y / scale) as i32);
+
+        match data.selection().clone() {
+            Selection::Single(index) => {
+                let block = data.current_plot_mut().get_block_mut(index).unwrap();
+                let (start_x, start_y) = block.start_pos();
+                block.set_position((start_x + position.0, start_y + position.1));
+                area.queue_draw();
+            }
+            Selection::Area(area_start, _) => {
+                data.set_selection(Selection::Area(area_start, (area_start.0 + position.0, area_start.1 + position.1)));
+                area.queue_draw();
+            }
+            _ => ()
+        }
+    });
+}
+
+fn drag_end(area: &DrawingArea, scale: f64, x: f64, y: f64) {
+    if x == 0. && y == 0. {
+        return;
+    }
+
+    crate::APPLICATION_DATA.with(|data| {
+        let mut data = data.borrow_mut();
+        let position = ((x / scale) as i32, (y / scale) as i32);
+
+        match data.selection().clone() { 
+            Selection::Single(index) => {
+                let block = data.current_plot_mut().get_block_mut(index).unwrap();
+                let (start_x, start_y) = block.start_pos();
+                block.set_position((start_x + position.0, start_y + position.1));
+            },
+            Selection::Area(_, _) => {
+                data.highlight_area();
+            }
+            _ => {}
+        }
+
+        area.queue_draw()
+    });
+}

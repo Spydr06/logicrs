@@ -12,7 +12,6 @@ use crate::{
     },
     simulator::Plot
 };
-
 use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -57,6 +56,7 @@ pub struct ApplicationData {
     modules: HashMap<String, Module>,
     plots: Vec<Plot>,
     current_plot: usize,
+    file: Option<String>,
 
     selection: Selection
 }
@@ -72,15 +72,19 @@ impl Default for ApplicationData {
 
 impl ApplicationData {
     pub fn new() -> Self {
-        Self {
+        let mut data = Self {
             modules: HashMap::new(),
             plots: vec![Plot::new()],
             current_plot: 0usize,
+            file: None,
             selection: Selection::None
-        }
+        };
+
+        builtin::register(&mut data);
+        data
     }
 
-    pub fn from_json<P>(path: P) -> Result<Self, String> 
+    pub fn build<P>(path: P) -> Result<Self, String> 
         where P: AsRef<Path>
     {
         let f = File::open(path);

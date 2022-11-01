@@ -17,10 +17,6 @@ std::thread_local! {
 }
 
 fn init_new() {
-    APPLICATION_DATA.with(|data| {
-        modules::builtin::register(&mut *data.borrow_mut());
-    });
-
     APPLICATION_DATA.with(|d| {
         let mut data = d.borrow_mut();
 
@@ -52,8 +48,11 @@ fn init_new() {
 }
 
 fn main() -> std::io::Result<()> {
-    init_new();
-
     let application = Application::new();
     std::process::exit(application.run());
+}
+
+pub fn die<'a>(reason: &'a str) -> ! {
+    eprintln!("Fatal error: `{reason}`");
+    std::process::exit(1)
 }
