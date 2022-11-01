@@ -1,22 +1,20 @@
-use std::cmp;
-
-use gtk::{
-    DrawingArea,
-    cairo::{
-        Context,
-        Antialias,
-        Error, FontFace
-    }
-};
+use gtk::DrawingArea;
 
 pub mod cairo;
 pub use cairo::*;
 
 pub trait Renderable {
-    fn render(&self, renderer: &impl Renderer) -> Result<(), Error>;
+    fn render<R>(&self, renderer: &R) -> Result<(), R::Error>
+        where R: Renderer;
 }
 
 pub trait Renderer {
+    type Context;
+    type Error;
+
+    // render callback
+    fn callback(&mut self, _area: &DrawingArea, context: &Self::Context, width: i32, height: i32) -> Result<(), Self::Error>;
+
     // getter/setter
     fn size(&self) -> (i32, i32);
     fn set_size(&mut self, size: (i32, i32)) -> &mut Self;
@@ -27,15 +25,17 @@ pub trait Renderer {
 
     // shape functions
     fn arc(&self, position: (i32, i32), radius: f64, angle1: f64, angle2: f64) -> &Self;
+    fn rectangle(&self, position: (i32, i32), size: (i32, i32)) -> &Self;
 
     fn move_to(&self, position: (i32, i32)) -> &Self;
     fn curve_to(&self, start: (i32, i32), mid: (i32, i32), end: (i32, i32)) -> &Self;
     fn line_to(&self, position: (i32, i32)) -> &Self;
 
     // drawing functions
-    fn fill(&self) -> Result<(), Error>;
-    fn stroke(&self) -> Result<(), Error>;
-    fn show_text<'a>(&self, text: &'a str) -> Result<(), Error>;
+    fn fill(&self) -> Result<(), Self::Error>;
+    fn fill_preserve(&self) -> Result<(), Self::Error>;
+    fn stroke(&self) -> Result<(), Self::Error>;
+    fn show_text<'a>(&self, text: &'a str) -> Result<(), Self::Error>;
 
     //
     // more complex shapes building on the backend-specific basic functions

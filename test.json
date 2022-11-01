@@ -1,0 +1,140 @@
+{
+    "modules": {
+        "Or": {
+            "name": "Or",
+            "num_inputs": 2,
+            "num_outputs": 1
+        },
+        "Not": {
+            "name": "Not",
+            "num_inputs": 1,
+            "num_outputs": 1
+        },
+        "Xor": {
+            "name": "Xor",
+            "num_inputs": 2,
+            "num_outputs": 1
+        },
+        "And": {
+            "name": "And",
+            "num_inputs": 2,
+            "num_outputs": 1
+        }
+    },
+    "plots": [
+        {
+            "blocks": {
+                "0": {
+                    "id": 0,
+                    "position": [
+                        10,
+                        10
+                    ],
+                    "start_pos": [
+                        0,
+                        0
+                    ],
+                    "size": [
+                        75,
+                        100
+                    ],
+                    "highlighted": false,
+                    "num_inputs": 2,
+                    "num_outputs": 1,
+                    "name": "And",
+                    "connections": [
+                        {
+                            "from": {
+                                "block_id": 0,
+                                "port": 0
+                            },
+                            "to": {
+                                "block_id": 1,
+                                "port": 1
+                            },
+                            "active": false
+                        }
+                    ]
+                },
+                "1": {
+                    "id": 1,
+                    "position": [
+                        110,
+                        10
+                    ],
+                    "start_pos": [
+                        0,
+                        0
+                    ],
+                    "size": [
+                        75,
+                        100
+                    ],
+                    "highlighted": false,
+                    "num_inputs": 2,
+                    "num_outputs": 1,
+                    "name": "Or",
+                    "connections": [
+                        {
+                            "from": {
+                                "block_id": 1,
+                                "port": 0
+                            },
+                            "to": {
+                                "block_id": 2,
+                                "port": 0
+                            },
+                            "active": false
+                        }
+                    ]
+                },
+                "3": {
+                    "id": 3,
+                    "position": [
+                        310,
+                        10
+                    ],
+                    "start_pos": [
+                        0,
+                        0
+                    ],
+                    "size": [
+                        75,
+                        100
+                    ],
+                    "highlighted": false,
+                    "num_inputs": 2,
+                    "num_outputs": 1,
+                    "name": "Xor",
+                    "connections": [
+                        null
+                    ]
+                },
+                "2": {
+                    "id": 2,
+                    "position": [
+                        210,
+                        10
+                    ],
+                    "start_pos": [
+                        0,
+                        0
+                    ],
+                    "size": [
+                        75,
+                        75
+                    ],
+                    "highlighted": false,
+                    "num_inputs": 1,
+                    "num_outputs": 1,
+                    "name": "Not",
+                    "connections": [
+                        null
+                    ]
+                }
+            }
+        }
+    ],
+    "current_plot": 0,
+    "selection": "None"
+}

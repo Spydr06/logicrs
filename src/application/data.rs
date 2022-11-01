@@ -15,31 +15,38 @@ use crate::{
 
 use serde::{Serialize, Deserialize};
 
-#[derive(Clone, Copy, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum Selection {
     Single(u32),
-    Area(Option<(i32, i32)>, Option<(i32, i32)>),
+    Many(Vec<u32>),
+    Area((i32, i32), (i32, i32)),
     None
 }
 
+impl Default for Selection {
+    fn default() -> Self {
+        Selection::None
+    }
+}
+
 impl Selection {
-    pub fn is_area(self) -> bool {
+    pub fn is_area(&self) -> bool {
         match self {
             Self::Area(_, _) => true,
             _ => false
         }
     }
 
-    pub fn area_start(self) -> Option<(i32, i32)> {
+    pub fn area_start(&self) -> Option<(i32, i32)> {
         match self {
-            Self::Area(start, _) => start,
+            Self::Area(start, _) => Some(*start),
             _ => None
         }
     }
 
-    pub fn area_end(self) -> Option<(i32, i32)> {
+    pub fn area_end(&self) -> Option<(i32, i32)> {
         match self {
-            Self::Area(_, end) => end,
+            Self::Area(_, end) => Some(*end),
             _ => None
         }
     }
@@ -134,23 +141,24 @@ impl ApplicationData {
         //}
     }
 
-    pub fn selection(&self) -> Selection {
-        self.selection
+    pub fn selection(&self) -> &Selection {
+        &self.selection
     }
 
     pub fn unhighlight(&mut self) {
-        self.current_plot_mut().blocks_mut().iter_mut().for_each(|(_, v)| v.set_highlighted(false));
+        match self.selection.clone() {
+            Selection::Single(id) => self.current_plot_mut().get_block_mut(id).unwrap().set_highlighted(false),
+            Selection::Many(ids) => ids.iter().for_each(|id| self.current_plot_mut().get_block_mut(*id).unwrap().set_highlighted(false)),
+            Selection::Area(_, _) => self.current_plot_mut().blocks_mut().iter_mut().for_each(|(_, v)| v.set_highlighted(false)),
+            Selection::None => ()
+        }
+
         self.selection = Selection::None
     }
 
     pub fn highlight_area(&mut self) {
         if let Selection::Area(selection_start, selection_end) = self.selection {
-            if selection_start.is_none() || selection_end.is_none() {
-                return;
-            }
-
-            let selection_start = selection_start.unwrap();
-            let selection_end = selection_end.unwrap();
+            let mut selected = Vec::new();
 
             let x1 = cmp::min(selection_start.0, selection_end.0);
             let y1 = cmp::min(selection_start.1, selection_end.1);
@@ -160,8 +168,11 @@ impl ApplicationData {
             for (_, block) in self.current_plot_mut().blocks_mut().iter_mut() {
                 if block.is_in_area((x1, y1, x2, y2)) {
                     block.set_highlighted(true);
+                    selected.push(block.id());
                 }
             }
+
+            self.selection = Selection::Many(selected)
         }
     }
 }

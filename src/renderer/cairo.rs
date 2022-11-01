@@ -1,4 +1,9 @@
 use super::*;
+use gtk::cairo::{
+    Context,
+    Antialias,
+    Error, FontFace
+};
 
 pub const DEFAULT_SCALE: f64 = 1.;
 pub const MINIMUM_SCALE: f64 = 0.1;
@@ -25,16 +30,19 @@ impl CairoRenderer {
         self.context = context;
         self
     }
+}
 
-    pub fn render_callback(&mut self, _area: &DrawingArea, context: &Context, width: i32, height: i32) -> Result<(), Error> {
+impl Renderer for CairoRenderer {
+    type Context = cairo::Context;
+    type Error = cairo::Error;
+
+    fn callback(&mut self, _area: &DrawingArea, context: &Self::Context, width: i32, height: i32) -> Result<(), Self::Error> {
         self.set_size((width, height)).set_context(Some(context.clone()));     
         if width == 0 || height == 0 {
             return Ok(());
         }
 
         context.scale(self.scale, self.scale);
-
-        //println!("renderer::render_callback() called\n  size: ({}, {})", width, height);
 
         context.set_antialias(Antialias::Default);
         context.set_source_rgb(0.1, 0.1, 0.1);
@@ -43,50 +51,9 @@ impl CairoRenderer {
         context.set_font_face(&self.font);
         context.set_font_size(15.0);
 
-        // render all blocks
-        crate::APPLICATION_DATA.with(|d| -> Result<(), Error> {
-            let data = d.borrow();
-
-            context.set_line_width(4.);
-            for (_, block) in data.current_plot().blocks() {
-                for c in block.connections() {
-                    if let Some(connection) = c {
-                        connection.render(self)?;
-                    }
-                }
-            }
-            context.set_line_width(2.);
-
-            for (_, block) in data.current_plot().blocks() {
-                if block.is_in_area((0, 0, (width as f64 / self.scale) as i32, (height as f64 / self.scale) as i32)) {
-                    block.render(self)?;
-                }
-            }
-
-            // draw selection rectangle
-            if let Some((start_x, start_y)) = data.selection().area_start() {
-                if let Some((end_x, end_y)) = data.selection().area_end() {
-                    let x = cmp::min(start_x, end_x);
-                    let y = cmp::min(start_y, end_y);
-                    let w = cmp::max(start_x, end_x) - x;
-                    let h = cmp::max(start_y, end_y) - y;
-
-                    context.rectangle(x as f64, y as f64, w as f64, h as f64);
-                    context.set_source_rgba(0.2078, 0.5176, 0.894, 0.3);
-                    context.fill()?;
-
-                    context.rectangle(x as f64, y as f64, w as f64, h as f64);
-                    context.set_source_rgba(0.2078, 0.5176, 0.894, 0.7);
-                    context.stroke()?;
-                }
-            }
-
-            Ok(())
-        })
+        crate::APPLICATION_DATA.with(|d| d.borrow().current_plot().render(self))
     }
-}
 
-impl Renderer for CairoRenderer {
     fn size(&self) -> (i32, i32) {
         self.size
     }
@@ -119,14 +86,21 @@ impl Renderer for CairoRenderer {
         self
     }
 
-    fn fill(&self) -> Result<(), Error> {
+    fn fill(&self) -> Result<(), Self::Error> {
         match &self.context {
             Some(context) => context.fill(),
             None => Ok(()) // TODO: error handling
         }
     }
 
-    fn stroke(&self) -> Result<(), Error> {
+    fn fill_preserve(&self) -> Result<(), Self::Error> {
+        match &self.context {
+            Some(context) => context.fill_preserve(),
+            None => Ok(()) // TODO: error handling
+        }
+    }
+
+    fn stroke(&self) -> Result<(), Self::Error> {
         match &self.context {
             Some(context) => context.stroke(),
             None => Ok(()) // TODO: error handling
@@ -143,6 +117,13 @@ impl Renderer for CairoRenderer {
     fn arc(&self, position: (i32, i32), radius: f64, angle1: f64, angle2: f64) -> &Self {
         if let Some(context) = &self.context {
             context.arc(position.0 as f64, position.1 as f64, radius, angle1, angle2);
+        }
+        self
+    }
+
+    fn rectangle(&self, position: (i32, i32), size: (i32, i32)) -> &Self {
+        if let Some(context) = &self.context {
+            context.rectangle(position.0 as f64, position.1 as f64, size.0 as f64, size.1 as f64);
         }
         self
     }

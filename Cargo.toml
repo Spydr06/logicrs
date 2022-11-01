@@ -4,9 +4,9 @@ version = "0.0.1"
 edition = "2021"
 description = "An easy-to-use simulator for logical circuits"
 readme = "./README.md"
-# repository = "https://github.com/spydr06/logicrs"
+repository = "https://github.com/spydr06/logicrs"
 license = "MIT"
-authors = ["Spydr06 https://github.com/spydr06"]
+authors = ["Spydr06"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -22,14 +22,7 @@ version = "0.1.1"
 package = "gtk4"
 version = "0.4.8"
 
-[dependencies.glib]
-package = "glib"
-version = "0.15.12"
-
-[dependencies.serde]
-package = "serde"
-version = "1.0.147"
-features = ["derive"]
-
 [dependencies]
+glib = "0.15.12"
 serde_json = "1.0"
+serde = {version = "1.0.147", features = ["derive"]}

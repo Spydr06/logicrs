@@ -3,7 +3,6 @@ use std::{
     f64,
     cmp
 };
-use gtk::cairo::Error;
 
 use crate::{
     modules::Module,
@@ -124,26 +123,30 @@ impl Block {
         &self.connections
     }
 
-    fn draw_connector(&self, renderer: &impl Renderer, position: (i32, i32)) -> Result<(), Error> {
+    fn draw_connector<R>(&self, renderer: &R, position: (i32, i32)) -> Result<(), R::Error>
+        where R: Renderer
+    {
         renderer.arc(position, 6., 0., f64::consts::TAU);
+        
+        renderer.set_color(0.5, 0.1, 0.7, 1.);
+        renderer.fill_preserve()?;
+
         match self.highlighted {
             true => renderer.set_color(0.2078, 0.5176, 0.894, 1.),
             false => renderer.set_color(0.23, 0.23, 0.23, 1.)       
-        };
-        
-        renderer.fill()?;
-    
-        renderer.arc(position, 5., 0., f64::consts::TAU);
-        renderer.set_color(0.5, 0.1, 0.7, 1.);
-        renderer.fill()?;
-        
+        };   
+        renderer.stroke()?;
+            
         Ok(())
     }
 }
 
 
 impl Renderable for Block {
-    fn render(&self, renderer: &impl Renderer) -> Result<(), Error> {
+    fn render<R>(&self, renderer: &R) -> Result<(), R::Error>
+        where R: Renderer 
+    {
+        renderer.set_line_width(2.);
         renderer.rounded_rect(self.position, self.size, 5);
         
         renderer.set_color(0.13, 0.13, 0.13, 1.).fill()?;
@@ -162,6 +165,7 @@ impl Renderable for Block {
         };
         renderer.stroke()?;
 
+        renderer.set_line_width(1.);
         for i in 0..self.num_inputs {
             self.draw_connector(renderer, (self.position.0, self.position.1 + 25 * i as i32 + 50))?;
         }

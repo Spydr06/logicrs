@@ -7,7 +7,6 @@ use std::sync::atomic::{
     AtomicBool,
     Ordering
 };
-use gtk::cairo::Error;
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -34,7 +33,9 @@ impl Connection {
 }
 
 impl Renderable for Connection {
-    fn render(&self, renderer: &impl Renderer) -> Result<(), Error> {
+    fn render<R>(&self, renderer: &R) -> Result<(), R::Error>
+        where R: Renderer
+    {
         crate::APPLICATION_DATA.with(|d| {
             let data = d.borrow();
 
@@ -57,11 +58,9 @@ impl Renderable for Connection {
                 (start.0 + ((end.0 - start.0) as f32 * 0.7) as i32, start.1),
                 (end.0 + ((start.0 - end.0) as f32 * 0.7) as i32, end.1),
             );
-            renderer.move_to(start);
-            //renderer.curve_to((end.0, start.1), (start.0, end.1), end);
-            renderer.curve_to(offset.0, offset.1, end);
-            
-            renderer.stroke()
+            renderer.move_to(start)
+                .curve_to(offset.0, offset.1, end)
+                .stroke()
         })
     }
 }

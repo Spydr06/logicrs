@@ -132,7 +132,7 @@ impl WidgetImpl for CircuitViewTemplate {
 
         let renderer = self.renderer().unwrap();
         self.drawing_area.set_draw_func(move |area: &DrawingArea, context: &gtk::cairo::Context, width: i32, height: i32| {
-            if let Err(err) = renderer.borrow_mut().render_callback(area, context, width, height) {
+            if let Err(err) = renderer.borrow_mut().callback(area, context, width, height) {
                 eprintln!("Error rendering CircuitView: {}", err);
                 panic!();
             }
@@ -160,8 +160,8 @@ impl WidgetImpl for CircuitViewTemplate {
                             }
                             data.set_selection(Selection::Single(index));
                         }
-                        None => {
-                            data.set_selection(Selection::Area(Some(position), Some(position)));
+                        _ => {
+                            data.set_selection(Selection::Area(position, position));
                         }
                     }
                     
@@ -178,7 +178,7 @@ impl WidgetImpl for CircuitViewTemplate {
                     let scale = renderer.borrow().scale();
                     let position = ((x / scale) as i32, (y / scale) as i32);
 
-                    match data.selection() {
+                    match data.selection().clone() {
                         Selection::Single(index) => {
                             let block = data.current_plot_mut().get_block_mut(index).unwrap();
                             let (start_x, start_y) = block.start_pos();
@@ -186,12 +186,10 @@ impl WidgetImpl for CircuitViewTemplate {
                             area.queue_draw();
                         }
                         Selection::Area(area_start, _) => {
-                            if let Some((start_x, start_y)) = area_start {
-                                data.set_selection(Selection::Area(area_start, Some((start_x + position.0, start_y + position.1))));
-                                area.queue_draw();
-                            }
+                            data.set_selection(Selection::Area(area_start, (area_start.0 + position.0, area_start.1 + position.1)));
+                            area.queue_draw();
                         }
-                        Selection::None => ()
+                        _ => ()
                     }
                 });
             });
@@ -209,7 +207,7 @@ impl WidgetImpl for CircuitViewTemplate {
                     let scale = renderer.borrow().scale();
                     let position = ((x / scale) as i32, (y / scale) as i32);
 
-                    match data.selection() { 
+                    match data.selection().clone() { 
                         Selection::Single(index) => {
                             let block = data.current_plot_mut().get_block_mut(index).unwrap();
                             let (start_x, start_y) = block.start_pos();
@@ -219,7 +217,7 @@ impl WidgetImpl for CircuitViewTemplate {
                             data.highlight_area();
                             data.set_selection(Selection::None);
                         }
-                        Selection::None => {}
+                        _ => {}
                     }
 
                     area.queue_draw()
