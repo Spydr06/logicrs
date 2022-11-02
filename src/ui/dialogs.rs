@@ -9,7 +9,7 @@ use gtk::{
 use std::{future::Future, rc::Rc};
 use crate::modules::Module;
 
-fn create_new_module(name: String, num_inputs: i32, num_outputs: i32) -> Result<(), String> {
+fn create_new_module(name: String, num_inputs: u8, num_outputs: u8) -> Result<(), String> {
     if name.is_empty() {
         return Err("Invalid name".to_string());
     }
@@ -19,12 +19,14 @@ fn create_new_module(name: String, num_inputs: i32, num_outputs: i32) -> Result<
         exists = data.borrow().module_exists(&name);
     });
     if exists {
-        return Err(format!("Module with name \"{}\" already exists", name));
+        let err = format!("Module with name \"{}\" already exists", name);
+        warn!("{err}");
+        return Err(err);
     }
 
-    println!("Create new Module \"{}\"\nwith: {} inputs\n      {} outputs", name, num_inputs, num_outputs);
+    info!("Create new Module \"{}\"\nwith: {} inputs\n      {} outputs", name, num_inputs, num_outputs);
     crate::APPLICATION_DATA.with(|data| {
-        data.borrow_mut().add_module(Module::new(name, num_inputs as u8, num_outputs as u8));
+        data.borrow_mut().add_module(Module::new(name, num_inputs, num_outputs));
     });
 
     Ok(())
@@ -108,7 +110,7 @@ pub async fn new_module<W: IsA<gtk::Window>>(window: Rc<W>) {
         let num_outputs = OUTPUTS.iter().position(|&elem| elem == output_chooser.active_id().unwrap()).unwrap_or_default() + 1;
 
         // generate new module
-        if let Err(err) = create_new_module(name_input.buffer().text().trim().to_string(), num_inputs as i32, num_outputs as i32) {
+        if let Err(err) = create_new_module(name_input.buffer().text().trim().to_string(), num_inputs as u8, num_outputs as u8) {
             gtk::glib::MainContext::default().spawn_local(invalid_module(window, err));
         }
     }
@@ -116,7 +118,7 @@ pub async fn new_module<W: IsA<gtk::Window>>(window: Rc<W>) {
 
 pub fn new<F>(trigger: &Button, window_size: (i32, i32), on_trigger: fn(Rc<gtk::ApplicationWindow>) -> F) 
 where
-    F: Future<Output = ()> + 'static,
+    F: Future<Output = ()> + 'static
 {
     let dialog_window = Rc::new(
         gtk::ApplicationWindow::builder()

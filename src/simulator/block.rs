@@ -1,8 +1,4 @@
-use std::{
-    sync::atomic::{AtomicU32, Ordering}, 
-    f64,
-    cmp
-};
+use std::{f64, cmp};
 
 use crate::{
     modules::Module,
@@ -23,20 +19,22 @@ pub enum Connector {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Block {
     id: u32,
+    name: String,
+
     position: (i32, i32),
     start_pos: (i32, i32), // starting position of drag movements
     size: (i32, i32),
+
+    #[serde(skip)]
     highlighted: bool,
+    
     num_inputs: u8,
     num_outputs: u8,
-    name: String,
     connections: Vec<Option<Connection>>
 }
 
 impl Block {
-    pub fn new(module: &&Module, position: (i32, i32)) -> Self {
-        static ID: AtomicU32 = AtomicU32::new(0u32);
-
+    pub fn new(module: &&Module, position: (i32, i32), id: u32) -> Self {
         let num_inputs = module.get_num_inputs();
         let num_outputs = module.get_num_outputs();
         let mut connections = Vec::with_capacity(num_outputs as usize);
@@ -44,15 +42,20 @@ impl Block {
             connections.push(None);
         }
 
+        let name = module.name().clone();
+
         Self {
-            id: ID.fetch_add(1u32, Ordering::SeqCst),
+            id,
             position,
             start_pos: (0, 0),
-            size: (75, cmp::max(num_inputs, num_outputs) as i32 * 25 + 50),
+            size: (
+                cmp::max(75, (name.len() * 10) as i32),
+                cmp::max(num_inputs, num_outputs) as i32 * 25 + 50
+            ),
             highlighted: false,
             num_inputs,
             num_outputs,
-            name: module.name().clone(),
+            name,
             connections,
         }
     }

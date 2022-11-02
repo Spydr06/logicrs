@@ -4,6 +4,9 @@ mod modules;
 mod renderer;
 mod simulator;
 
+#[macro_use]
+extern crate log;
+
 use std::cell::RefCell;
 use adw::prelude::ApplicationExtManual;
 use application::{
@@ -25,10 +28,10 @@ fn init_new() {
         let not_mod = data.get_module(&"Not".to_string()).unwrap();
         let xor_mod = data.get_module(&"Xor".to_string()).unwrap();
 
-        let mut block1 = Block::new(&and_mod, (10, 10));
-        let mut block2 = Block::new(&or_mod, (110, 10));
-        let block3 = Block::new(&not_mod, (210, 10));
-        let block4 = Block::new(&xor_mod, (310, 10));
+        let mut block1 = Block::new(&and_mod, (10, 10), data.new_id());
+        let mut block2 = Block::new(&or_mod, (110, 10), data.new_id());
+        let block3 = Block::new(&not_mod, (210, 10), data.new_id());
+        let block4 = Block::new(&xor_mod, (310, 10), data.new_id());
         block1.connect_to(0u8, Linkage {block_id: 1u32, port: 1u8});
         block2.connect_to(0u8, Linkage {block_id: 2u32, port: 0u8});
 
@@ -47,12 +50,17 @@ fn init_new() {
     });
 }
 
-fn main() -> std::io::Result<()> {
+fn main() {
+    env_logger::init();
+
+    info!("Starting up LogicRs...");
+    //init_new();
+    
     let application = Application::new();
     std::process::exit(application.run());
 }
 
 pub fn die<'a>(reason: &'a str) -> ! {
-    eprintln!("Fatal error: `{reason}`");
-    std::process::exit(1)
+    error!("{reason}");
+    panic!()
 }

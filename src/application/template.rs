@@ -61,13 +61,27 @@ impl ApplicationImpl for ApplicationTemplate {
             crate::die("File path is None");
         }
 
-        let data = ApplicationData::build(file.path().unwrap());
+        let data = ApplicationData::build(file.to_owned());
         if let Err(err) = data {
             crate::die(err.as_str());
         }
 
         crate::APPLICATION_DATA.with(|d| d.replace(data.unwrap()));
         self.create_window(application);
+    }
+
+    fn shutdown(&self, _application: &Self::Type) {
+        let res = crate::APPLICATION_DATA.with(|d| {
+            let data = d.borrow();
+            match data.file() {
+                Some(_) => data.save(),
+                None => Err("save_as is not implemented()".to_string()),
+            }
+        });
+
+        if let Err(err) = res {
+            crate::die(err.as_str())
+        }
     }
 }
 impl GtkApplicationImpl for ApplicationTemplate {}

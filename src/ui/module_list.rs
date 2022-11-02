@@ -104,7 +104,7 @@ fn new_list_item(module: &Module) -> ListBoxRow {
         crate::APPLICATION_DATA.with(|data| {
             let mut data = data.borrow_mut();
             let module = data.get_module(&name).unwrap();
-            let block = Block::new(&module, (0, 0));
+            let block = Block::new(&module, (0, 0), data.new_id());
             data.current_plot_mut().add_block(block);
         });
     });

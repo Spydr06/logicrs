@@ -1,10 +1,11 @@
 use std::{
     collections::HashMap,
-    io::BufReader,
-    fs::File,
-    cmp, path::Path
+    io::{BufReader, Write},
+    fs::{File, OpenOptions},
+    sync::atomic::{AtomicU32, Ordering},
+    cmp,
 };
-
+use gtk::gio::{self, prelude::FileExt};
 use crate::{
     modules::{
         Module,
@@ -55,9 +56,15 @@ impl Selection {
 pub struct ApplicationData {
     modules: HashMap<String, Module>,
     plots: Vec<Plot>,
-    current_plot: usize,
-    file: Option<String>,
+    id_counter: AtomicU32,
 
+    #[serde(skip)]
+    file: Option<gio::File>,
+
+    #[serde(skip)]
+    current_plot: usize,
+
+    #[serde(skip)]
     selection: Selection
 }
 
@@ -76,6 +83,7 @@ impl ApplicationData {
             modules: HashMap::new(),
             plots: vec![Plot::new()],
             current_plot: 0usize,
+            id_counter: AtomicU32::new(0u32),
             file: None,
             selection: Selection::None
         };
@@ -84,10 +92,8 @@ impl ApplicationData {
         data
     }
 
-    pub fn build<P>(path: P) -> Result<Self, String> 
-        where P: AsRef<Path>
-    {
-        let f = File::open(path);
+    pub fn build(file: gio::File) -> Result<Self, String>  {
+        let f = File::open(file.path().unwrap());
         if let Err(err) = f {
             return Err(err.to_string());
         }
@@ -96,9 +102,58 @@ impl ApplicationData {
     
         let result: serde_json::Result<ApplicationData> = serde_json::from_reader(reader);
         match result {
-            Ok(data) => Ok(data),
+            Ok(mut data) => {
+                info!("Opened file `{}`", file.path().unwrap().to_str().unwrap());
+                data.set_file(Some(file));
+                Ok(data)
+            },
             Err(err) => Err(err.to_string()),
         }
+    }
+
+    pub fn save(&self) -> Result<(), String> {
+        if (&self.file).is_none() {
+            return Err("save_as is not implemented".to_string());
+        }
+
+        let file = self.file.as_ref().unwrap();
+
+        info!("Saving to `{}` ...", file.path().unwrap().to_str().unwrap());
+        let res = OpenOptions::new().write(true).truncate(true).open(file.path().unwrap());
+        if let Err(err) = res {
+            return Err(err.to_string());
+        }
+
+        let mut f = res.unwrap();
+        let result = serde_json::to_string(self);
+        match result {
+            Ok(serialized) => {
+                let res = f.write(serialized.as_bytes());
+                match res {
+                    Ok(bytes_written) => {
+                        info!("Wrote {} bytes to `{}` successfully", bytes_written, file.path().unwrap().to_str().unwrap());
+                        Ok(())
+                    }
+                    Err(err) => {
+                        Err(err.to_string())
+                    }
+                }
+            },
+            Err(err) => Err(err.to_string())
+        }
+    }
+
+    pub fn new_id(&self) -> u32 {
+        self.id_counter.fetch_add(1u32, Ordering::SeqCst)
+    }
+
+    pub fn file(&self) -> &Option<gio::File> {
+        &self.file
+    }
+
+    pub fn set_file(&mut self, file: Option<gio::File>) -> &mut Self {
+        self.file = file;
+        self
     }
 
     pub fn add_module(&mut self, module: Module) -> &mut Self {
