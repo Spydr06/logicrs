@@ -4,7 +4,7 @@ use glib::{
     object_subclass,
     subclass::{
         object::{ObjectImpl, ObjectImplExt},
-        types::{ObjectSubclass, ObjectSubclassExt},
+        types::{ObjectSubclass, ObjectSubclassExt, ObjectSubclassIsExt},
         InitializingObject,
     },
     wrapper, Object,
@@ -22,7 +22,7 @@ use gtk::{
     TemplateChild, Widget, Window, traits::GtkWindowExt,
 };
 
-use crate::application::Application;
+use crate::application::{Application, data::ApplicationDataRef};
 use super::{
     circuit_panel::{CircuitPanel, CircuitPanelTemplate},
     module_list::{ModuleList, ModuleListTemplate},
@@ -35,11 +35,25 @@ wrapper! {
 }
 
 impl MainWindow {
-    pub fn new(app: &Application) -> Self {
-        Object::new(&[
+    pub fn new(app: &Application, data: ApplicationDataRef) -> Self {
+        let window: Self = Object::new(&[
                 ("application", app),
                 ("title", &"LogicRs"),
-            ]).expect("failed to create window")
+            ]).expect("failed to create window");
+        
+        window.imp().set_data(data.clone());
+
+        let module_list = window.imp().module_list.imp();
+        module_list.initialize();
+
+        let panel = window.imp().circuit_panel.imp();
+        panel.new_tab("Main");
+        data.lock().unwrap()
+            .modules().iter()
+            .filter(|(_, m)| !m.builtin())
+            .for_each(|(_, m)| { panel.new_tab(m.name()); });
+
+        window
     }
 }
 
@@ -54,6 +68,13 @@ pub struct MainWindowTemplate {
 
     #[template_child]
     pub circuit_panel: TemplateChild<CircuitPanel>,
+}
+
+impl MainWindowTemplate {
+    fn set_data(&self, data: ApplicationDataRef) {
+        self.module_list.get().imp().set_data(data.clone());
+        self.circuit_panel.get().imp().set_data(data);
+    }
 }
 
 #[object_subclass]

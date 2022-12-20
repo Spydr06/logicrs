@@ -1,14 +1,12 @@
-use crate::application::Application;
-
+use crate::application::{Application, data::ApplicationDataRef};
 use super::circuit_view::CircuitView;
-
-use adw::{self, HeaderBar};
+use adw::{self, HeaderBar, TabPage, TabView, TabBar};
 
 use glib::{
     object_subclass,
     subclass::{
         object::{ObjectImpl, ObjectImplExt},
-        types::ObjectSubclass,
+        types::{ObjectSubclass, ObjectSubclassIsExt},
         InitializingObject,
     },
     wrapper, Object,
@@ -25,6 +23,8 @@ use gtk::{
     ShortcutManager, TemplateChild, Widget,
 };
 
+use std::cell::RefCell;
+
 wrapper! {
     pub struct CircuitPanel(ObjectSubclass<CircuitPanelTemplate>)
         @extends Box, Widget,
@@ -32,8 +32,10 @@ wrapper! {
 }
 
 impl CircuitPanel {
-    pub fn new(app: &Application) -> Self {
-        Object::new(&[("application", app)]).expect("failed to create window")
+    pub fn new(app: &Application, data: ApplicationDataRef) -> Self {
+        let panel: Self = Object::new(&[("application", app)]).expect("failed to create window");
+        panel.imp().set_data(data);
+        panel
     }
 }
 
@@ -47,7 +49,33 @@ pub struct CircuitPanelTemplate {
     pub back_button: TemplateChild<Button>,
 
     #[template_child]
-    pub circuit_view: TemplateChild<CircuitView>,
+    pub view: TemplateChild<TabView>,
+
+    #[template_child]
+    pub tab_bar: TemplateChild<TabBar>,
+
+    data: RefCell<ApplicationDataRef>
+}
+
+impl CircuitPanelTemplate {
+    fn add_page<'a>(&self, content: &CircuitView, title: &'a str) -> TabPage {
+        let page = self.view.add_page(content, None);
+        page.set_indicator_activatable(true);
+        page.set_title(title);
+        page
+    }
+
+    pub fn set_data(&self, data: ApplicationDataRef) {
+        self.data.replace(data);
+    }
+
+    pub fn new_tab<'a>(&self, title: &'a str) -> TabPage {
+        let content = CircuitView::new(self.data.borrow().clone());
+        let page = self.add_page(&content, title);
+        self.view.set_selected_page(&page);
+
+        page
+    }
 }
 
 #[object_subclass]
@@ -67,7 +95,10 @@ impl ObjectSubclass for CircuitPanelTemplate {
 
 impl ObjectImpl for CircuitPanelTemplate {
     fn constructed(&self, obj: &Self::Type) {
-        self.parent_constructed(obj)
+        self.parent_constructed(obj);
+
+       // self.new_tab("Main");
+       // self.new_tab("Second");
     }
 }
 

@@ -5,7 +5,7 @@ use crate::{
     renderer::{
         Renderer,
         Renderable
-    }
+    }, application::data::ApplicationData
 };
 use serde::{Serialize, Deserialize};
 
@@ -146,7 +146,7 @@ impl Block {
 
 
 impl Renderable for Block {
-    fn render<R>(&self, renderer: &R) -> Result<(), R::Error>
+    fn render<R>(&self, renderer: &R, _data: &ApplicationData) -> Result<(), R::Error>
         where R: Renderer 
     {
         renderer.set_line_width(2.);

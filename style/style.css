@@ -1,6 +1,2 @@
 @import "overlay.css";
-
-.module-list-item {
-    border: 2px;
-    border-color: red;
-}
+@import "module-list.css";

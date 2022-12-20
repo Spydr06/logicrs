@@ -3,23 +3,18 @@ mod ui;
 mod modules;
 mod renderer;
 mod simulator;
-
+ 
 #[macro_use]
 extern crate log;
 
-use std::cell::RefCell;
 use adw::prelude::ApplicationExtManual;
-use application::{
-    Application,
-    data::ApplicationData
-};
-use simulator::{block::Block, Linkage};
+use application::Application;
 
-std::thread_local! {
-    pub static APPLICATION_DATA: RefCell<ApplicationData> = RefCell::new(ApplicationData::new());
-}
+// std::thread_local! {
+//     pub static APPLICATION_DATA: RefCell<ApplicationData> = RefCell::new(ApplicationData::new());
+// }
 
-fn init_new() {
+/*fn init_new() {
     APPLICATION_DATA.with(|d| {
         let mut data = d.borrow_mut();
 
@@ -48,7 +43,7 @@ fn init_new() {
             serde_json::to_string(d.to_owned()).unwrap()
         }
     });
-}
+}*/
 
 fn main() {
     env_logger::init();

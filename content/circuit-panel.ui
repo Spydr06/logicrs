@@ -28,9 +28,40 @@
           </object>
         </child>
         <child>
-          <object class="CircuitView" id="circuit_view"></object>
+          <object class="AdwTabBar" id="tab_bar">
+            <property name="view">view</property>
+          </object>
+        </child>
+        <child>
+          <object class="AdwTabView" id="view">
+            <property name="vexpand">True</property>
+            <property name="menu-model">tab_menu</property>
+            <!--<child>
+              <object class="CircuitView" id="circuit_view"></object>
+            </child>-->
+          </object>
         </child>
       </object>
     </child>
   </template>
+  <menu id="tab_menu">
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">P_in Tab</attribute>
+        <attribute name="action">tab.pin</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Unp_in Tab</attribute>
+        <attribute name="action">tab.unpin</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">_Close</attribute>
+        <attribute name="action">tab.close</attribute>
+      </item>
+    </section>
+  </menu>
 </interface>

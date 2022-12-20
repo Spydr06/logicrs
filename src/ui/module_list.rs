@@ -5,6 +5,7 @@ use glib::{
     subclass::{
         object::{ObjectImpl, ObjectImplExt},
         types::ObjectSubclass,
+        types::ObjectSubclassExt,
         InitializingObject,
     },
     wrapper,
@@ -21,11 +22,9 @@ use gtk::{
     TemplateChild, Widget, ListBox, ListBoxRow, Label, traits::WidgetExt, GestureClick
 };
 
-use crate::{
-    application::Application,
-    modules::Module,
-    simulator::block::Block
-};
+use std::cell::RefCell;
+
+use crate::{application::{Application, data::ApplicationDataRef}, modules::Module, simulator::Block};
 use super::dialogs;
 
 wrapper! {
@@ -50,7 +49,66 @@ pub struct ModuleListTemplate {
     pub new_module_button: TemplateChild<Button>,
 
     #[template_child]
-    pub list_box: TemplateChild<ListBox>
+    pub builtin_list_box: TemplateChild<ListBox>,
+
+    #[template_child]
+    pub custom_list_box: TemplateChild<ListBox>,
+
+    data: RefCell<ApplicationDataRef>
+}
+
+impl ModuleListTemplate {
+    pub fn get_from(parent: &ModuleList) -> &Self {
+        Self::from_instance(parent)
+    }
+
+    pub fn set_data(&self, data: ApplicationDataRef) {
+        self.data.replace(data);
+    }
+
+    pub fn application_data(&self) -> ApplicationDataRef {
+        self.data.borrow().clone()
+    }
+
+    fn new_list_item(&self, module: &Module) {
+        let label = Label::builder()
+            .label(module.name().as_str())
+            .build();
+        
+        let item = ListBoxRow::builder()
+            .child(&label)
+            .build();
+            
+        let click_gesture = GestureClick::builder()
+            .button(gdk::ffi::GDK_BUTTON_PRIMARY as u32)
+            .build();
+        
+        let name = module.name().to_owned();
+        let data = self.data.borrow().clone();
+        click_gesture.connect_pressed(move |_, _, _, _| {
+                let mut data = data.lock().unwrap();
+                let module = data.get_module(&name).unwrap();
+                let block = Block::new(&module, (0, 0), data.new_id());
+                data.current_plot_mut().add_block(block);
+        });
+        
+        item.add_controller(&click_gesture);
+        item.add_css_class("module-list-item");
+        
+        if module.builtin() {
+            self.builtin_list_box.append(&item);
+        }
+        else {
+            self.custom_list_box.append(&item);
+        }
+    }
+
+    pub fn initialize(&self) {
+        let data = self.data.borrow();
+        dialogs::new(data.clone(), &self.new_module_button, (400, 70), dialogs::new_module);
+        
+        data.lock().unwrap().modules().iter().for_each(|(_, m)| self.new_list_item(m));
+    }
 }
 
 #[object_subclass]
@@ -71,46 +129,8 @@ impl ObjectSubclass for ModuleListTemplate {
 impl ObjectImpl for ModuleListTemplate {
     fn constructed(&self, obj: &Self::Type) {
         self.parent_constructed(obj);
-
-        dialogs::new(&self.new_module_button, (400, 70), dialogs::new_module);
-
-        crate::APPLICATION_DATA.with(|data| {
-            let data = data.borrow();
-            for (_, v) in data.modules().iter() {
-                self.list_box.append(&new_list_item(v));
-            }
-        });
     }
 }
 
 impl WidgetImpl for ModuleListTemplate {}
 impl BoxImpl for ModuleListTemplate {}
-
-fn new_list_item(module: &Module) -> ListBoxRow {
-    let label = Label::builder()
-        .label(module.name().as_str())
-        .build();
-    
-    let item = ListBoxRow::builder()
-        .child(&label)
-        .build();
-        
-    let click_gesture = GestureClick::builder()
-        .button(gdk::ffi::GDK_BUTTON_PRIMARY as u32)
-        .build();
-    
-    let name = module.name().to_owned();
-    click_gesture.connect_pressed(move |_, _, _, _| {
-        crate::APPLICATION_DATA.with(|data| {
-            let mut data = data.borrow_mut();
-            let module = data.get_module(&name).unwrap();
-            let block = Block::new(&module, (0, 0), data.new_id());
-            data.current_plot_mut().add_block(block);
-        });
-    });
-    
-    item.add_controller(&click_gesture);
-    item.add_css_class("module-list-item");
-    
-    item
-}

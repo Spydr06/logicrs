@@ -4,7 +4,7 @@ use glib::{
     object_subclass,
     subclass::{
         object::{ObjectImpl, ObjectImplExt},
-        types::ObjectSubclass,
+        types::{ObjectSubclass, ObjectSubclassIsExt},
         InitializingObject,
     },
     wrapper,
@@ -23,16 +23,7 @@ use gtk::{
     Box, TemplateChild, Button
 };
 
-use crate::{
-    application::{
-        Application,
-        data::Selection
-    }, 
-    renderer::{
-        self,
-        Renderer, CairoRenderer
-    }
-};
+use crate::{application::data::*, renderer::*};
 
 wrapper! {
     pub struct CircuitView(ObjectSubclass<CircuitViewTemplate>)
@@ -41,8 +32,10 @@ wrapper! {
 }
 
 impl CircuitView {
-    pub fn new(app: &Application) -> Self {
-        glib::Object::new(&[("application", app)]).unwrap()
+    pub fn new(app: ApplicationDataRef) -> Self {
+        let circuit_view: Self = glib::Object::new(&[]).unwrap();
+        circuit_view.imp().set_data(app).initialize();
+        circuit_view
     }
 }
 
@@ -62,6 +55,7 @@ pub struct CircuitViewTemplate {
     zoom_reset: TemplateChild<Button>,
 
     renderer: RefCell<Option<Arc<RefCell<CairoRenderer>>>>,
+    data: RefCell<ApplicationDataRef>
 }
 
 impl CircuitViewTemplate {
@@ -72,12 +66,17 @@ impl CircuitViewTemplate {
         }
     }
 
+    fn set_data(&self, data: ApplicationDataRef) -> &Self {
+        self.data.replace(data);
+        self
+    }
+
     fn setup_buttons(&self) {
         let renderer = self.renderer().unwrap();
         let r = renderer.clone();
         let w = self.drawing_area.to_owned();
         self.zoom_reset.connect_clicked(move |_| {
-            r.borrow_mut().set_scale(renderer::DEFAULT_SCALE);
+            r.borrow_mut().set_scale(DEFAULT_SCALE);
             w.queue_draw();
             //println!("scale: {}%", r.lock().unwrap().scale() * 100.);
         });
@@ -99,6 +98,47 @@ impl CircuitViewTemplate {
             w.queue_draw();
             //println!("scale: {}%", scale * 100.);
         });
+    }
+
+    fn initialize(&self) {
+        *self.renderer.borrow_mut() = Some(Arc::new(RefCell::new(CairoRenderer::new())));
+        self.setup_buttons();
+
+        let renderer = self.renderer().unwrap();
+        let app_data = self.data.borrow().clone();
+        self.drawing_area.set_draw_func(move |area: &DrawingArea, context: &gtk::cairo::Context, width: i32, height: i32| {
+            if let Err(err) = renderer.borrow_mut().callback(&app_data, area, context, width, height) {
+                eprintln!("Error rendering CircuitView: {}", err);
+                panic!();
+            }
+        });
+
+        let gesture_drag = GestureDrag::builder().button(gdk::ffi::GDK_BUTTON_PRIMARY as u32).build();
+        let area = self.drawing_area.to_owned();
+        let renderer = self.renderer().unwrap();
+        let app_data = self.data.borrow().clone();
+        gesture_drag.connect_drag_begin(move |gesture, x, y| {
+            gesture.set_state(gtk::EventSequenceState::Claimed);
+            drag_begin(&app_data, &area, renderer.borrow().scale(), x, y)
+        });
+
+        let area = self.drawing_area.to_owned();
+        let renderer = self.renderer().unwrap();
+        let app_data = self.data.borrow().clone();
+        gesture_drag.connect_drag_update(move |gesture, x, y| {
+            gesture.set_state(gtk::EventSequenceState::Claimed);
+            drag_update(&app_data, &area, renderer.borrow().scale(), x, y)
+        });
+
+        let area = self.drawing_area.to_owned();
+        let renderer = self.renderer().unwrap();
+        let app_data = self.data.borrow().clone();
+        gesture_drag.connect_drag_end(move |gesture, x, y| {
+            gesture.set_state(gtk::EventSequenceState::Claimed);
+            drag_end(&app_data, &area, renderer.borrow().scale(), x, y)
+        });
+
+        self.drawing_area.add_controller(&gesture_drag);
     }
 }
 
@@ -126,41 +166,6 @@ impl ObjectImpl for CircuitViewTemplate {
 impl WidgetImpl for CircuitViewTemplate {
     fn realize(&self, widget: &Self::Type) {
         self.parent_realize(widget);
-
-        *self.renderer.borrow_mut() = Some(Arc::new(RefCell::new(CairoRenderer::new())));
-        self.setup_buttons();
-
-        let renderer = self.renderer().unwrap();
-        self.drawing_area.set_draw_func(move |area: &DrawingArea, context: &gtk::cairo::Context, width: i32, height: i32| {
-            if let Err(err) = renderer.borrow_mut().callback(area, context, width, height) {
-                eprintln!("Error rendering CircuitView: {}", err);
-                panic!();
-            }
-        });
-
-        let gesture_drag = GestureDrag::builder().button(gdk::ffi::GDK_BUTTON_PRIMARY as u32).build();
-        let area = self.drawing_area.to_owned();
-        let renderer = self.renderer().unwrap();
-        gesture_drag.connect_drag_begin(move |gesture, x, y| {
-            gesture.set_state(gtk::EventSequenceState::Claimed);
-            drag_begin(&area, renderer.borrow().scale(), x, y)
-        });
-
-        let area = self.drawing_area.to_owned();
-        let renderer = self.renderer().unwrap();
-        gesture_drag.connect_drag_update(move |gesture, x, y| {
-            gesture.set_state(gtk::EventSequenceState::Claimed);
-            drag_update(&area, renderer.borrow().scale(), x, y)
-        });
-
-        let area = self.drawing_area.to_owned();
-        let renderer = self.renderer().unwrap();
-        gesture_drag.connect_drag_end(move |gesture, x, y| {
-            gesture.set_state(gtk::EventSequenceState::Claimed);
-            drag_end(&area, renderer.borrow().scale(), x, y)
-        });
-
-        self.drawing_area.add_controller(&gesture_drag);
     }
 
     fn unrealize(&self, widget: &Self::Type) {
@@ -170,72 +175,65 @@ impl WidgetImpl for CircuitViewTemplate {
 
 impl BoxImpl for CircuitViewTemplate {}
 
-fn drag_begin(area: &DrawingArea, scale: f64, x: f64, y: f64) {
-    crate::APPLICATION_DATA.with(|data| {
-        let mut data = data.borrow_mut();
-        let position = ((x / scale) as i32, (y / scale) as i32);
+fn drag_begin(data: &ApplicationDataRef, area: &DrawingArea, scale: f64, x: f64, y: f64) {
+    let position = ((x / scale) as i32, (y / scale) as i32);
+    let mut data = data.lock().unwrap();
+
+    data.unhighlight();
     
-        data.unhighlight();
-        
-        match data.current_plot().get_block_at(position) {
-            Some(index) => {
-                if let Some(block) = data.current_plot_mut().get_block_mut(index) {
-                    block.set_start_pos(block.position());
-                    block.set_highlighted(true);
-                }
-                data.set_selection(Selection::Single(index));
+    match data.current_plot().get_block_at(position) {
+        Some(index) => {
+            if let Some(block) = data.current_plot_mut().get_block_mut(index) {
+                block.set_start_pos(block.position());
+                block.set_highlighted(true);
             }
-            _ => {
-                data.set_selection(Selection::Area(position, position));
-            }
+            data.set_selection(Selection::Single(index));
         }
-        
-        area.queue_draw();
-    });
+        _ => {
+            data.set_selection(Selection::Area(position, position));
+        }
+    }
+
+    area.queue_draw();
 }
 
-fn drag_update(area: &DrawingArea, scale: f64, x: f64, y: f64) {
-    crate::APPLICATION_DATA.with(|data| {
-        let mut data = data.borrow_mut();
-        let position = ((x / scale) as i32, (y / scale) as i32);
+fn drag_update(data: &ApplicationDataRef, area: &DrawingArea, scale: f64, x: f64, y: f64) {
+    let position = ((x / scale) as i32, (y / scale) as i32);
+    let mut data = data.lock().unwrap();
 
-        match data.selection().clone() {
-            Selection::Single(index) => {
-                let block = data.current_plot_mut().get_block_mut(index).unwrap();
-                let (start_x, start_y) = block.start_pos();
-                block.set_position((start_x + position.0, start_y + position.1));
-                area.queue_draw();
-            }
-            Selection::Area(area_start, _) => {
-                data.set_selection(Selection::Area(area_start, (area_start.0 + position.0, area_start.1 + position.1)));
-                area.queue_draw();
-            }
-            _ => ()
+    match data.selection().clone() {
+        Selection::Single(index) => {
+            let block = data.current_plot_mut().get_block_mut(index).unwrap();
+            let (start_x, start_y) = block.start_pos();
+            block.set_position((start_x + position.0, start_y + position.1));
+            area.queue_draw();
         }
-    });
+        Selection::Area(area_start, _) => {
+            data.set_selection(Selection::Area(area_start, (area_start.0 + position.0, area_start.1 + position.1)));
+            area.queue_draw();
+        }
+        _ => ()
+    }
 }
 
-fn drag_end(area: &DrawingArea, scale: f64, x: f64, y: f64) {
+fn drag_end(data: &ApplicationDataRef, area: &DrawingArea, scale: f64, x: f64, y: f64) {
     if x == 0. && y == 0. {
         return;
     }
 
-    crate::APPLICATION_DATA.with(|data| {
-        let mut data = data.borrow_mut();
-        let position = ((x / scale) as i32, (y / scale) as i32);
+    let position = ((x / scale) as i32, (y / scale) as i32);
+    let mut data = data.lock().unwrap();
 
-        match data.selection().clone() { 
-            Selection::Single(index) => {
-                let block = data.current_plot_mut().get_block_mut(index).unwrap();
-                let (start_x, start_y) = block.start_pos();
-                block.set_position((start_x + position.0, start_y + position.1));
-            },
-            Selection::Area(_, _) => {
-                data.highlight_area();
-            }
-            _ => {}
+    match data.selection().clone() { 
+        Selection::Single(index) => {
+            let block = data.current_plot_mut().get_block_mut(index).unwrap();
+            let (start_x, start_y) = block.start_pos();
+            block.set_position((start_x + position.0, start_y + position.1));
+        },
+        Selection::Area(_, _) => {
+            data.highlight_area();
         }
-
-        area.queue_draw()
-    });
+        _ => {}
+    }
+    area.queue_draw()
 }

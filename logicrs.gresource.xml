@@ -11,5 +11,6 @@
   <gresource>
     <file compressed="true">style/style.css</file>
     <file compressed="true">style/overlay.css</file>
+    <file compressed="true">style/module-list.css</file>
   </gresource>
 </gresources>

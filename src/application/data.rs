@@ -4,6 +4,7 @@ use std::{
     fs::{File, OpenOptions},
     sync::atomic::{AtomicU32, Ordering},
     cmp,
+    sync::{Arc, Mutex}
 };
 use gtk::gio::{self, prelude::FileExt};
 use crate::{
@@ -15,7 +16,9 @@ use crate::{
 };
 use serde::{Serialize, Deserialize};
 
-#[derive(Clone, Serialize, Deserialize)]
+pub type ApplicationDataRef = Arc<Mutex<ApplicationData>>;
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum Selection {
     Single(u32),
     Many(Vec<u32>),
@@ -52,7 +55,7 @@ impl Selection {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ApplicationData {
     modules: HashMap<String, Module>,
     plots: Vec<Plot>,

@@ -16,10 +16,10 @@ impl Default for Application {
 impl Application {
     pub fn new() -> Self {
         gio::resources_register_include!("logicrs.gresource").expect("Failed to register resources.");
-        glib::Object::new(&[
+        let application: Self = glib::Object::new(&[
             ("application-id", &"com.spydr06.logicrs"),
             ("flags", &gio::ApplicationFlags::HANDLES_OPEN),
-        ])
-        .unwrap()
+        ]).unwrap();
+        application
     }
 }
