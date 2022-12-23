@@ -74,8 +74,8 @@ impl Block {
     }
 
     pub fn touches(&self, point: (i32, i32)) -> bool {
-        point.0 > self.position.0 && point.0 < self.position.0 + self.size.0 &&
-        point.1 > self.position.1 && point.1 < self.position.1 + self.size.1
+        point.0 > self.position.0 - 3 && point.0 < self.position.0 + self.size.0 + 3 &&
+        point.1 > self.position.1 - 3 && point.1 < self.position.1 + self.size.1 + 3
     }
 
     pub fn set_highlighted(&mut self, highlighted: bool) {
@@ -124,6 +124,26 @@ impl Block {
 
     pub fn connections(&self) -> &Vec<Option<Connection>> {
         &self.connections
+    }
+
+    pub fn position_on_connection(&self, position: (i32, i32), is_input: bool) -> Option<u8> {
+        if is_input {
+            for i in 0..self.num_inputs {
+                let connector_pos = (self.position.0, self.position.1 + 25 * i as i32 + 50);
+                if (position.0 - connector_pos.0).abs() < 6 && (position.1 - connector_pos.1).abs() < 6 {
+                    return Some(i);
+                }
+            }
+        }
+        else {
+            for i in 0..self.num_outputs {
+                let connector_pos = (self.position.0 + self.size.0, self.position.1 + 25 * i as i32 + 50);
+                if (position.0 - connector_pos.0).abs() < 6 && (position.1 - connector_pos.1).abs() < 6 {
+                    return Some(i);
+                }
+            }
+        }
+        None
     }
 
     fn draw_connector<R>(&self, renderer: &R, position: (i32, i32)) -> Result<(), R::Error>

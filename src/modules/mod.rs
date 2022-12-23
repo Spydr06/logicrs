@@ -2,7 +2,7 @@ pub mod builtin;
 
 use serde::{Serialize, Deserialize};
 
-#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd)]
 pub struct Module {
     name: String,
     builtin: bool,
@@ -45,3 +45,11 @@ impl Module {
         self.num_outputs
     }
 }
+
+impl Ord for Module {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.name.chars().nth(0).unwrap().cmp(&other.name().chars().nth(0).unwrap())
+    }
+}
+
+impl Eq for Module {}

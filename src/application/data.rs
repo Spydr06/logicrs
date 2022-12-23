@@ -1,3 +1,4 @@
+use serde::{Serialize, Deserialize};
 use std::{
     collections::HashMap,
     io::{BufReader, Write},
@@ -14,48 +15,11 @@ use crate::{
     },
     simulator::Plot
 };
-use serde::{Serialize, Deserialize};
+use super::selection::*;
 
 pub type ApplicationDataRef = Arc<Mutex<ApplicationData>>;
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
-pub enum Selection {
-    Single(u32),
-    Many(Vec<u32>),
-    Area((i32, i32), (i32, i32)),
-    None
-}
-
-impl Default for Selection {
-    fn default() -> Self {
-        Selection::None
-    }
-}
-
-impl Selection {
-    pub fn is_area(&self) -> bool {
-        match self {
-            Self::Area(_, _) => true,
-            _ => false
-        }
-    }
-
-    pub fn area_start(&self) -> Option<(i32, i32)> {
-        match self {
-            Self::Area(start, _) => Some(*start),
-            _ => None
-        }
-    }
-
-    pub fn area_end(&self) -> Option<(i32, i32)> {
-        match self {
-            Self::Area(_, end) => Some(*end),
-            _ => None
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct ApplicationData {
     modules: HashMap<String, Module>,
     plots: Vec<Plot>,
@@ -88,7 +52,7 @@ impl ApplicationData {
             current_plot: 0usize,
             id_counter: AtomicU32::new(0u32),
             file: None,
-            selection: Selection::None
+            selection: Selection::None,
         };
 
         builtin::register(&mut data);
@@ -212,6 +176,7 @@ impl ApplicationData {
             Selection::Single(id) => self.current_plot_mut().get_block_mut(id).unwrap().set_highlighted(false),
             Selection::Many(ids) => ids.iter().for_each(|id| self.current_plot_mut().get_block_mut(*id).unwrap().set_highlighted(false)),
             Selection::Area(_, _) => self.current_plot_mut().blocks_mut().iter_mut().for_each(|(_, v)| v.set_highlighted(false)),
+            Selection::Connection { block_id, output, start, position } => (),
             Selection::None => ()
         }
 

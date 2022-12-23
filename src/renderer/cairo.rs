@@ -54,7 +54,10 @@ impl Renderer for CairoRenderer {
 
         let data = data.lock().unwrap();
         let plot = data.current_plot();
-        plot.render(self, &data)
+        plot.render(self, &data)?;
+
+        // render selection
+        data.selection().render(self, &data)
     }
 
     fn size(&self) -> (i32, i32) {

@@ -10,7 +10,7 @@ use gtk::{
 use std::{future::Future, rc::Rc, sync::{Arc,Mutex}};
 use crate::{modules::Module, application::data::{ApplicationData, ApplicationDataRef}};
 
-fn create_new_module(data: Arc<Mutex<ApplicationData>>,name: String, num_inputs: u8, num_outputs: u8) -> Result<(), String> {
+fn create_new_module(data: Arc<Mutex<ApplicationData>>, name: String, num_inputs: u8, num_outputs: u8) -> Result<(), String> {
     if name.is_empty() {
         return Err("Invalid name".to_string());
     }

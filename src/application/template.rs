@@ -11,17 +11,28 @@ use gtk::{
     StyleContext,
     STYLE_PROVIDER_PRIORITY_APPLICATION
 };
-use std::sync::{Arc, Mutex};
+use std::{sync::{Arc, Mutex}, cell::RefCell};
 use super::data::ApplicationData;
-use crate::ui::main_window::MainWindow;
+use crate::{ui::main_window::MainWindow, simulator::Simulator};
 
 #[derive(Default)]
 pub struct ApplicationTemplate {
-    data: Arc<Mutex<ApplicationData>>
+    data: Arc<Mutex<ApplicationData>>,
+    simulator: RefCell<Option<Simulator>>
 }
 
 impl ApplicationTemplate {
     const CSS_RESOURCE: &'static str = "/style/style.css";
+
+    fn start_simulation(&self) {
+        *self.simulator.borrow_mut() = Some(Simulator::new(self.data.clone()))
+    }
+
+    fn stop_simulation(&self) {
+        if let Some(simulator) = self.simulator.replace(None) {
+            simulator.join();
+        }
+    }
 
     fn create_window(&self, application: &super::Application) {
         StyleManager::default().set_color_scheme(ColorScheme::ForceDark);
@@ -53,6 +64,7 @@ impl ObjectImpl for ApplicationTemplate {}
 impl ApplicationImpl for ApplicationTemplate {
     fn activate(&self, application: &Self::Type) {
         self.create_window(application);
+        self.start_simulation();
     }
 
     fn open(&self, application: &Self::Type, files: &[File], _hint: &str) {
@@ -76,6 +88,8 @@ impl ApplicationImpl for ApplicationTemplate {
     }
 
     fn shutdown(&self, _application: &Self::Type) {
+        self.stop_simulation();
+
         let data = self.data.lock().unwrap();
         let res = {
             match data.file() {

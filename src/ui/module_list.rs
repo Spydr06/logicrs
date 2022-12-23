@@ -107,7 +107,10 @@ impl ModuleListTemplate {
         let data = self.data.borrow();
         dialogs::new(data.clone(), &self.new_module_button, (400, 70), dialogs::new_module);
         
-        data.lock().unwrap().modules().iter().for_each(|(_, m)| self.new_list_item(m));
+        let data = data.lock().unwrap();
+        let mut values: Vec<_> = data.modules().values().into_iter().collect();
+        values.sort();
+        values.iter().for_each(|m| self.new_list_item(m));
     }
 }
 

@@ -1,5 +1,6 @@
 pub mod template;
 pub mod data;
+pub mod selection;
 
 use gtk::{gio, glib};
 
