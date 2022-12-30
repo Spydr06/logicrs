@@ -13,8 +13,8 @@ use glib::{
 };
 
 use gtk::{
-    gio::{ActionGroup, ActionMap},
-    prelude::InitializingWidgetExt,
+    gio::*,
+    prelude::{InitializingWidgetExt},
     subclass::{
         prelude::{BoxImpl, WidgetImpl},
         widget::{CompositeTemplate, WidgetClassSubclassExt},
@@ -54,7 +54,7 @@ pub struct CircuitPanelTemplate {
     #[template_child]
     pub tab_bar: TemplateChild<TabBar>,
 
-    data: RefCell<ApplicationDataRef>
+    data: RefCell<ApplicationDataRef>,
 }
 
 impl CircuitPanelTemplate {
@@ -96,7 +96,6 @@ impl ObjectSubclass for CircuitPanelTemplate {
 impl ObjectImpl for CircuitPanelTemplate {
     fn constructed(&self, obj: &Self::Type) {
         self.parent_constructed(obj);
-
        // self.new_tab("Main");
        // self.new_tab("Second");
     }

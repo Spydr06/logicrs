@@ -8,7 +8,7 @@ use glib::{
         types::ObjectSubclassExt,
         InitializingObject,
     },
-    wrapper,
+    wrapper, Cast,
 };
 
 use gtk::{
@@ -19,7 +19,7 @@ use gtk::{
         widget::{CompositeTemplate, WidgetClassSubclassExt},
     },
     Accessible, Box, Buildable, Button, CompositeTemplate, ConstraintTarget, Orientable,
-    TemplateChild, Widget, ListBox, ListBoxRow, Label, traits::WidgetExt, GestureClick
+    TemplateChild, Widget, ListBox, ListBoxRow, Label, traits::WidgetExt, GestureClick, Ordering
 };
 
 use std::cell::RefCell;
@@ -111,6 +111,13 @@ impl ModuleListTemplate {
         let mut values: Vec<_> = data.modules().values().into_iter().collect();
         values.sort();
         values.iter().for_each(|m| self.new_list_item(m));
+    
+        let order_alphabetically = |a: &ListBoxRow, b: &ListBoxRow| Ordering::from(
+            (a.first_child().unwrap().downcast_ref().unwrap() as &Label).label()
+            .cmp(&(b.first_child().unwrap().downcast_ref().unwrap() as &Label).label())
+        );
+        self.builtin_list_box.set_sort_func(order_alphabetically);
+        self.custom_list_box.set_sort_func(order_alphabetically);
     }
 }
 

@@ -2,14 +2,8 @@ pub mod block;
 pub mod connection;
 pub mod plot;
 
-pub use {
-    block::*,
-    connection::*,
-    plot::*
-};
-
+pub use {block::*, connection::*, plot::*};
 use std::thread::*;
-
 use crate::application::data::ApplicationDataRef;
 
 pub struct Simulator {
@@ -28,5 +22,5 @@ impl Simulator {
     }
 }
 
-fn simulate(data: ApplicationDataRef) {
+fn simulate(_data: ApplicationDataRef) {
 }

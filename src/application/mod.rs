@@ -2,10 +2,14 @@ pub mod template;
 pub mod data;
 pub mod selection;
 
-use gtk::{gio, glib};
+use glib::subclass::types::ObjectSubclassIsExt;
+use gtk::{gio, glib::{wrapper, clone}, prelude::ActionMapExt, traits::*, AboutDialog, subclass::prelude::ApplicationImpl};
+use crate::config;
 
-glib::wrapper! {
-    pub struct Application(ObjectSubclass<template::ApplicationTemplate>) @extends gio::Application, gtk::Application, @implements gio::ActionGroup, gio::ActionMap;
+wrapper! {
+    pub struct Application(ObjectSubclass<template::ApplicationTemplate>)
+    @extends gio::Application, gtk::Application, 
+    @implements gio::ActionGroup, gio::ActionMap;
 }
 
 impl Default for Application {
@@ -17,10 +21,50 @@ impl Default for Application {
 impl Application {
     pub fn new() -> Self {
         gio::resources_register_include!("logicrs.gresource").expect("Failed to register resources.");
-        let application: Self = glib::Object::new(&[
+        glib::Object::new(&[
             ("application-id", &"com.spydr06.logicrs"),
             ("flags", &gio::ApplicationFlags::HANDLES_OPEN),
-        ]).unwrap();
-        application
+        ]).expect("Failed to create main application struct")
+    }
+
+    fn quit(&self) {
+        self.imp().shutdown(self);
+    }
+
+    fn show_about(&self) {
+        let window = self.active_window().unwrap();
+        let dialog = AboutDialog::builder()
+            .transient_for(&window)
+            .modal(true)
+            .program_name(config::APP_ID)
+            .version(config::VERSION)
+            .comments(config::DESCRIPTION)
+            .copyright(config::COPYRIGHT)
+            .authors(config::AUTHORS.split(':').map(|s| s.to_string()).collect())
+            .website(config::REPOSITORY)
+            .license_type(gtk::License::MitX11)
+            .build();
+        
+        dialog.present();
+    }
+
+    pub(self) fn setup_gactions(&self) {
+        let quit_action = gio::SimpleAction::new("quit", None);
+        quit_action.connect_activate(clone!(@weak self as app => move |_, _| {
+            app.quit();
+        }));
+        self.add_action(&quit_action);
+
+        let preferences_action = gio::SimpleAction::new("preferences", None);
+        preferences_action.connect_activate(clone!(@weak self as app => move |_, _| {
+            warn!("TODO: Implement preferences activate");
+        }));
+        self.add_action(&preferences_action);
+
+        let about_action = gio::SimpleAction::new("about", None);
+        about_action.connect_activate(clone!(@weak self as app => move |_, _| {
+            app.show_about();
+        }));
+        self.add_action(&about_action);
     }
 }

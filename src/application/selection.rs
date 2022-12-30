@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-use crate::{renderer::Renderable, simulator::Connector};
+use crate::renderer::Renderable;
 use std::cmp;
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -47,22 +47,20 @@ impl Selection {
 }
 
 impl Renderable for Selection {
-    fn render<R>(&self, renderer: &R, data: &super::data::ApplicationData) -> Result<(), R::Error>
+    fn render<R>(&self, renderer: &R, _data: &super::data::ApplicationData) -> Result<(), R::Error>
         where R: crate::renderer::Renderer {
 
         match self {
             Selection::Area(start, end) => {
                 let position = (cmp::min(start.0, end.0), cmp::min(start.1, end.1));
                 let size = (cmp::max(start.0, end.0) - position.0, cmp::max(start.1, end.1) - position.1);
-                renderer.rectangle(position, size);
-                renderer.set_color(0.2078, 0.5176, 0.894, 0.3);
-                renderer.fill_preserve()?;
-                renderer.set_color(0.2078, 0.5176, 0.894, 0.7);
-                renderer.stroke()?;
+                renderer.rectangle(position, size)
+                    .set_color(0.2078, 0.5176, 0.894, 0.3)
+                    .fill_preserve()?;
+                renderer.set_color(0.2078, 0.5176, 0.894, 0.7)
+                    .stroke()
             }
-            Selection::Connection { block_id, output, start, position: end } => {
-                let block = data.current_plot().get_block(*block_id).unwrap();
-
+            Selection::Connection { block_id: _, output: _, start, position: end } => {
                 let offset = (
                     (start.0 + ((end.0 - start.0) as f32 * 0.7) as i32, start.1),
                     (end.0 + ((start.0 - end.0) as f32 * 0.7) as i32, end.1),
@@ -72,11 +70,9 @@ impl Renderable for Selection {
                     .set_color(0.346, 0.155, 0.41, 1.)    
                     .move_to(*start)
                     .curve_to(offset.0, offset.1, *end)
-                    .stroke()?;
+                    .stroke()
             }
-            _ => ()
+            _ => Ok(())
         }
-
-        Ok(())
     }
 }

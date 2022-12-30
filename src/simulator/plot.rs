@@ -1,6 +1,6 @@
 use super::Block;
 use crate::{renderer::{Renderable, Renderer}, application::data::ApplicationData};
-use std::{collections::HashMap, cmp};
+use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Debug)]

@@ -176,7 +176,7 @@ impl ApplicationData {
             Selection::Single(id) => self.current_plot_mut().get_block_mut(id).unwrap().set_highlighted(false),
             Selection::Many(ids) => ids.iter().for_each(|id| self.current_plot_mut().get_block_mut(*id).unwrap().set_highlighted(false)),
             Selection::Area(_, _) => self.current_plot_mut().blocks_mut().iter_mut().for_each(|(_, v)| v.set_highlighted(false)),
-            Selection::Connection { block_id, output, start, position } => (),
+            Selection::Connection { block_id: _, output: _, start: _, position: _ } => (),
             Selection::None => ()
         }
 

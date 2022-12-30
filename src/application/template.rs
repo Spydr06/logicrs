@@ -1,5 +1,5 @@
 use adw::{prelude::WidgetExt, subclass::prelude::AdwApplicationImpl, ColorScheme, StyleManager};
-use glib::subclass::{prelude::ObjectImpl, types::ObjectSubclass};
+use glib::subclass::{prelude::{ObjectImpl, ObjectImplExt}, types::ObjectSubclass};
 use gtk::{
     subclass::{
         prelude::{ApplicationImpl, GtkApplicationImpl},
@@ -9,7 +9,7 @@ use gtk::{
     gdk::Display,
     CssProvider,
     StyleContext,
-    STYLE_PROVIDER_PRIORITY_APPLICATION
+    STYLE_PROVIDER_PRIORITY_APPLICATION, traits::GtkApplicationExt
 };
 use std::{sync::{Arc, Mutex}, cell::RefCell};
 use super::data::ApplicationData;
@@ -60,7 +60,14 @@ impl ObjectSubclass for ApplicationTemplate {
     type ParentType = adw::Application;
 }
 
-impl ObjectImpl for ApplicationTemplate {}
+impl ObjectImpl for ApplicationTemplate {
+    fn constructed(&self, obj: &Self::Type) {
+        self.parent_constructed(obj);
+
+        obj.setup_gactions();
+        obj.set_accels_for_action("app.quit", &["<primary>Q", "<primary>W"]);
+    }
+}
 impl ApplicationImpl for ApplicationTemplate {
     fn activate(&self, application: &Self::Type) {
         self.create_window(application);
