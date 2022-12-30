@@ -1,6 +1,6 @@
 use crate::application::{Application, data::ApplicationDataRef};
 use super::circuit_view::CircuitView;
-use adw::{self, HeaderBar, TabPage, TabView, TabBar};
+use adw::{self, HeaderBar, TabPage, TabView, TabBar, WindowTitle};
 
 use glib::{
     object_subclass,
@@ -9,7 +9,7 @@ use glib::{
         types::{ObjectSubclass, ObjectSubclassIsExt},
         InitializingObject,
     },
-    wrapper, Object,
+    wrapper, Object, Cast,
 };
 
 use gtk::{
@@ -34,6 +34,7 @@ wrapper! {
 impl CircuitPanel {
     pub fn new(app: &Application, data: ApplicationDataRef) -> Self {
         let panel: Self = Object::new(&[("application", app)]).expect("failed to create window");
+        panel.imp().set_title(data.lock().unwrap().filename().as_str());
         panel.imp().set_data(data);
         panel
     }
@@ -75,6 +76,10 @@ impl CircuitPanelTemplate {
         self.view.set_selected_page(&page);
 
         page
+    }
+
+    pub fn set_title<'a>(&self, title: &'a str) {
+        (self.header_bar.title_widget().unwrap().downcast_ref().unwrap() as &WindowTitle).set_subtitle(title);
     }
 }
 

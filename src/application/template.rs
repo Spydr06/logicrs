@@ -51,6 +51,24 @@ impl ApplicationTemplate {
         let window = MainWindow::new(application, self.data.clone());
         window.show();
     }
+
+    pub fn save_as(&self) -> Result<(), String> {
+        Err("save_as is not implemented()".to_string())
+    }
+
+    pub fn save(&self) {
+        let data = self.data.lock().unwrap();
+        let res = {
+            match data.file() {
+                Some(_) => data.save(),
+                None => self.save_as(),
+            }
+        };
+
+        if let Err(err) = res {
+            crate::die(err.as_str())
+        }
+    }
 }
 
 #[glib::object_subclass]
@@ -66,6 +84,9 @@ impl ObjectImpl for ApplicationTemplate {
 
         obj.setup_gactions();
         obj.set_accels_for_action("app.quit", &["<primary>Q", "<primary>W"]);
+        obj.set_accels_for_action("app.about", &["<primary>comma"]);
+        obj.set_accels_for_action("app.save", &["<primary>S"]);
+        obj.set_accels_for_action("app.save-as", &["<primary><shift>S"]);
     }
 }
 impl ApplicationImpl for ApplicationTemplate {
@@ -96,18 +117,7 @@ impl ApplicationImpl for ApplicationTemplate {
 
     fn shutdown(&self, _application: &Self::Type) {
         self.stop_simulation();
-
-        let data = self.data.lock().unwrap();
-        let res = {
-            match data.file() {
-                Some(_) => data.save(),
-                None => Err("save_as is not implemented()".to_string()),
-            }
-        };
-
-        if let Err(err) = res {
-            crate::die(err.as_str())
-        }
+        self.save();
     }
 }
 impl GtkApplicationImpl for ApplicationTemplate {}

@@ -55,16 +55,22 @@ impl Application {
         }));
         self.add_action(&quit_action);
 
-        let preferences_action = gio::SimpleAction::new("preferences", None);
-        preferences_action.connect_activate(clone!(@weak self as app => move |_, _| {
-            warn!("TODO: Implement preferences activate");
-        }));
-        self.add_action(&preferences_action);
-
         let about_action = gio::SimpleAction::new("about", None);
         about_action.connect_activate(clone!(@weak self as app => move |_, _| {
             app.show_about();
         }));
         self.add_action(&about_action);
+
+        let save_action = gio::SimpleAction::new("save", None);
+        save_action.connect_activate(clone!(@weak self as app => move |_, _| {
+            app.imp().save();
+        }));
+        self.add_action(&save_action);
+
+        let save_as_action = gio::SimpleAction::new("save-as", None);
+        save_as_action.connect_activate(clone!(@weak self as app => move |_, _| {
+            app.imp().save_as();
+        }));
+        self.add_action(&save_as_action);
     }
 }

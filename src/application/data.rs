@@ -110,6 +110,13 @@ impl ApplicationData {
         }
     }
 
+    pub fn filename(&self) -> String {
+        match &self.file {
+            Some(file) => file.path().unwrap().into_os_string().into_string().unwrap(),
+            None => "New File".to_string()
+        }
+    }
+
     pub fn new_id(&self) -> u32 {
         self.id_counter.fetch_add(1u32, Ordering::SeqCst)
     }

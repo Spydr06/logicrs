@@ -47,6 +47,7 @@ impl MainWindow {
         module_list.initialize();
 
         let panel = window.imp().circuit_panel.imp();
+        panel.set_title(data.lock().unwrap().filename().as_str());
         panel.new_tab("Main");
         data.lock().unwrap()
             .modules().iter()

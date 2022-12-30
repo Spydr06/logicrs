@@ -131,8 +131,6 @@ impl CircuitViewTemplate {
 
     fn initialize(&self) {
         *self.renderer.borrow_mut() = Some(Arc::new(RefCell::new(CairoRenderer::new())));
-        self.setup_buttons();
-
         let renderer = self.renderer().unwrap();
         let app_data = self.data.borrow().clone();
         self.drawing_area.set_draw_func(move |area: &DrawingArea, context: &gtk::cairo::Context, width: i32, height: i32| {
@@ -141,7 +139,8 @@ impl CircuitViewTemplate {
                 panic!();
             }
         });
-
+        
+        self.setup_buttons();
         self.init_dragging();
     }
 }

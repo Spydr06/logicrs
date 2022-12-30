@@ -53,9 +53,19 @@
   <menu id="primary_menu">
     <section>
       <item>
+        <attribute name="label" translatable="yes">_Save</attribute>
+        <attribute name="action">app.save</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_Save As</attribute>
+        <attribute name="action">app.save-as</attribute>
+      </item>
+    </section>
+    <section>
+      <!--<item>
         <attribute name="label" translatable="yes">_Preferences</attribute>
         <attribute name="action">app.preferences</attribute>
-      </item>
+      </item>-->
       <item>
         <attribute name="label" translatable="yes">_About</attribute>
         <attribute name="action">app.about</attribute>
