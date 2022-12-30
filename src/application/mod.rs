@@ -31,6 +31,14 @@ impl Application {
         self.imp().shutdown(self);
     }
 
+    fn open_new(&self) {
+        
+    }
+
+    fn open(&self) {
+        
+    }
+
     fn show_about(&self) {
         let window = self.active_window().unwrap();
         let dialog = AboutDialog::builder()
@@ -72,5 +80,17 @@ impl Application {
             app.imp().save_as();
         }));
         self.add_action(&save_as_action);
+
+        let new_action = gio::SimpleAction::new("new", None);
+        new_action.connect_activate(clone!(@weak self as app => move |_, _| {
+            app.open_new();
+        }));
+        self.add_action(&new_action);
+
+        let open_action = gio::SimpleAction::new("open", None);
+        open_action.connect_activate(clone!(@weak self as app => move |_, _| {
+            app.open();
+        }));
+        self.add_action(&open_action);
     }
 }
