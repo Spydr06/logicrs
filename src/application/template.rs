@@ -87,6 +87,8 @@ impl ObjectImpl for ApplicationTemplate {
         obj.set_accels_for_action("app.about", &["<primary>comma"]);
         obj.set_accels_for_action("app.save", &["<primary>S"]);
         obj.set_accels_for_action("app.save-as", &["<primary><shift>S"]);
+        obj.set_accels_for_action("app.open", &["<primary>O"]);
+        obj.set_accels_for_action("app.new", &["<primary>N"]);
     }
 }
 impl ApplicationImpl for ApplicationTemplate {
