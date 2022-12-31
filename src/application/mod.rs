@@ -35,7 +35,6 @@ impl Application {
     }
 
     fn open(&self) {
-        
     }
 
     fn show_about(&self) {

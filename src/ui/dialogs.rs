@@ -1,8 +1,8 @@
 use adw::prelude::{
     BoxExt, ButtonExt, DialogExtManual, EntryBufferExtManual, EntryExt, GtkWindowExt, ComboBoxExt
 };
-use glib::clone;
 use gtk::{
+    glib::clone,
     traits::{DialogExt, GtkApplicationExt},
     Button, ButtonsType, Entry, Inhibit, MessageDialog, ResponseType, ComboBoxText, Orientation, Box
 };
