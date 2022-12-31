@@ -1,58 +1,36 @@
-use adw::{self, HeaderBar};
-
-use glib::{
-    object_subclass,
-    subclass::{
-        object::{ObjectImpl, ObjectImplExt},
-        types::ObjectSubclass,
-        types::ObjectSubclassExt,
-        InitializingObject,
-    },
-    wrapper, Cast,
-};
-
-use gtk::{
-    gdk,
-    prelude::InitializingWidgetExt,
-    subclass::{
-        prelude::{BoxImpl, WidgetImpl},
-        widget::{CompositeTemplate, WidgetClassSubclassExt},
-    },
-    Accessible, Box, Buildable, Button, CompositeTemplate, ConstraintTarget, Orientable,
-    TemplateChild, Widget, ListBox, ListBoxRow, Label, traits::WidgetExt, GestureClick, Ordering
-};
+use gtk::{prelude::*, subclass::prelude::*, glib, gdk};
 
 use std::cell::RefCell;
 
 use crate::{application::{Application, data::ApplicationDataRef}, modules::Module, simulator::Block};
 use super::dialogs;
 
-wrapper! {
+glib::wrapper! {
     pub struct ModuleList(ObjectSubclass<ModuleListTemplate>)
-        @extends Widget, Box,
-        @implements Accessible, Buildable, ConstraintTarget, Orientable;
+        @extends gtk::Widget, gtk::Box,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Orientable;
 }
 
 impl ModuleList {
     pub fn new(app: &Application) -> Self {
-        glib::Object::new(&[("application", app)]).expect("Failed to create an instance of ModuleList")
+        glib::Object::new::<Self>(&[("application", app)])
     }
 }
 
-#[derive(CompositeTemplate, Default)]
+#[derive(gtk::CompositeTemplate, Default)]
 #[template(resource = "/content/module-list.ui")]
 pub struct ModuleListTemplate {
     #[template_child]
-    pub header_bar: TemplateChild<HeaderBar>,
+    pub header_bar: TemplateChild<adw::HeaderBar>,
 
     #[template_child]
-    pub new_module_button: TemplateChild<Button>,
+    pub new_module_button: TemplateChild<gtk::Button>,
 
     #[template_child]
-    pub builtin_list_box: TemplateChild<ListBox>,
+    pub builtin_list_box: TemplateChild<gtk::ListBox>,
 
     #[template_child]
-    pub custom_list_box: TemplateChild<ListBox>,
+    pub custom_list_box: TemplateChild<gtk::ListBox>,
 
     data: RefCell<ApplicationDataRef>
 }
@@ -71,15 +49,15 @@ impl ModuleListTemplate {
     }
 
     fn new_list_item(&self, module: &Module) {
-        let label = Label::builder()
+        let label = gtk::Label::builder()
             .label(module.name().as_str())
             .build();
         
-        let item = ListBoxRow::builder()
+        let item = gtk::ListBoxRow::builder()
             .child(&label)
             .build();
             
-        let click_gesture = GestureClick::builder()
+        let click_gesture = gtk::GestureClick::builder()
             .button(gdk::ffi::GDK_BUTTON_PRIMARY as u32)
             .build();
         
@@ -112,33 +90,33 @@ impl ModuleListTemplate {
         values.sort();
         values.iter().for_each(|m| self.new_list_item(m));
     
-        let order_alphabetically = |a: &ListBoxRow, b: &ListBoxRow| Ordering::from(
-            (a.first_child().unwrap().downcast_ref().unwrap() as &Label).label()
-            .cmp(&(b.first_child().unwrap().downcast_ref().unwrap() as &Label).label())
+        let order_alphabetically = |a: &gtk::ListBoxRow, b: &gtk::ListBoxRow| gtk::Ordering::from(
+            (a.first_child().unwrap().downcast_ref().unwrap() as &gtk::Label).label()
+            .cmp(&(b.first_child().unwrap().downcast_ref().unwrap() as &gtk::Label).label())
         );
         self.builtin_list_box.set_sort_func(order_alphabetically);
         self.custom_list_box.set_sort_func(order_alphabetically);
     }
 }
 
-#[object_subclass]
+#[glib::object_subclass]
 impl ObjectSubclass for ModuleListTemplate {
     const NAME: &'static str = "ModuleList";
     type Type = ModuleList;
-    type ParentType = Box;
+    type ParentType = gtk::Box;
 
     fn class_init(my_class: &mut Self::Class) {
         Self::bind_template(my_class);
     }
 
-    fn instance_init(obj: &InitializingObject<Self>) {
+    fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {
         obj.init_template();
     }
 }
 
 impl ObjectImpl for ModuleListTemplate {
-    fn constructed(&self, obj: &Self::Type) {
-        self.parent_constructed(obj);
+    fn constructed(&self) {
+        self.parent_constructed();
     }
 }
 

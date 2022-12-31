@@ -1,65 +1,44 @@
 use crate::application::{Application, data::ApplicationDataRef};
 use super::circuit_view::CircuitView;
-use adw::{self, HeaderBar, TabPage, TabView, TabBar, WindowTitle};
-
-use glib::{
-    object_subclass,
-    subclass::{
-        object::{ObjectImpl, ObjectImplExt},
-        types::{ObjectSubclass, ObjectSubclassIsExt},
-        InitializingObject,
-    },
-    wrapper, Object, Cast,
-};
-
-use gtk::{
-    gio::*,
-    prelude::{InitializingWidgetExt},
-    subclass::{
-        prelude::{BoxImpl, WidgetImpl},
-        widget::{CompositeTemplate, WidgetClassSubclassExt},
-    },
-    Accessible, Box, Buildable, Button, CompositeTemplate, ConstraintTarget, Native, Root,
-    ShortcutManager, TemplateChild, Widget,
-};
+use gtk::{prelude::*, subclass::prelude::*, gio, glib};
 
 use std::cell::RefCell;
 
-wrapper! {
+glib::wrapper! {
     pub struct CircuitPanel(ObjectSubclass<CircuitPanelTemplate>)
-        @extends Box, Widget,
-        @implements ActionGroup, ActionMap, Accessible, Buildable, ConstraintTarget, Native, Root, ShortcutManager;
+        @extends gtk::Box, gtk::Widget,
+        @implements gio::ActionGroup, gio::ActionMap, gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Native, gtk::Root, gtk::ShortcutManager;
 }
 
 impl CircuitPanel {
     pub fn new(app: &Application, data: ApplicationDataRef) -> Self {
-        let panel: Self = Object::new(&[("application", app)]).expect("failed to create window");
+        let panel: Self = glib::Object::new::<Self>(&[("application", app)]);
         panel.imp().set_title(data.lock().unwrap().filename().as_str());
         panel.imp().set_data(data);
         panel
     }
 }
 
-#[derive(CompositeTemplate, Default)]
+#[derive(gtk::CompositeTemplate, Default)]
 #[template(resource = "/content/circuit-panel.ui")]
 pub struct CircuitPanelTemplate {
     #[template_child]
-    pub header_bar: TemplateChild<HeaderBar>,
+    pub header_bar: TemplateChild<adw::HeaderBar>,
 
     #[template_child]
-    pub back_button: TemplateChild<Button>,
+    pub back_button: TemplateChild<gtk::Button>,
 
     #[template_child]
-    pub view: TemplateChild<TabView>,
+    pub view: TemplateChild<adw::TabView>,
 
     #[template_child]
-    pub tab_bar: TemplateChild<TabBar>,
+    pub tab_bar: TemplateChild<adw::TabBar>,
 
     data: RefCell<ApplicationDataRef>,
 }
 
 impl CircuitPanelTemplate {
-    fn add_page<'a>(&self, content: &CircuitView, title: &'a str) -> TabPage {
+    fn add_page<'a>(&self, content: &CircuitView, title: &'a str) -> adw::TabPage {
         let page = self.view.add_page(content, None);
         page.set_indicator_activatable(true);
         page.set_title(title);
@@ -70,7 +49,7 @@ impl CircuitPanelTemplate {
         self.data.replace(data);
     }
 
-    pub fn new_tab<'a>(&self, title: &'a str) -> TabPage {
+    pub fn new_tab<'a>(&self, title: &'a str) -> adw::TabPage {
         let content = CircuitView::new(self.data.borrow().clone());
         let page = self.add_page(&content, title);
         self.view.set_selected_page(&page);
@@ -79,28 +58,28 @@ impl CircuitPanelTemplate {
     }
 
     pub fn set_title<'a>(&self, title: &'a str) {
-        (self.header_bar.title_widget().unwrap().downcast_ref().unwrap() as &WindowTitle).set_subtitle(title);
+        (self.header_bar.title_widget().unwrap().downcast_ref().unwrap() as &adw::WindowTitle).set_subtitle(title);
     }
 }
 
-#[object_subclass]
+#[glib::object_subclass]
 impl ObjectSubclass for CircuitPanelTemplate {
     const NAME: &'static str = "CircuitPanel";
     type Type = CircuitPanel;
-    type ParentType = Box;
+    type ParentType = gtk::Box;
 
     fn class_init(my_class: &mut Self::Class) {
         Self::bind_template(my_class);
     }
 
-    fn instance_init(obj: &InitializingObject<Self>) {
+    fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {
         obj.init_template();
     }
 }
 
 impl ObjectImpl for CircuitPanelTemplate {
-    fn constructed(&self, obj: &Self::Type) {
-        self.parent_constructed(obj);
+    fn constructed(&self) {
+        self.parent_constructed();
        // self.new_tab("Main");
        // self.new_tab("Second");
     }

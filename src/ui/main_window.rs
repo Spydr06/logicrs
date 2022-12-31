@@ -1,45 +1,23 @@
-use adw::{self, subclass::prelude::AdwApplicationWindowImpl, ApplicationWindow, Leaflet};
-
-use glib::{
-    object_subclass,
-    subclass::{
-        object::{ObjectImpl, ObjectImplExt},
-        types::{ObjectSubclass, ObjectSubclassExt, ObjectSubclassIsExt},
-        InitializingObject,
-    },
-    wrapper, Object,
-};
-
-use gtk::{
-    gio::{ActionGroup, ActionMap},
-    prelude::{GObjectPropertyExpressionExt, InitializingWidgetExt},
-    subclass::{
-        application_window::ApplicationWindowImpl,
-        prelude::{WidgetImpl, WindowImpl},
-        widget::{CompositeTemplate, WidgetClassSubclassExt},
-    },
-    Accessible, Buildable, CompositeTemplate, ConstraintTarget, Native, Root, ShortcutManager,
-    TemplateChild, Widget, Window, traits::GtkWindowExt,
-};
-
+use gtk::{prelude::*, subclass::prelude::*, gio, glib};
+use adw::subclass::prelude::AdwApplicationWindowImpl;
 use crate::application::{Application, data::ApplicationDataRef};
 use super::{
     circuit_panel::{CircuitPanel, CircuitPanelTemplate},
     module_list::{ModuleList, ModuleListTemplate},
 };
 
-wrapper! {
+glib::wrapper! {
     pub struct MainWindow(ObjectSubclass<MainWindowTemplate>)
-        @extends gtk::ApplicationWindow, Window, Widget,
-        @implements ActionGroup, ActionMap, Accessible, Buildable, ConstraintTarget, Native, Root, ShortcutManager;
+        @extends gtk::ApplicationWindow, gtk::Window, gtk::Widget,
+        @implements gio::ActionGroup, gio::ActionMap, gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Native, gtk::Root, gtk::ShortcutManager;
 }
 
 impl MainWindow {
     pub fn new(app: &Application, data: ApplicationDataRef) -> Self {
-        let window: Self = Object::new(&[
+        let window: Self = glib::Object::new::<Self>(&[
                 ("application", app),
                 ("title", &"LogicRs"),
-            ]).expect("failed to create window");
+            ]);
         
         window.imp().set_data(data.clone());
 
@@ -58,11 +36,11 @@ impl MainWindow {
     }
 }
 
-#[derive(CompositeTemplate, Default)]
+#[derive(gtk::CompositeTemplate, Default)]
 #[template(resource = "/content/main-window.ui")]
 pub struct MainWindowTemplate {
     #[template_child]
-    pub leaflet: TemplateChild<Leaflet>,
+    pub leaflet: TemplateChild<adw::Leaflet>,
 
     #[template_child]
     pub module_list: TemplateChild<ModuleList>,
@@ -78,26 +56,25 @@ impl MainWindowTemplate {
     }
 }
 
-#[object_subclass]
+#[glib::object_subclass]
 impl ObjectSubclass for MainWindowTemplate {
     const NAME: &'static str = "MainWindow";
-
     type Type = MainWindow;
-    type ParentType = ApplicationWindow;
+    type ParentType = adw::ApplicationWindow;
 
     fn class_init(my_class: &mut Self::Class) {
         Self::bind_template(my_class);
     }
 
-    fn instance_init(obj: &InitializingObject<Self>) {
+    fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {
         obj.init_template();
     }
 }
 
 impl ObjectImpl for MainWindowTemplate {
-    fn constructed(&self, obj: &Self::Type) {
-        self.parent_constructed(obj);
-        obj.set_title(Some("LogicRs"));
+    fn constructed(&self) {
+        self.parent_constructed();
+    //    obj.set_title(Some("LogicRs"));
 
         let module_list = self.module_list.get();
         let module_list_template = ModuleListTemplate::from_instance(&module_list);
@@ -108,19 +85,19 @@ impl ObjectImpl for MainWindowTemplate {
         self.leaflet.property_expression("folded").bind(
             &module_list_template.header_bar.get(),
             "show-end-title-buttons",
-            Widget::NONE,
+            gtk::Widget::NONE,
         );
 
         self.leaflet.property_expression("folded").bind(
             &circuit_panel_template.header_bar.get(),
             "show-start-title-buttons",
-            Widget::NONE,
+            gtk::Widget::NONE,
         );
 
         self.leaflet.property_expression("folded").bind(
             &circuit_panel_template.back_button.get(),
             "visible",
-            Widget::NONE,
+            gtk::Widget::NONE,
         );
     }
 }

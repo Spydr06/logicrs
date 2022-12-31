@@ -1,58 +1,37 @@
 use std::{cell::RefCell, sync::Arc};
 
-use glib::{
-    object_subclass,
-    subclass::{
-        object::{ObjectImpl, ObjectImplExt},
-        types::{ObjectSubclass, ObjectSubclassIsExt},
-        InitializingObject,
-    },
-    wrapper,
-};
-
-use gtk::{
-    gio::{ActionGroup, ActionMap},
-    prelude::{InitializingWidgetExt, DrawingAreaExtManual, GestureDragExt, ButtonExt},
-    subclass::{
-        prelude::{WidgetImpl, BoxImpl},
-        widget::{CompositeTemplate, WidgetImplExt, WidgetClassSubclassExt},
-    },
-    gdk,
-    Accessible, Buildable, CompositeTemplate, ConstraintTarget, Native, Root,
-    ShortcutManager, Widget, DrawingArea, GestureDrag, traits::{WidgetExt, GestureExt},
-    Box, TemplateChild, Button
-};
+use gtk::{prelude::*, subclass::prelude::*, gio, glib, gdk};
 
 use crate::{application::{data::*, selection::*}, renderer::*, simulator::{Connector, Connection, Linkage}};
 
-wrapper! {
+glib::wrapper! {
     pub struct CircuitView(ObjectSubclass<CircuitViewTemplate>)
-        @extends Box, Widget,
-        @implements ActionGroup, ActionMap, Accessible, Buildable, ConstraintTarget, Native, Root, ShortcutManager;
+        @extends gtk::Box, gtk::Widget,
+        @implements gio::ActionGroup, gio::ActionMap, gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Native, gtk::Root, gtk::ShortcutManager;
 }
 
 impl CircuitView {
     pub fn new(app: ApplicationDataRef) -> Self {
-        let circuit_view: Self = glib::Object::new(&[]).unwrap();
+        let circuit_view: Self = glib::Object::new::<Self>(&[]);
         circuit_view.imp().set_data(app).initialize();
         circuit_view
     }
 }
 
-#[derive(CompositeTemplate, Default)]
+#[derive(gtk::CompositeTemplate, Default)]
 #[template(resource = "/content/circuit-view.ui")]
 pub struct CircuitViewTemplate {
     #[template_child]
-    drawing_area: TemplateChild<DrawingArea>,
+    drawing_area: TemplateChild<gtk::DrawingArea>,
 
     #[template_child]
-    zoom_in: TemplateChild<Button>,
+    zoom_in: TemplateChild<gtk::Button>,
 
     #[template_child]
-    zoom_out: TemplateChild<Button>,
+    zoom_out: TemplateChild<gtk::Button>,
 
     #[template_child]
-    zoom_reset: TemplateChild<Button>,
+    zoom_reset: TemplateChild<gtk::Button>,
 
     renderer: RefCell<Option<Arc<RefCell<CairoRenderer>>>>,
     data: RefCell<ApplicationDataRef>
@@ -101,7 +80,7 @@ impl CircuitViewTemplate {
     }
 
     fn init_dragging(&self) {
-        let gesture_drag = GestureDrag::builder().button(gdk::ffi::GDK_BUTTON_PRIMARY as u32).build();
+        let gesture_drag = gtk::GestureDrag::builder().button(gdk::ffi::GDK_BUTTON_PRIMARY as u32).build();
         let area = self.drawing_area.to_owned();
         let renderer = self.renderer().unwrap();
         let app_data = self.data.borrow().clone();
@@ -133,7 +112,7 @@ impl CircuitViewTemplate {
         *self.renderer.borrow_mut() = Some(Arc::new(RefCell::new(CairoRenderer::new())));
         let renderer = self.renderer().unwrap();
         let app_data = self.data.borrow().clone();
-        self.drawing_area.set_draw_func(move |area: &DrawingArea, context: &gtk::cairo::Context, width: i32, height: i32| {
+        self.drawing_area.set_draw_func(move |area: &gtk::DrawingArea, context: &gtk::cairo::Context, width: i32, height: i32| {
             if let Err(err) = renderer.borrow_mut().callback(&app_data, area, context, width, height) {
                 eprintln!("Error rendering CircuitView: {}", err);
                 panic!();
@@ -145,40 +124,41 @@ impl CircuitViewTemplate {
     }
 }
 
-#[object_subclass]
+#[glib::object_subclass]
 impl ObjectSubclass for CircuitViewTemplate {
     const NAME: &'static str = "CircuitView";
     type Type = CircuitView;
-    type ParentType = Box;
+    type ParentType = gtk::Box;
 
     fn class_init(my_class: &mut Self::Class) {
         Self::bind_template(my_class);
     }
 
-    fn instance_init(obj: &InitializingObject<Self>) {
+    fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {
         obj.init_template();
     }
 }
 
+
 impl ObjectImpl for CircuitViewTemplate {
-    fn constructed(&self, obj: &Self::Type) {
-        self.parent_constructed(obj);
+    fn constructed(&self) {
+        self.parent_constructed();
     }
 }
 
 impl WidgetImpl for CircuitViewTemplate {
-    fn realize(&self, widget: &Self::Type) {
-        self.parent_realize(widget);
+    fn realize(&self) {
+        self.parent_realize();
     }
 
-    fn unrealize(&self, widget: &Self::Type) {
-        self.parent_unrealize(widget);
+    fn unrealize(&self) {
+        self.parent_unrealize();
     }
 }
 
 impl BoxImpl for CircuitViewTemplate {}
 
-fn drag_begin(data: &ApplicationDataRef, area: &DrawingArea, scale: f64, x: f64, y: f64) {
+fn drag_begin(data: &ApplicationDataRef, area: &gtk::DrawingArea, scale: f64, x: f64, y: f64) {
     let position = ((x / scale) as i32, (y / scale) as i32);
     let mut data = data.lock().unwrap();
 
@@ -211,7 +191,7 @@ fn drag_begin(data: &ApplicationDataRef, area: &DrawingArea, scale: f64, x: f64,
     area.queue_draw();
 }
 
-fn drag_update(data: &ApplicationDataRef, area: &DrawingArea, scale: f64, x: f64, y: f64) {
+fn drag_update(data: &ApplicationDataRef, area: &gtk::DrawingArea, scale: f64, x: f64, y: f64) {
     let position = ((x / scale) as i32, (y / scale) as i32);
     let mut data = data.lock().unwrap();
 
@@ -234,7 +214,7 @@ fn drag_update(data: &ApplicationDataRef, area: &DrawingArea, scale: f64, x: f64
     }
 }
 
-fn drag_end(data: &ApplicationDataRef, area: &DrawingArea, scale: f64, x: f64, y: f64) {
+fn drag_end(data: &ApplicationDataRef, area: &gtk::DrawingArea, scale: f64, x: f64, y: f64) {
     if x == 0. && y == 0. {
         return;
     }

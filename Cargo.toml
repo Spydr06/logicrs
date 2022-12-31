@@ -10,17 +10,16 @@ authors = ["Spydr06"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[build-dependencies.adw]
-package = "libadwaita"
-version = "0.1.1"
+[build-dependencies]
+glib-build-tools = "0.16.3"
 
 [dependencies.adw]
 package = "libadwaita"
-version = "0.1.1"
+version = "0.2.1"
 
 [dependencies.gtk]
 package = "gtk4"
-version = "0.4.8"
+version = "0.5.4"
 
 [dependencies]
 glib = "0.15.12"

@@ -1,5 +1,3 @@
-use adw::gio::compile_resources;
-
 fn main() {
-    compile_resources(".", "logicrs.gresource.xml", "logicrs.gresource")
+    glib_build_tools::compile_resources(".", "logicrs.gresource.xml", "logicrs.gresource");
 }

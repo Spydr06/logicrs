@@ -1,7 +1,7 @@
 use adw::prelude::{
     BoxExt, ButtonExt, DialogExtManual, EntryBufferExtManual, EntryExt, GtkWindowExt, ComboBoxExt
 };
-use glib::{clone, IsA};
+use glib::clone;
 use gtk::{
     traits::{DialogExt, GtkApplicationExt},
     Button, ButtonsType, Entry, Inhibit, MessageDialog, ResponseType, ComboBoxText, Orientation, Box
@@ -27,7 +27,7 @@ fn create_new_module(data: Arc<Mutex<ApplicationData>>, name: String, num_inputs
     Ok(())
 }
 
-pub async fn invalid_module<W: IsA<gtk::Window>>(window: Rc<W>, msg: String) {
+pub async fn invalid_module(window: Rc<gtk::Window>, msg: String) {
     let dialog = MessageDialog::builder()
         .transient_for(&*window)
         .modal(true)
@@ -54,7 +54,7 @@ const INPUTS: [&'static str; 16] = [
     "13 Inputs", "14 Inputs", "15 Inputs", "16 Inputs",
 ];
 
-pub async fn new_module<W: IsA<gtk::Window>>(data: ApplicationDataRef, window: Rc<W>) {
+pub async fn new_module(data: ApplicationDataRef, window: Rc<gtk::Window>) {
     let content = Box::builder()
         .orientation(Orientation::Horizontal)
         .hexpand(true)
@@ -111,12 +111,12 @@ pub async fn new_module<W: IsA<gtk::Window>>(data: ApplicationDataRef, window: R
     }
 }
 
-pub fn new<F>(data: ApplicationDataRef, trigger: &Button, window_size: (i32, i32), on_trigger: fn(ApplicationDataRef, Rc<gtk::ApplicationWindow>) -> F) 
+pub fn new<F>(data: ApplicationDataRef, trigger: &Button, window_size: (i32, i32), on_trigger: fn(ApplicationDataRef, Rc<gtk::Window>) -> F) 
 where
     F: Future<Output = ()> + 'static
 {
     let dialog_window = Rc::new(
-        gtk::ApplicationWindow::builder()
+        gtk::Window::builder()
             .default_width(window_size.0)
             .default_height(window_size.1)
             .visible(false)

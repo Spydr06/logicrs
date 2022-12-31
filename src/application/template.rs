@@ -1,16 +1,5 @@
-use adw::{prelude::WidgetExt, subclass::prelude::AdwApplicationImpl, ColorScheme, StyleManager};
-use glib::subclass::{prelude::{ObjectImpl, ObjectImplExt}, types::ObjectSubclass};
-use gtk::{
-    subclass::{
-        prelude::{ApplicationImpl, GtkApplicationImpl},
-        widget::WidgetImpl,
-    },
-    gio::{File, prelude::FileExt},
-    gdk::Display,
-    CssProvider,
-    StyleContext,
-    STYLE_PROVIDER_PRIORITY_APPLICATION, traits::GtkApplicationExt
-};
+use gtk::{prelude::*, subclass::prelude::*, gio, glib, gdk};
+use adw::subclass::prelude::*;
 use std::{sync::{Arc, Mutex}, cell::RefCell};
 use super::data::ApplicationData;
 use crate::{ui::main_window::MainWindow, simulator::Simulator};
@@ -35,16 +24,16 @@ impl ApplicationTemplate {
     }
 
     fn create_window(&self, application: &super::Application) {
-        StyleManager::default().set_color_scheme(ColorScheme::ForceDark);
+        adw::StyleManager::default().set_color_scheme(adw::ColorScheme::ForceDark);
 
-        let provider = CssProvider::new();
+        let provider = gtk::CssProvider::new();
         provider.load_from_resource(Self::CSS_RESOURCE);
         // We give the CssProvided to the default screen so the CSS rules we added
         // can be applied to our window.
-        StyleContext::add_provider_for_display(
-            &Display::default().expect("Could not connect to a display."),
+        gtk::StyleContext::add_provider_for_display(
+            &gdk::Display::default().expect("Could not connect to a display."),
             &provider,
-            STYLE_PROVIDER_PRIORITY_APPLICATION,
+           gtk:: STYLE_PROVIDER_PRIORITY_APPLICATION,
         );
 
         // build the application window and UI
@@ -79,9 +68,10 @@ impl ObjectSubclass for ApplicationTemplate {
 }
 
 impl ObjectImpl for ApplicationTemplate {
-    fn constructed(&self, obj: &Self::Type) {
-        self.parent_constructed(obj);
+    fn constructed(&self) {
+        self.parent_constructed();
 
+        let obj = self.instance();
         obj.setup_gactions();
         obj.set_accels_for_action("app.quit", &["<primary>Q", "<primary>W"]);
         obj.set_accels_for_action("app.about", &["<primary>comma"]);
@@ -92,12 +82,12 @@ impl ObjectImpl for ApplicationTemplate {
     }
 }
 impl ApplicationImpl for ApplicationTemplate {
-    fn activate(&self, application: &Self::Type) {
-        self.create_window(application);
+    fn activate(&self) {
+        self.create_window(&self.instance());
         self.start_simulation();
     }
 
-    fn open(&self, application: &Self::Type, files: &[File], _hint: &str) {
+    fn open(&self, files: &[gio::File], _hint: &str) {
         assert!(files.len() != 0);
 
         let file = &files[0];
@@ -114,10 +104,10 @@ impl ApplicationImpl for ApplicationTemplate {
         *old_data = data.unwrap();
         std::mem::drop(old_data);
 
-        self.create_window(application);
+        self.create_window(&self.instance());
     }
 
-    fn shutdown(&self, _application: &Self::Type) {
+    fn shutdown(&self) {
         self.stop_simulation();
         self.save();
     }
