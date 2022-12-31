@@ -40,16 +40,18 @@ impl Application {
 
     fn show_about(&self) {
         let window = self.active_window().unwrap();
-        let dialog = gtk::AboutDialog::builder()
+        let dialog = adw::AboutWindow::builder()
             .transient_for(&window)
             .modal(true)
-            .program_name(config::APP_ID)
+            .application_name(config::APP_ID)
             .version(config::VERSION)
             .comments(config::DESCRIPTION)
             .copyright(config::COPYRIGHT)
-            .authors(config::AUTHORS.split(':').map(|s| s.to_string()).collect())
+            .developer_name("Spydr06")
+            .developers(config::AUTHORS.split(':').map(|s| s.to_string()).collect())
             .website(config::REPOSITORY)
-            .license_type(gtk::License::Gpl30)
+            .issue_url(&(config::REPOSITORY.to_owned() + "/issues"))
+            .license_type(gtk::License::MitX11)
             .build();
         
         dialog.present();
