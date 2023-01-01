@@ -41,16 +41,12 @@ impl ApplicationTemplate {
         window.show();
     }
 
-    pub fn save_as(&self) -> Result<(), String> {
-        Err("save_as is not implemented()".to_string())
-    }
-
     pub fn save(&self) {
         let data = self.data.lock().unwrap();
         let res = {
             match data.file() {
                 Some(_) => data.save(),
-                None => self.save_as(),
+                None => Ok(self.instance().save_as())
             }
         };
 

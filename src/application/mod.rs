@@ -2,6 +2,7 @@ pub mod template;
 pub mod data;
 pub mod selection;
 
+use std::cell::RefCell;
 use adw::traits::MessageDialogExt;
 use gtk::{prelude::*, subclass::prelude::*, gio, glib};
 use crate::{config, application::data::ApplicationData};
@@ -79,6 +80,11 @@ impl Application {
             };
 
             let window = app.active_window().unwrap();
+
+            let json_filter = gtk::FileFilter::new();
+            json_filter.set_name(Some("JSON files"));
+            json_filter.add_mime_type("application/json");
+
             let open_dialog = gtk::FileChooserNative::builder()
                 .transient_for(&window)
                 .modal(true)
@@ -86,16 +92,12 @@ impl Application {
                 .action(gtk::FileChooserAction::Open)
                 .accept_label("Open")
                 .cancel_label("Cancel")
+                .filter(&json_filter)
                 .build();
             
-            let json_filter = gtk::FileFilter::new();
-            json_filter.set_name(Some("JSON files"));
-            json_filter.add_mime_type("application/json");
-            open_dialog.add_filter(&json_filter);
-
             open_dialog.connect_response({
                 let obj = app.downgrade();
-                let file_chooser = std::cell::RefCell::new(Some(open_dialog.clone()));
+                let file_chooser = RefCell::new(Some(open_dialog.clone()));
                 move |_, response| {
                     if let Some(obj) = obj.upgrade() {
                         if let Some(file_chooser) = file_chooser.take() {
@@ -113,18 +115,65 @@ impl Application {
                                     }
                                 }
                             }
-                        } else {
+                        }
+                        else {
                             warn!("got file chooser response more than once");
                         }
-                    } else {
+                    }
+                    else {
                         warn!("got file chooser response after window was freed");
                     }
-    
                 }
             });
             
             open_dialog.show();
         }));
+    }
+
+    pub fn save_as(&self) {
+        //let window = self.active_window().unwrap();
+
+        let json_filter = gtk::FileFilter::new();
+        json_filter.set_name(Some("JSON files"));
+        json_filter.add_mime_type("application/json");
+
+        let save_dialog = gtk::FileChooserNative::builder()
+       //     .transient_for(&window)
+            .modal(true)
+            .title("Open File")
+            .action(gtk::FileChooserAction::Save)
+            .accept_label("Save")
+            .filter(&json_filter)
+            .cancel_label("Cancel")
+            .build();
+
+            save_dialog.connect_response({
+                let file_chooser = RefCell::new(Some(save_dialog.clone()));
+                glib::clone!(@weak self as app => move |_, response| {
+                    if let Some(file_chooser) = file_chooser.take() {
+                        if response == gtk::ResponseType::Accept {
+                            for file in file_chooser.files().snapshot().into_iter() {
+                                let file: gio::File = file
+                                    .downcast()
+                                    .expect("unexpected type returned from file chooser");
+                                if !file.query_exists(gio::Cancellable::NONE) {
+                                    if let Err(err) = file.create(gio::FileCreateFlags::NONE, gio::Cancellable::NONE) {
+                                        crate::die(err.message());
+                                    }
+                                }
+                                app.imp().data().lock().unwrap().set_file(Some(file));
+                                if let Err(err) = app.imp().data().lock().unwrap().save() {
+                                    crate::die(err.as_str());
+                                }
+                            }
+                        }
+                    } else {
+                        warn!("got file chooser response more than once");
+                    }
+                })
+            });
+
+        save_dialog.show();
     }
 
     fn show_about(&self) {
@@ -167,7 +216,7 @@ impl Application {
 
         let save_as_action = gio::SimpleAction::new("save-as", None);
         save_as_action.connect_activate(glib::clone!(@weak self as app => move |_, _| {
-            app.imp().save_as();
+            app.save_as();
         }));
         self.add_action(&save_as_action);
 
