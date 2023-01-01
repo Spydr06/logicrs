@@ -1,12 +1,12 @@
 use gtk::{prelude::*, subclass::prelude::*, gio, glib, gdk};
 use adw::subclass::prelude::*;
 use std::{sync::{Arc, Mutex}, cell::RefCell};
-use super::data::ApplicationData;
+use super::data::*;
 use crate::{ui::main_window::MainWindow, simulator::Simulator};
 
 #[derive(Default)]
 pub struct ApplicationTemplate {
-    data: Arc<Mutex<ApplicationData>>,
+    data: ApplicationDataRef,
     simulator: RefCell<Option<Simulator>>
 }
 
@@ -57,6 +57,10 @@ impl ApplicationTemplate {
         if let Err(err) = res {
             crate::die(err.as_str())
         }
+    }
+
+    pub fn data(&self) -> ApplicationDataRef {
+        self.data.clone()
     }
 }
 

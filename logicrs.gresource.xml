@@ -2,10 +2,10 @@
 <gresources>
   <!-- UI Layout files -->
   <gresource>
-    <file compressed="true">content/main-window.ui</file>
-    <file compressed="true">content/module-list.ui</file>
-    <file compressed="true">content/circuit-view.ui</file>
-    <file compressed="true">content/circuit-panel.ui</file>
+    <file preprocess="xml-stripblanks" compressed="true">content/main-window.ui</file>
+    <file preprocess="xml-stripblanks" compressed="true">content/module-list.ui</file>
+    <file preprocess="xml-stripblanks" compressed="true">content/circuit-view.ui</file>
+    <file preprocess="xml-stripblanks" compressed="true">content/circuit-panel.ui</file>
   </gresource>
   <!-- CSS Style files -->
   <gresource>

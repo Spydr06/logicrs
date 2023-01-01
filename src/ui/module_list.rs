@@ -31,7 +31,6 @@ pub struct ModuleListTemplate {
 
     #[template_child]
     pub custom_list_box: TemplateChild<gtk::ListBox>,
-
     data: RefCell<ApplicationDataRef>
 }
 

@@ -13,13 +13,16 @@
             <child>
               <object class="GtkButton" id="back_button">
                 <property name="icon-name">go-previous-symbolic</property>
+                <property name="tooltip-text" translatable="yes">Go to module list</property>
               </object>
             </child>
-            <!--<child>
-              <object class="GtkButton" id="run_button">
-                <property name="icon-name">media-playback-start-symbolic</property>
+            <child>
+              <object class="GtkButton" id="open_button">
+                <property name="tooltip-text" translatable="yes">Open file</property>
+                <property name="label" translatable="yes">Open</property>
+                <signal name="clicked" handler="on_open_button_activate" swapped="true" />
               </object>
-            </child>-->
+            </child>
             <property name="title-widget">
               <object class="AdwWindowTitle">
                 <property name="title">Circuit</property>
@@ -29,6 +32,7 @@
               <object class="GtkMenuButton" id="context_button">
                 <property name="icon_name">open-menu-symbolic</property>
                 <property name="menu_model">primary_menu</property>
+                <property name="tooltip-text" translatable="yes">More options</property>
               </object>
             </child>
           </object>

@@ -1,6 +1,6 @@
 use crate::application::{Application, data::ApplicationDataRef};
 use super::circuit_view::CircuitView;
-use gtk::{prelude::*, subclass::prelude::*, gio, glib};
+use gtk::{prelude::*, subclass::prelude::*, gio, glib, template_callbacks};
 
 use std::cell::RefCell;
 
@@ -10,12 +10,18 @@ glib::wrapper! {
         @implements gio::ActionGroup, gio::ActionMap, gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Native, gtk::Root, gtk::ShortcutManager;
 }
 
+#[gtk::template_callbacks]
 impl CircuitPanel {
     pub fn new(app: &Application, data: ApplicationDataRef) -> Self {
         let panel: Self = glib::Object::new::<Self>(&[("application", app)]);
         panel.imp().set_title(data.lock().unwrap().filename().as_str());
         panel.imp().set_data(data);
         panel
+    }
+
+    #[template_callback]
+    pub fn on_open_button_activate(&self, btn: &gtk::Button) {
+        println!("here");
     }
 }
 
@@ -27,6 +33,9 @@ pub struct CircuitPanelTemplate {
 
     #[template_child]
     pub back_button: TemplateChild<gtk::Button>,
+
+    #[template_child]
+    pub open_button: TemplateChild<gtk::Button>,
 
     #[template_child]
     pub view: TemplateChild<adw::TabView>,
@@ -68,8 +77,9 @@ impl ObjectSubclass for CircuitPanelTemplate {
     type Type = CircuitPanel;
     type ParentType = gtk::Box;
 
-    fn class_init(my_class: &mut Self::Class) {
-        Self::bind_template(my_class);
+    fn class_init(class: &mut Self::Class) {
+        class.bind_template();
+        class.bind_template_instance_callbacks();
     }
 
     fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {

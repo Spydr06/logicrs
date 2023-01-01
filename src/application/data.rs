@@ -59,6 +59,19 @@ impl ApplicationData {
         data
     }
 
+    pub fn reset(&mut self) -> &mut Self {
+        self.modules.clear();
+        self.plots = vec![Plot::new()];
+        self.current_plot = 0usize;
+        self.id_counter = AtomicU32::new(0u32);
+        self.file = None;
+        self.selection = Selection::None;
+
+        builtin::register(self);
+
+        self
+    }
+
     pub fn build(file: gio::File) -> Result<Self, String>  {
         let f = File::open(file.path().unwrap());
         if let Err(err) = f {

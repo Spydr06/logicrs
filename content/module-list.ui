@@ -16,6 +16,13 @@
             <child>
               <object class="GtkButton" id="new_module_button">
                 <property name="icon-name">list-add-symbolic</property>
+                <property name="tooltip-text" translatable="yes">Create new module</property>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkToggleButton" id="search_button">
+                <property name="icon-name">system-search-symbolic</property>
+                <property name="tooltip-text" translatable="yes">Search</property>
               </object>
             </child>
           </object>
