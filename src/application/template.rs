@@ -1,6 +1,6 @@
 use gtk::{prelude::*, subclass::prelude::*, gio, glib, gdk};
 use adw::subclass::prelude::*;
-use std::{sync::{Arc, Mutex}, cell::RefCell};
+use std::cell::RefCell;
 use super::data::*;
 use crate::{ui::main_window::MainWindow, simulator::Simulator};
 
@@ -37,7 +37,7 @@ impl ApplicationTemplate {
         );
 
         // build the application window and UI
-        let window = MainWindow::new(application, self.data.clone());
+        let window = MainWindow::new(application);
         window.show();
     }
 

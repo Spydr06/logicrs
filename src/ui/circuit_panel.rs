@@ -1,6 +1,6 @@
-use crate::application::{Application, data::ApplicationDataRef};
+use crate::application::Application;
 use super::circuit_view::CircuitView;
-use gtk::{prelude::*, subclass::prelude::*, gio, glib, template_callbacks};
+use gtk::{prelude::*, subclass::prelude::*, gio, glib};
 
 use std::cell::RefCell;
 
@@ -12,10 +12,10 @@ glib::wrapper! {
 
 #[gtk::template_callbacks]
 impl CircuitPanel {
-    pub fn new(app: &Application, data: ApplicationDataRef) -> Self {
-        let panel: Self = glib::Object::new::<Self>(&[("application", app)]);
-        panel.imp().set_title(data.lock().unwrap().filename().as_str());
-        panel.imp().set_data(data);
+    pub fn new(app: Application) -> Self {
+        let panel: Self = glib::Object::new::<Self>(&[]);
+        panel.imp().set_title(app.imp().data().lock().unwrap().filename().as_str());
+        panel.imp().set_application(app);
         panel
     }
 
@@ -43,7 +43,7 @@ pub struct CircuitPanelTemplate {
     #[template_child]
     pub tab_bar: TemplateChild<adw::TabBar>,
 
-    data: RefCell<ApplicationDataRef>,
+    application: RefCell<Application>
 }
 
 impl CircuitPanelTemplate {
@@ -54,12 +54,12 @@ impl CircuitPanelTemplate {
         page
     }
 
-    pub fn set_data(&self, data: ApplicationDataRef) {
-        self.data.replace(data);
+    pub fn set_application(&self, app: Application) {
+        self.application.replace(app);
     }
 
     pub fn new_tab<'a>(&self, title: &'a str) -> adw::TabPage {
-        let content = CircuitView::new(self.data.borrow().clone());
+        let content = CircuitView::new(self.application.borrow().clone());
         let page = self.add_page(&content, title);
         self.view.set_selected_page(&page);
 

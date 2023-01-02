@@ -2,7 +2,7 @@ use std::{cell::RefCell, sync::Arc};
 
 use gtk::{prelude::*, subclass::prelude::*, gio, glib, gdk};
 
-use crate::{application::{data::*, selection::*}, renderer::*, simulator::{Connector, Connection, Linkage}};
+use crate::{application::{Application, data::*, selection::*}, renderer::*, simulator::{Connector, Connection, Linkage}};
 
 glib::wrapper! {
     pub struct CircuitView(ObjectSubclass<CircuitViewTemplate>)
@@ -11,9 +11,9 @@ glib::wrapper! {
 }
 
 impl CircuitView {
-    pub fn new(app: ApplicationDataRef) -> Self {
+    pub fn new(app: Application) -> Self {
         let circuit_view: Self = glib::Object::new::<Self>(&[]);
-        circuit_view.imp().set_data(app).initialize();
+        circuit_view.imp().set_application(app).initialize();
         circuit_view
     }
 }
@@ -34,7 +34,7 @@ pub struct CircuitViewTemplate {
     zoom_reset: TemplateChild<gtk::Button>,
 
     renderer: RefCell<Option<Arc<RefCell<CairoRenderer>>>>,
-    data: RefCell<ApplicationDataRef>
+    application: RefCell<Application>
 }
 
 impl CircuitViewTemplate {
@@ -45,8 +45,8 @@ impl CircuitViewTemplate {
         }
     }
 
-    fn set_data(&self, data: ApplicationDataRef) -> &Self {
-        self.data.replace(data);
+    fn set_application(&self, app: Application) -> &Self {
+        self.application.replace(app);
         self
     }
 
@@ -83,7 +83,10 @@ impl CircuitViewTemplate {
         let gesture_drag = gtk::GestureDrag::builder().button(gdk::ffi::GDK_BUTTON_PRIMARY as u32).build();
         let area = self.drawing_area.to_owned();
         let renderer = self.renderer().unwrap();
-        let app_data = self.data.borrow().clone();
+
+        let data = self.application.borrow().imp().data();
+
+        let app_data = data.clone();
         gesture_drag.connect_drag_begin(move |gesture, x, y| {
             gesture.set_state(gtk::EventSequenceState::Claimed);
             drag_begin(&app_data, &area, renderer.borrow().scale(), x, y)
@@ -91,7 +94,7 @@ impl CircuitViewTemplate {
 
         let area = self.drawing_area.to_owned();
         let renderer = self.renderer().unwrap();
-        let app_data = self.data.borrow().clone();
+        let app_data = data.clone();
         gesture_drag.connect_drag_update(move |gesture, x, y| {
             gesture.set_state(gtk::EventSequenceState::Claimed);
             drag_update(&app_data, &area, renderer.borrow().scale(), x, y)
@@ -99,7 +102,7 @@ impl CircuitViewTemplate {
 
         let area = self.drawing_area.to_owned();
         let renderer = self.renderer().unwrap();
-        let app_data = self.data.borrow().clone();
+        let app_data = data.clone();
         gesture_drag.connect_drag_end(move |gesture, x, y| {
             gesture.set_state(gtk::EventSequenceState::Claimed);
             drag_end(&app_data, &area, renderer.borrow().scale(), x, y)
@@ -111,7 +114,7 @@ impl CircuitViewTemplate {
     fn initialize(&self) {
         *self.renderer.borrow_mut() = Some(Arc::new(RefCell::new(CairoRenderer::new())));
         let renderer = self.renderer().unwrap();
-        let app_data = self.data.borrow().clone();
+        let app_data = self.application.borrow().imp().data().clone();
         self.drawing_area.set_draw_func(move |area: &gtk::DrawingArea, context: &gtk::cairo::Context, width: i32, height: i32| {
             if let Err(err) = renderer.borrow_mut().callback(&app_data, area, context, width, height) {
                 eprintln!("Error rendering CircuitView: {}", err);

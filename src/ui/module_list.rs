@@ -2,7 +2,7 @@ use gtk::{prelude::*, subclass::prelude::*, glib, gdk};
 
 use std::cell::RefCell;
 
-use crate::{application::{Application, data::ApplicationDataRef}, modules::Module, simulator::Block};
+use crate::{application::Application, modules::Module, simulator::Block};
 use super::dialogs;
 
 glib::wrapper! {
@@ -31,7 +31,7 @@ pub struct ModuleListTemplate {
 
     #[template_child]
     pub custom_list_box: TemplateChild<gtk::ListBox>,
-    data: RefCell<ApplicationDataRef>
+    application: RefCell<Application>
 }
 
 impl ModuleListTemplate {
@@ -39,12 +39,12 @@ impl ModuleListTemplate {
         Self::from_instance(parent)
     }
 
-    pub fn set_data(&self, data: ApplicationDataRef) {
-        self.data.replace(data);
+    pub fn set_application(&self, app: Application) {
+        self.application.replace(app);
     }
 
-    pub fn application_data(&self) -> ApplicationDataRef {
-        self.data.borrow().clone()
+    pub fn application_data(&self) -> Application {
+        self.application.borrow().clone()
     }
 
     fn new_list_item(&self, module: &Module) {
@@ -61,7 +61,7 @@ impl ModuleListTemplate {
             .build();
         
         let name = module.name().to_owned();
-        let data = self.data.borrow().clone();
+        let data = self.application.borrow().imp().data();
         click_gesture.connect_pressed(move |_, _, _, _| {
                 let mut data = data.lock().unwrap();
                 let module = data.get_module(&name).unwrap();
@@ -81,7 +81,7 @@ impl ModuleListTemplate {
     }
 
     pub fn initialize(&self) {
-        let data = self.data.borrow();
+        let data = self.application.borrow().imp().data();
         dialogs::new(data.clone(), &self.new_module_button, (400, 70), dialogs::new_module);
         
         let data = data.lock().unwrap();

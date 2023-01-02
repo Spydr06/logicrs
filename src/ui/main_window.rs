@@ -1,6 +1,6 @@
 use gtk::{prelude::*, subclass::prelude::*, gio, glib};
 use adw::subclass::prelude::AdwApplicationWindowImpl;
-use crate::application::{Application, data::ApplicationDataRef};
+use crate::application::Application;
 use super::{
     circuit_panel::{CircuitPanel, CircuitPanelTemplate},
     module_list::{ModuleList, ModuleListTemplate},
@@ -13,22 +13,22 @@ glib::wrapper! {
 }
 
 impl MainWindow {
-    pub fn new(app: &Application, data: ApplicationDataRef) -> Self {
+    pub fn new(app: &Application) -> Self {
         let window: Self = glib::Object::new::<Self>(&[
                 ("application", app),
                 ("title", &"LogicRs"),
             ]);
-        
-        window.imp().set_data(data.clone());
-
+        window.imp().set_application(app.clone());
         let module_list = window.imp().module_list.imp();
         module_list.initialize();
 
         let panel = window.imp().circuit_panel.imp();
-        panel.set_title(data.lock().unwrap().filename().as_str());
+
+        let data = app.imp().data();
+        let data = data.lock().unwrap();
+        panel.set_title(data.filename().as_str());
         panel.new_tab("Main");
-        data.lock().unwrap()
-            .modules().iter()
+        data.modules().iter()
             .filter(|(_, m)| !m.builtin())
             .for_each(|(_, m)| { panel.new_tab(m.name()); });
 
@@ -50,9 +50,9 @@ pub struct MainWindowTemplate {
 }
 
 impl MainWindowTemplate {
-    fn set_data(&self, data: ApplicationDataRef) {
-        self.module_list.get().imp().set_data(data.clone());
-        self.circuit_panel.get().imp().set_data(data);
+    pub fn set_application(&self, app: Application) {
+        self.module_list.get().imp().set_application(app.clone());
+        self.circuit_panel.get().imp().set_application(app);
     }
 }
 
@@ -74,6 +74,7 @@ impl ObjectSubclass for MainWindowTemplate {
 impl ObjectImpl for MainWindowTemplate {
     fn constructed(&self) {
         self.parent_constructed();
+
     //    obj.set_title(Some("LogicRs"));
 
         let module_list = self.module_list.get();
