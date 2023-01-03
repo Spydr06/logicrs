@@ -2,7 +2,7 @@ use std::{cell::RefCell, sync::Arc};
 
 use gtk::{prelude::*, subclass::prelude::*, gio, glib, gdk};
 
-use crate::{application::{Application, data::*, selection::*}, renderer::*, simulator::{Connector, Connection, Linkage}};
+use crate::{application::{Application, data::*, selection::*}, renderer::*, simulator::{Connector, Connection, Linkage, self}};
 
 glib::wrapper! {
     pub struct CircuitView(ObjectSubclass<CircuitViewTemplate>)
@@ -32,6 +32,9 @@ pub struct CircuitViewTemplate {
 
     #[template_child]
     zoom_reset: TemplateChild<gtk::Button>,
+
+    #[template_child]
+    context_menu: TemplateChild<gtk::PopoverMenu>,
 
     renderer: RefCell<Option<Arc<RefCell<CairoRenderer>>>>,
     application: RefCell<Application>
@@ -111,6 +114,15 @@ impl CircuitViewTemplate {
         self.drawing_area.add_controller(&gesture_drag);
     }
 
+    fn init_context_menu(&self) {
+        let gesture = gtk::GestureClick::builder().button(gdk::ffi::GDK_BUTTON_SECONDARY as u32).build();
+        gesture.connect_pressed(glib::clone!(@weak self as widget => move |gesture, _, x, y| {
+            gesture.set_state(gtk::EventSequenceState::Claimed);
+            widget.context_menu(x, y);
+        }));
+        self.drawing_area.add_controller(&gesture);
+    }
+
     fn initialize(&self) {
         *self.renderer.borrow_mut() = Some(Arc::new(RefCell::new(CairoRenderer::new())));
         let renderer = self.renderer().unwrap();
@@ -124,6 +136,36 @@ impl CircuitViewTemplate {
         
         self.setup_buttons();
         self.init_dragging();
+        self.init_context_menu();
+    }
+
+    fn context_menu(&self, x: f64, y: f64) {        
+        let scale = if let Some(r) = self.renderer.borrow().as_ref() { r.borrow().scale() } else { 1.0 };
+        let position = ((x / scale) as i32, (y / scale) as i32);
+
+        let data = self.application.borrow_mut().imp().data();
+        let mut data = data.lock().unwrap();
+        match data.current_plot().get_block_at(position) {
+            Some(index) => {
+                if let Some(block) = data.current_plot_mut().get_block_mut(index) {
+                    block.set_start_pos(block.position());
+                    block.set_highlighted(true);
+                    
+                    if let Selection::None = data.selection() {
+                        data.unhighlight();
+                        data.set_selection(Selection::Single(index));
+                    }
+
+                    drop(data);
+
+                    self.context_menu.set_pointing_to(Some(&gdk::Rectangle::new(position.0, position.1, 1, 1)));
+                    self.context_menu.popup();
+                }
+            }
+            None => {}
+        }
+
+        self.drawing_area.queue_draw();
     }
 }
 

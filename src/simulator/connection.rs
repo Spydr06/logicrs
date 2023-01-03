@@ -27,6 +27,10 @@ impl Connection {
             active: AtomicBool::new(false)
         }
     }
+
+    pub fn contains(&self, id: u32) -> bool {
+        self.from.block_id == id || self.to.block_id == id
+    }
 }
 
 impl Renderable for Connection {

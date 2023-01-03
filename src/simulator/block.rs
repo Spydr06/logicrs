@@ -126,6 +126,14 @@ impl Block {
         &self.connections
     }
 
+    pub fn connections_mut(&mut self) -> &mut Vec<Option<Connection>> {
+        &mut self.connections
+    }
+
+    pub fn remove_connection(&mut self, index: usize) {
+        self.connections.remove(index);
+    }
+
     pub fn position_on_connection(&self, position: (i32, i32), is_input: bool) -> Option<u8> {
         if is_input {
             for i in 0..self.num_inputs {

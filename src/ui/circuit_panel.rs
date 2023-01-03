@@ -20,8 +20,8 @@ impl CircuitPanel {
     }
 
     #[template_callback]
-    pub fn on_open_button_activate(&self, btn: &gtk::Button) {
-        println!("here");
+    pub fn on_open_button_activate(&self, _btn: &gtk::Button) {
+        self.imp().application.borrow().open();
     }
 }
 

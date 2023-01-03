@@ -231,5 +231,11 @@ impl Application {
             app.open();
         }));
         self.add_action(&open_action);
+
+        let delete_block_action = gio::SimpleAction::new("delete-block", None);
+        delete_block_action.connect_activate(glib::clone!(@weak self as app => move |_, _| {
+            app.imp().data().lock().unwrap().delete_selected();
+        }));
+        self.add_action(&delete_block_action);
     }
 }

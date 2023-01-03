@@ -193,8 +193,14 @@ impl ApplicationData {
 
     pub fn unhighlight(&mut self) {
         match self.selection.clone() {
-            Selection::Single(id) => self.current_plot_mut().get_block_mut(id).unwrap().set_highlighted(false),
-            Selection::Many(ids) => ids.iter().for_each(|id| self.current_plot_mut().get_block_mut(*id).unwrap().set_highlighted(false)),
+            Selection::Single(id) => {
+                self.current_plot_mut().get_block_mut(id).map(|b| b.set_highlighted(false));
+            },
+            Selection::Many(ids) => {
+                ids.iter().for_each(|id| {
+                    self.current_plot_mut().get_block_mut(*id).map(|b| b.set_highlighted(false));
+                });
+            },
             Selection::Area(_, _) => self.current_plot_mut().blocks_mut().iter_mut().for_each(|(_, v)| v.set_highlighted(false)),
             Selection::Connection { block_id: _, output: _, start: _, position: _ } => (),
             Selection::None => ()
@@ -220,6 +226,15 @@ impl ApplicationData {
             }
 
             self.selection = Selection::Many(selected)
+        }
+    }
+
+    pub fn delete_selected(&mut self) {
+        match self.selection.clone() {
+            Selection::Single(id) => self.current_plot_mut().delete_block(id),
+            Selection::Many(ids) => ids.iter().for_each(|id| self.current_plot_mut().delete_block(*id)),
+            Selection::Area(_, _) => {}
+            Selection::None | Selection::Connection {block_id: _, output: _, start: _, position: _} => {},
         }
     }
 }

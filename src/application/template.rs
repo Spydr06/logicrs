@@ -79,6 +79,7 @@ impl ObjectImpl for ApplicationTemplate {
         obj.set_accels_for_action("app.save-as", &["<primary><shift>S"]);
         obj.set_accels_for_action("app.open", &["<primary>O"]);
         obj.set_accels_for_action("app.new", &["<primary>N"]);
+        obj.set_accels_for_action("app.delete-block", &["<delete>"]);
     }
 }
 impl ApplicationImpl for ApplicationTemplate {

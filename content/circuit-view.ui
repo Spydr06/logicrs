@@ -13,6 +13,12 @@
           <object class="GtkDrawingArea" id="drawing_area">
             <property name="hexpand">True</property>
             <property name="vexpand">True</property>
+
+            <child>
+              <object class="GtkPopoverMenu" id="context_menu">
+                <property name="menu_model">block_context_menu</property>
+              </object>
+            </child>
           </object>
         </property>
         
@@ -89,4 +95,12 @@
       </object>
     </child>
   </template>
+  <menu id="block_context_menu">
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">_Delete</attribute>
+        <attribute name="action">app.delete-block</attribute>
+      </item>
+    </section>
+  </menu>
 </interface>

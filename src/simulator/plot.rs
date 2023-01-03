@@ -44,6 +44,17 @@ impl Plot {
 
         None
     }
+
+    pub fn delete_block(&mut self, id: u32) {
+        info!("Remove block {id}");
+
+        
+        for block in self.blocks.values_mut() {
+            block.connections_mut().iter_mut().filter(|c| c.as_ref().map(|c| c.contains(id)).unwrap_or(true)).for_each(|c| *c = None);
+        }
+
+        self.blocks.remove(&id);
+    }
 }
 
 impl Renderable for Plot {
