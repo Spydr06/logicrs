@@ -27,6 +27,7 @@ impl CairoRenderer {
         }
     }
 
+    #[inline]
     fn set_context(&mut self, context: Option<Context>) -> &mut Self {
         self.context = context;
         self
@@ -60,24 +61,29 @@ impl Renderer for CairoRenderer {
         data.selection().render(self, &data)
     }
 
+    #[inline]
     fn size(&self) -> (i32, i32) {
         self.size
     }
 
+    #[inline]
     fn set_size(&mut self, size: (i32, i32)) -> &mut Self {
         self.size = size;
         self
     }
 
+    #[inline]
     fn scale(&self) -> f64 {
         self.scale
     }
 
+    #[inline]
     fn set_scale(&mut self, scale: f64) -> &mut Self {
         self.scale = scale.clamp(MINIMUM_SCALE, MAXIMUM_SCALE);
         self
     }
 
+    #[inline]
     fn set_color(&self, red: f64, green: f64, blue: f64, alpha: f64) -> &Self {
         if let Some(context) = &self.context {
             context.set_source_rgba(red, green, blue, alpha)
@@ -85,6 +91,7 @@ impl Renderer for CairoRenderer {
         self
     }
 
+    #[inline]
     fn set_line_width(&self, width: f64) -> &Self {
         if let Some(context) = &self.context {
             context.set_line_width(width);
@@ -92,6 +99,7 @@ impl Renderer for CairoRenderer {
         self
     }
 
+    #[inline]
     fn fill(&self) -> Result<(), Self::Error> {
         match &self.context {
             Some(context) => context.fill(),
@@ -99,6 +107,7 @@ impl Renderer for CairoRenderer {
         }
     }
 
+    #[inline]
     fn fill_preserve(&self) -> Result<(), Self::Error> {
         match &self.context {
             Some(context) => context.fill_preserve(),
@@ -106,6 +115,7 @@ impl Renderer for CairoRenderer {
         }
     }
 
+    #[inline]
     fn stroke(&self) -> Result<(), Self::Error> {
         match &self.context {
             Some(context) => context.stroke(),
@@ -113,6 +123,7 @@ impl Renderer for CairoRenderer {
         }
     }
 
+    #[inline]
     fn show_text<'a>(&self, text: &'a str) -> Result<(), Error> {
         match &self.context {
             Some(context) => context.show_text(text),
@@ -120,6 +131,7 @@ impl Renderer for CairoRenderer {
         }
     }
 
+    #[inline]
     fn arc(&self, position: (i32, i32), radius: f64, angle1: f64, angle2: f64) -> &Self {
         if let Some(context) = &self.context {
             context.arc(position.0 as f64, position.1 as f64, radius, angle1, angle2);
@@ -127,6 +139,7 @@ impl Renderer for CairoRenderer {
         self
     }
 
+    #[inline]
     fn rectangle(&self, position: (i32, i32), size: (i32, i32)) -> &Self {
         if let Some(context) = &self.context {
             context.rectangle(position.0 as f64, position.1 as f64, size.0 as f64, size.1 as f64);
@@ -134,6 +147,7 @@ impl Renderer for CairoRenderer {
         self
     }
 
+    #[inline]
     fn move_to(&self, position: (i32, i32)) -> &Self {
         if let Some(context) = &self.context {
             context.move_to(position.0 as f64, position.1 as f64);
@@ -141,6 +155,7 @@ impl Renderer for CairoRenderer {
         self
     }
 
+    #[inline]
     fn curve_to(&self, start: (i32, i32), mid: (i32, i32), end: (i32, i32)) -> &Self {
         if let Some(context) = &self.context {
             context.curve_to(
@@ -152,6 +167,7 @@ impl Renderer for CairoRenderer {
         self
     }
 
+    #[inline]
     fn line_to(&self, position: (i32, i32)) -> &Self {
         if let Some(context) = &self.context {
             context.line_to(position.0 as f64, position.1 as f64);

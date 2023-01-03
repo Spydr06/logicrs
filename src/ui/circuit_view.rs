@@ -2,7 +2,7 @@ use std::{cell::RefCell, sync::Arc};
 
 use gtk::{prelude::*, subclass::prelude::*, gio, glib, gdk};
 
-use crate::{application::{Application, data::*, selection::*}, renderer::*, simulator::{Connector, Connection, Linkage, self}};
+use crate::{application::{Application, data::*, selection::*}, renderer::*, simulator::{Connector, Connection, Linkage}};
 
 glib::wrapper! {
     pub struct CircuitView(ObjectSubclass<CircuitViewTemplate>)
