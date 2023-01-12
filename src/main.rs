@@ -4,6 +4,7 @@ mod modules;
 mod renderer;
 mod simulator;
 mod config;
+mod fatal;
  
 #[macro_use]
 extern crate log;
@@ -17,9 +18,4 @@ fn main() {
     
     let application = Application::new();
     std::process::exit(application.run());
-}
-
-pub fn die<'a>(reason: &'a str) -> ! {
-    error!("{reason}");
-    panic!()
 }

@@ -20,9 +20,9 @@ impl Module {
         }
     }
 
-    pub fn new_builtin(name: String, num_inputs: u8, num_outputs: u8) -> Self {
+    pub fn new_builtin<'a>(name: &'a str, num_inputs: u8, num_outputs: u8) -> Self {
         Self {
-            name,
+            name: name.to_string(),
             builtin: true,
             num_inputs,
             num_outputs

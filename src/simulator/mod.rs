@@ -11,9 +11,9 @@ pub struct Simulator {
 }
 
 impl Simulator {
-    pub fn new(data: ApplicationDataRef) -> Self {
+    pub fn new(_data: ApplicationDataRef) -> Self {
         Self{
-            thread: spawn(|| simulate(data)),
+            thread: spawn(|| simulate()),
         }
     }
 
@@ -22,5 +22,5 @@ impl Simulator {
     }
 }
 
-fn simulate(_data: ApplicationDataRef) {
+fn simulate() {
 }

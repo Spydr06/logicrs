@@ -1,28 +1,26 @@
-use adw::prelude::{
-    BoxExt, ButtonExt, DialogExtManual, EntryBufferExtManual, EntryExt, GtkWindowExt, ComboBoxExt
-};
+use adw::prelude::*;
 use gtk::{
-    glib::clone,
-    traits::{DialogExt, GtkApplicationExt},
-    Button, ButtonsType, Entry, Inhibit, MessageDialog, ResponseType, ComboBoxText, Orientation, Box
+    traits::DialogExt,
+    subclass::prelude::ObjectSubclassIsExt,
+    ButtonsType, Entry, MessageDialog, ResponseType, ComboBoxText, Orientation, Box, 
 };
 
-use std::{future::Future, rc::Rc, sync::{Arc,Mutex}};
-use crate::{modules::Module, application::data::{ApplicationData, ApplicationDataRef}};
+use std::{future::Future, rc::Rc};
+use crate::{modules::Module, application::Application};
 
-fn create_new_module(data: Arc<Mutex<ApplicationData>>, name: String, num_inputs: u8, num_outputs: u8) -> Result<(), String> {
+fn create_new_module(app: Application, name: String, num_inputs: u8, num_outputs: u8) -> Result<(), String> {
     if name.is_empty() {
         return Err("Invalid name".to_string());
     }
 
-    if data.lock().unwrap().module_exists(&name) {
+    if app.imp().data().lock().unwrap().module_exists(&name) {
         let err = format!("Module with name \"{}\" already exists", name);
         warn!("{err}");
         return Err(err);
     }
 
     info!("Create new Module \"{}\"\nwith: {} inputs\n      {} outputs", name, num_inputs, num_outputs);
-    data.lock().unwrap().add_module(Module::new(name, num_inputs, num_outputs));
+    app.imp().add_module(Module::new(name, num_inputs, num_outputs));
 
     Ok(())
 }
@@ -54,7 +52,7 @@ const INPUTS: [&'static str; 16] = [
     "13 Inputs", "14 Inputs", "15 Inputs", "16 Inputs",
 ];
 
-pub async fn new_module(data: ApplicationDataRef, window: Rc<gtk::Window>) {
+pub async fn new_module(app: Application, window: Rc<gtk::Window>) {
     let content = Box::builder()
         .orientation(Orientation::Horizontal)
         .hexpand(true)
@@ -105,35 +103,15 @@ pub async fn new_module(data: ApplicationDataRef, window: Rc<gtk::Window>) {
         let num_outputs = OUTPUTS.iter().position(|&elem| elem == output_chooser.active_id().unwrap()).unwrap_or_default() + 1;
 
         // generate new module
-        if let Err(err) = create_new_module(data, name_input.buffer().text().trim().to_string(), num_inputs as u8, num_outputs as u8) {
+        if let Err(err) = create_new_module(app, name_input.buffer().text().trim().to_string(), num_inputs as u8, num_outputs as u8) {
             gtk::glib::MainContext::default().spawn_local(invalid_module(window, err));
         }
     }
 }
 
-pub fn new<F>(data: ApplicationDataRef, trigger: &Button, window_size: (i32, i32), on_trigger: fn(ApplicationDataRef, Rc<gtk::Window>) -> F) 
+pub fn new<F>(application: Application, window: Rc<gtk::Window>, dialog: fn(Application, Rc<gtk::Window>) -> F) 
 where
     F: Future<Output = ()> + 'static
 {
-    let dialog_window = Rc::new(
-        gtk::Window::builder()
-            .default_width(window_size.0)
-            .default_height(window_size.1)
-            .visible(false)
-            .resizable(false)
-            .build(),
-    );
-
-    trigger.connect_clicked(clone!(@strong dialog_window =>
-        move |_| {
-            gtk::glib::MainContext::default().spawn_local(on_trigger(data.clone(), dialog_window.clone()));
-        }
-    ));
-
-    dialog_window.connect_close_request(move |dialog_window| {
-        if let Some(application) = dialog_window.application() {
-            application.remove_window(dialog_window);
-        }
-        Inhibit(false)
-    });
+    gtk::glib::MainContext::default().spawn_local(dialog(application, window.clone()));
 }

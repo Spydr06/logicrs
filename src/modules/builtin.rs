@@ -1,10 +1,14 @@
 use super::Module;
 
-pub fn register(data: &mut crate::application::data::ApplicationData) {
-   data.add_module(Module::new_builtin("And".to_string(), 2, 1));
-   data.add_module(Module::new_builtin("Or".to_string(), 2, 1));
-   data.add_module(Module::new_builtin("Not".to_string(), 1, 1));
-   data.add_module(Module::new_builtin("Xor".to_string(), 2, 1));
-   data.add_module(Module::new_builtin("Button".to_string(), 0, 1));
-   data.add_module(Module::new_builtin("Switch".to_string(), 0, 1));
+lazy_static::lazy_static! {
+   pub static ref BUILTINS: Vec<Module> = {
+      vec![
+         Module::new_builtin("And", 2, 1),
+         Module::new_builtin("Or", 2, 1),
+         Module::new_builtin("Not", 1, 1),
+         Module::new_builtin("Xor", 2, 1),
+         Module::new_builtin("Button", 0, 1),
+         Module::new_builtin("Switch", 0, 1)
+      ]
+   };
 }

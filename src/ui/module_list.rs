@@ -1,9 +1,6 @@
 use gtk::{prelude::*, subclass::prelude::*, glib, gdk};
 
-use std::cell::RefCell;
-
 use crate::{application::Application, modules::Module, simulator::Block};
-use super::dialogs;
 
 glib::wrapper! {
     pub struct ModuleList(ObjectSubclass<ModuleListTemplate>)
@@ -15,6 +12,14 @@ impl ModuleList {
     pub fn new(app: &Application) -> Self {
         glib::Object::new::<Self>(&[("application", app)])
     }
+
+    pub fn add_module_to_ui(&self, app: &Application, module: &Module) {
+        self.imp().add_module_to_ui(app, module);
+    }
+
+    pub fn remove_module(&self, module: &Module) {
+        self.imp().remove_module(module);
+    }
 }
 
 #[derive(gtk::CompositeTemplate, Default)]
@@ -24,14 +29,10 @@ pub struct ModuleListTemplate {
     pub header_bar: TemplateChild<adw::HeaderBar>,
 
     #[template_child]
-    pub new_module_button: TemplateChild<gtk::Button>,
-
-    #[template_child]
     pub builtin_list_box: TemplateChild<gtk::ListBox>,
 
     #[template_child]
-    pub custom_list_box: TemplateChild<gtk::ListBox>,
-    application: RefCell<Application>
+    pub custom_list_box: TemplateChild<gtk::ListBox>
 }
 
 impl ModuleListTemplate {
@@ -39,15 +40,7 @@ impl ModuleListTemplate {
         Self::from_instance(parent)
     }
 
-    pub fn set_application(&self, app: Application) {
-        self.application.replace(app);
-    }
-
-    pub fn application_data(&self) -> Application {
-        self.application.borrow().clone()
-    }
-
-    fn new_list_item(&self, module: &Module) {
+    fn add_module_to_ui(&self, application: &Application, module: &Module) {
         let label = gtk::Label::builder()
             .label(module.name().as_str())
             .build();
@@ -61,34 +54,38 @@ impl ModuleListTemplate {
             .build();
         
         let name = module.name().to_owned();
-        let data = self.application.borrow().imp().data();
+        let data = application.imp().data();
         click_gesture.connect_pressed(move |_, _, _, _| {
                 let mut data = data.lock().unwrap();
-                let module = data.get_module(&name).unwrap();
-                let block = Block::new(&module, (0, 0), data.new_id());
-                data.current_plot_mut().add_block(block);
+                if let Some(module) = data.get_module(&name) {
+                    let block = Block::new(&module, (0, 0), data.new_id());
+                    data.current_plot_mut().add_block(block);
+                }
         });
         
         item.add_controller(&click_gesture);
         item.add_css_class("module-list-item");
         
-        if module.builtin() {
-            self.builtin_list_box.append(&item);
+        if module.builtin() { &self.builtin_list_box } else { &self.custom_list_box }.append(&item);
+    }
+
+    fn remove_module(&self, module: &Module) {
+        let list = if module.builtin() { &self.builtin_list_box } else { &self.custom_list_box };
+        let mut i = 0;
+        while let Some(row) = list.row_at_index(i) {
+            if let Some(label) = row.child() {
+                if label.downcast::<gtk::Label>().unwrap_or_default().label().to_string().eq(module.name()) {
+                    list.remove(&row);
+                    break;
+                }
+            }
+
+            i += 1;
         }
-        else {
-            self.custom_list_box.append(&item);
-        }
+
     }
 
     pub fn initialize(&self) {
-        let data = self.application.borrow().imp().data();
-        dialogs::new(data.clone(), &self.new_module_button, (400, 70), dialogs::new_module);
-        
-        let data = data.lock().unwrap();
-        let mut values: Vec<_> = data.modules().values().into_iter().collect();
-        values.sort();
-        values.iter().for_each(|m| self.new_list_item(m));
-    
         let order_alphabetically = |a: &gtk::ListBoxRow, b: &gtk::ListBoxRow| gtk::Ordering::from(
             (a.first_child().unwrap().downcast_ref().unwrap() as &gtk::Label).label()
             .cmp(&(b.first_child().unwrap().downcast_ref().unwrap() as &gtk::Label).label())

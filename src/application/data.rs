@@ -32,31 +32,25 @@ pub struct ApplicationData {
     current_plot: usize,
 
     #[serde(skip)]
-    selection: Selection
+    selection: Selection,
 }
 
 impl Default for ApplicationData {
     fn default() -> Self {
-        let mut data = Self::new();
-        builtin::register(&mut data);
-
-        data
+        Self::new(&builtin::BUILTINS)
     }
 }
 
 impl ApplicationData {
-    pub fn new() -> Self {
-        let mut data = Self {
-            modules: HashMap::new(),
+    pub fn new(modules: &Vec<Module>) -> Self {
+        Self {
+            modules: modules.iter().map(|module| (module.name().to_owned(), module.to_owned())).collect::<HashMap<_, _>>(),
             plots: vec![Plot::new()],
             current_plot: 0usize,
             id_counter: AtomicU32::new(0u32),
             file: None,
             selection: Selection::None,
-        };
-
-        builtin::register(&mut data);
-        data
+        }
     }
 
     pub fn reset(&mut self) -> &mut Self {
@@ -66,8 +60,6 @@ impl ApplicationData {
         self.id_counter = AtomicU32::new(0u32);
         self.file = None;
         self.selection = Selection::None;
-
-        builtin::register(self);
 
         self
     }

@@ -14,8 +14,9 @@
               </object>
             </property>
             <child>
-              <object class="GtkButton" id="new_module_button">
+              <object class="GtkMenuButton" id="new_module_button">
                 <property name="icon-name">list-add-symbolic</property>
+                <property name="menu_model">add_module_menu</property>
                 <property name="tooltip-text" translatable="yes">Create new module</property>
               </object>
             </child>
@@ -84,4 +85,16 @@
       </object>
     </child>
   </template>
+  <menu id="add_module_menu">
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">_Create New</attribute>
+        <attribute name="action">app.create-new-module</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_Import</attribute>
+        <attribute name="action">app.import-module</attribute>
+      </item>
+    </section>
+  </menu>
 </interface>
