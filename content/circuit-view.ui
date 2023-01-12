@@ -98,6 +98,16 @@
   <menu id="block_context_menu">
     <section>
       <item>
+        <attribute name="label" translatable="yes">_Copy</attribute>
+        <attribute name="action">app.copy-block</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">C_ut</attribute>
+        <attribute name="action">app.cut-block</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
         <attribute name="label" translatable="yes">_Delete</attribute>
         <attribute name="action">app.delete-block</attribute>
       </item>

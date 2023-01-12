@@ -1,4 +1,4 @@
-use crate::application::Application;
+use crate::{application::Application, simulator::PlotProvider};
 use super::circuit_view::CircuitView;
 use gtk::{prelude::*, subclass::prelude::*, gio, glib};
 
@@ -14,7 +14,7 @@ glib::wrapper! {
 impl CircuitPanel {
     pub fn new(app: Application) -> Self {
         let panel: Self = glib::Object::new::<Self>(&[]);
-        panel.imp().set_title(app.imp().data().lock().unwrap().filename().as_str());
+        panel.imp().set_title(app.imp().file_name().as_str());
         panel.imp().set_application(app);
         panel
     }
@@ -58,8 +58,8 @@ impl CircuitPanelTemplate {
         self.application.replace(app);
     }
 
-    pub fn new_tab<'a>(&self, title: &'a str) -> adw::TabPage {
-        let content = CircuitView::new(self.application.borrow().clone());
+    pub fn new_tab<'a>(&self, title: &'a str, plot_provider: PlotProvider) -> adw::TabPage {
+        let content = CircuitView::new(plot_provider);
         let page = self.add_page(&content, title);
         self.view.set_selected_page(&page);
 

@@ -5,9 +5,14 @@ mod renderer;
 mod simulator;
 mod config;
 mod fatal;
- 
+mod project;
+mod selection;
+
 #[macro_use]
 extern crate log;
+
+#[macro_use]
+extern crate lazy_static;
 
 use adw::prelude::ApplicationExtManual;
 use application::Application;

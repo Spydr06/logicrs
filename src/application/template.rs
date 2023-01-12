@@ -1,21 +1,25 @@
 use gtk::{prelude::*, subclass::prelude::*, gio, glib, gdk};
 use adw::subclass::prelude::*;
 use std::cell::RefCell;
-use super::data::*;
-use crate::{ui::main_window::MainWindow, simulator::Simulator, fatal::*, modules::Module};
+use crate::{
+    ui::{main_window::MainWindow, circuit_view::CircuitView},
+    fatal::*, modules::*, project::*, selection::*,
+    simulator::*,
+};
 
 #[derive(Default)]
 pub struct ApplicationTemplate {
-    data: ApplicationDataRef,
+    project: ProjectRef,
     window: RefCell<Option<MainWindow>>,
-    simulator: RefCell<Option<Simulator>>
+    simulator: RefCell<Option<Simulator>>,
+    file: RefCell<Option<gio::File>>,
 }
 
 impl ApplicationTemplate {
     const CSS_RESOURCE: &'static str = "/style/style.css";
 
     fn start_simulation(&self) {
-        *self.simulator.borrow_mut() = Some(Simulator::new(self.data.clone()))
+        *self.simulator.borrow_mut() = Some(Simulator::new(self.project.clone()))
     }
 
     fn stop_simulation(&self) {
@@ -43,28 +47,72 @@ impl ApplicationTemplate {
         self.window.replace(Some(window));
     }
 
-    pub fn save(&self) {
-        let data = self.data.lock().unwrap();
-        if data.file().is_some() { 
-            data.save().unwrap_or_die();
+    pub fn save(&self) -> Result<(), String> {
+        let project = self.project.lock().unwrap();
+        if let Some(file) = self.file.borrow().as_ref() { 
+            project.write_to(file)
         }
-    }
-
-    pub fn data(&self) -> ApplicationDataRef {
-        self.data.clone()
+        else {
+            Err(String::from("File was none"))
+        }
     }
 
     pub fn add_module(&self, module: Module) {
         if let Some(window) = self.window.borrow().as_ref() {
             window.add_module_to_ui(&self.instance(), &module);
         }
-        self.data.lock().unwrap().add_module(module);
+        (&mut*self.project.lock().unwrap()).add_module(module);
     }
 
     pub fn delete_selected_blocks(&self) {
-        self.data.lock().unwrap().delete_selected();
+        self.with_current_plot_mut(|plot| {
+                plot.delete_selected();
+                self.window.borrow().as_ref().unwrap().rerender_circuit();
+        });
+    }
+
+    pub fn set_project(&self, project: Project) {
+        let mut old = self.project.lock().unwrap();
+        *old = project;
+    }
+
+    pub fn project(&self) -> &ProjectRef {
+        &self.project
+    }
+
+    pub fn set_file(&self, file: gio::File) {
+        self.file.replace(Some(file));
+    }
+
+    pub fn reset(&self) {
+        self.set_project(Project::default());
+        self.file.replace(None);
+    }
+
+    pub fn file_name(&self) -> String {
+        match self.file.borrow().as_ref() {
+            Some(file) => file.path().unwrap().into_os_string().into_string().unwrap(),
+            None => String::from("New File")
+        }
+    }
+
+    // pub fn with_current_plot(&self, func: impl Fn(&Plot)) {
+    //     if let Some(window) = self.window.borrow().as_ref() {
+    //         if let Some(page) = window.imp().circuit_panel.imp().view.selected_page() {
+    //             if let Ok(view) = page.child().downcast::<CircuitView>() {
+    //                 view.imp().plot_provider().with(func);
+    //             }
+    //         }
+    //     }
+    // }
+
+    pub fn with_current_plot_mut(&self, func: impl Fn(&mut Plot)) {
         if let Some(window) = self.window.borrow().as_ref() {
-            window.rerender_circuit();
+            if let Some(page) = window.imp().circuit_panel.imp().view.selected_page() {
+                if let Ok(view) = page.child().downcast::<CircuitView>() {
+                    view.imp().plot_provider().with_mut(func);
+                }
+            }
         }
     }
 }
@@ -105,15 +153,16 @@ impl ApplicationImpl for ApplicationTemplate {
             die("File path is None");
         }
 
-        let data = ApplicationData::build(file.to_owned());
+        let data = Project::load_from(file);
         if let Err(err) = data {
             die(err.as_str());
         }
-
-        let mut old_data = self.data.lock().unwrap();
+        
+        let mut old_data = self.project.lock().unwrap();
         *old_data = data.unwrap();
         std::mem::drop(old_data);
-
+        
+        self.file.replace(Some(file.to_owned()));
         self.create_window(&self.instance());
         self.start_simulation();
     }

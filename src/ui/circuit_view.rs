@@ -2,7 +2,7 @@ use std::{cell::RefCell, sync::Arc};
 
 use gtk::{prelude::*, subclass::prelude::*, gio, glib, gdk};
 
-use crate::{application::{Application, data::*, selection::*}, renderer::*, simulator::{Connector, Connection, Linkage}};
+use crate::{selection::*, renderer::*, simulator::*};
 
 glib::wrapper! {
     pub struct CircuitView(ObjectSubclass<CircuitViewTemplate>)
@@ -11,9 +11,9 @@ glib::wrapper! {
 }
 
 impl CircuitView {
-    pub fn new(app: Application) -> Self {
+    pub fn new(plot_provider: PlotProvider) -> Self {
         let circuit_view: Self = glib::Object::new::<Self>(&[]);
-        circuit_view.imp().set_application(app).initialize();
+        circuit_view.imp().set_plot_provider(plot_provider).initialize();
         circuit_view
     }
 }
@@ -37,10 +37,14 @@ pub struct CircuitViewTemplate {
     context_menu: TemplateChild<gtk::PopoverMenu>,
 
     renderer: RefCell<Option<Arc<RefCell<CairoRenderer>>>>,
-    application: RefCell<Application>
+    plot_provider: RefCell<PlotProvider>,
 }
 
 impl CircuitViewTemplate {
+    pub fn rerender(&self) {
+        self.drawing_area.queue_draw();
+    }
+
     fn renderer(&self) -> Option<Arc<RefCell<CairoRenderer>>> {
         match self.renderer.borrow().as_ref() {
             Some(renderer) => Some(renderer.clone()),
@@ -48,8 +52,12 @@ impl CircuitViewTemplate {
         }
     }
 
-    fn set_application(&self, app: Application) -> &Self {
-        self.application.replace(app);
+    pub fn plot_provider(&self) -> PlotProvider {
+        self.plot_provider.borrow().clone()
+    }
+
+    fn set_plot_provider(&self, plot_provider: PlotProvider) -> &Self {
+        self.plot_provider.replace(plot_provider);
         self
     }
 
@@ -87,28 +95,28 @@ impl CircuitViewTemplate {
         let area = self.drawing_area.to_owned();
         let renderer = self.renderer().unwrap();
 
-        let data = self.application.borrow().imp().data();
+        let original_provider = self.plot_provider.borrow();
 
-        let app_data = data.clone();
+        let provider = original_provider.clone();
         gesture_drag.connect_drag_begin(move |gesture, x, y| {
             gesture.set_state(gtk::EventSequenceState::Claimed);
-            drag_begin(&app_data, &area, renderer.borrow().scale(), x, y)
+            provider.with_mut(|plot| drag_begin(plot, &area, renderer.borrow().scale(), x, y));
         });
 
         let area = self.drawing_area.to_owned();
         let renderer = self.renderer().unwrap();
-        let app_data = data.clone();
+        let provider = original_provider.clone();
         gesture_drag.connect_drag_update(move |gesture, x, y| {
             gesture.set_state(gtk::EventSequenceState::Claimed);
-            drag_update(&app_data, &area, renderer.borrow().scale(), x, y)
+            provider.with_mut(|plot| drag_update(plot, &area, renderer.borrow().scale(), x, y));
         });
 
         let area = self.drawing_area.to_owned();
         let renderer = self.renderer().unwrap();
-        let app_data = data.clone();
+        let provider = original_provider.clone();
         gesture_drag.connect_drag_end(move |gesture, x, y| {
             gesture.set_state(gtk::EventSequenceState::Claimed);
-            drag_end(&app_data, &area, renderer.borrow().scale(), x, y)
+            provider.with_mut(|plot| drag_end(plot, &area, renderer.borrow().scale(), x, y));
         });
 
         self.drawing_area.add_controller(&gesture_drag);
@@ -126,12 +134,14 @@ impl CircuitViewTemplate {
     fn initialize(&self) {
         *self.renderer.borrow_mut() = Some(Arc::new(RefCell::new(CairoRenderer::new())));
         let renderer = self.renderer().unwrap();
-        let app_data = self.application.borrow().imp().data().clone();
+        let provider = self.plot_provider.borrow().clone();
         self.drawing_area.set_draw_func(move |area: &gtk::DrawingArea, context: &gtk::cairo::Context, width: i32, height: i32| {
-            if let Err(err) = renderer.borrow_mut().callback(&app_data, area, context, width, height) {
-                eprintln!("Error rendering CircuitView: {}", err);
-                panic!();
-            }
+            provider.with_mut(|plot| {
+                if let Err(err) = renderer.borrow_mut().callback(plot, area, context, width, height) {
+                    eprintln!("Error rendering CircuitView: {}", err);
+                    panic!();
+                }
+            });
         });
         
         self.setup_buttons();
@@ -143,27 +153,27 @@ impl CircuitViewTemplate {
         let scale = if let Some(r) = self.renderer.borrow().as_ref() { r.borrow().scale() } else { 1.0 };
         let position = ((x / scale) as i32, (y / scale) as i32);
 
-        let data = self.application.borrow_mut().imp().data();
-        let mut data = data.lock().unwrap();
-        match data.current_plot().get_block_at(position) {
-            Some(index) => {
-                if let Some(block) = data.current_plot_mut().get_block_mut(index) {
-                    block.set_start_pos(block.position());
-                    block.set_highlighted(true);
-                    
-                    if let Selection::None = data.selection() {
-                        data.unhighlight();
-                        data.set_selection(Selection::Single(index));
+        self.plot_provider.borrow_mut().with_mut(|plot| {
+            match plot.get_block_at(position) {
+                Some(index) => {
+                    if let Some(block) = plot.get_block_mut(index) {
+                        block.set_start_pos(block.position());
+                        block.set_highlighted(true);
+
+                        if let Selection::None = plot.selection() {
+                            plot.unhighlight();
+                            plot.set_selection(Selection::Single(index));
+                        }
+
+                        drop(plot);
+
+                        self.context_menu.set_pointing_to(Some(&gdk::Rectangle::new(position.0, position.1, 1, 1)));
+                        self.context_menu.popup();
                     }
-
-                    drop(data);
-
-                    self.context_menu.set_pointing_to(Some(&gdk::Rectangle::new(position.0, position.1, 1, 1)));
-                    self.context_menu.popup();
                 }
+                None => {}
             }
-            None => {}
-        }
+        });
 
         self.drawing_area.queue_draw();
     }
@@ -203,18 +213,17 @@ impl WidgetImpl for CircuitViewTemplate {
 
 impl BoxImpl for CircuitViewTemplate {}
 
-fn drag_begin(data: &ApplicationDataRef, area: &gtk::DrawingArea, scale: f64, x: f64, y: f64) {
+fn drag_begin(plot: &mut Plot, area: &gtk::DrawingArea, scale: f64, x: f64, y: f64) {
     let position = ((x / scale) as i32, (y / scale) as i32);
-    let mut data = data.lock().unwrap();
 
-    data.unhighlight();
+    plot.unhighlight();
     
-    match data.current_plot().get_block_at(position) {
+    match plot.get_block_at(position) {
         Some(index) => {
-            if let Some(block) = data.current_plot_mut().get_block_mut(index) {
+            if let Some(block) = plot.get_block_mut(index) {
                 if let Some(i) = block.position_on_connection(position, false) {
                     let start = block.get_connector_pos(Connector::Output(i));
-                    data.set_selection(Selection::Connection {
+                    plot.set_selection(Selection::Connection {
                         block_id: index,
                         output: i,
                         start,
@@ -224,69 +233,66 @@ fn drag_begin(data: &ApplicationDataRef, area: &gtk::DrawingArea, scale: f64, x:
                 else {
                     block.set_start_pos(block.position());
                     block.set_highlighted(true);
-                    data.set_selection(Selection::Single(index));
+                    plot.set_selection(Selection::Single(index));
                 }
             }
         }
         _ => {
-            data.set_selection(Selection::Area(position, position));
+            plot.set_selection(Selection::Area(position, position));
         }
     }
 
     area.queue_draw();
 }
 
-fn drag_update(data: &ApplicationDataRef, area: &gtk::DrawingArea, scale: f64, x: f64, y: f64) {
+fn drag_update(plot: &mut Plot, area: &gtk::DrawingArea, scale: f64, x: f64, y: f64) {
     let position = ((x / scale) as i32, (y / scale) as i32);
-    let mut data = data.lock().unwrap();
 
-    match data.selection().clone() {
+    match plot.selection().clone() {
         Selection::Single(index) => {
-            let block = data.current_plot_mut().get_block_mut(index).unwrap();
+            let block = plot.get_block_mut(index).unwrap();
             let (start_x, start_y) = block.start_pos();
             block.set_position((start_x + position.0, start_y + position.1));
             area.queue_draw();
         }
         Selection::Connection { block_id, output, start, position: _ } => {
-            data.set_selection(Selection::Connection { block_id, output, start, position: (start.0 + position.0, start.1 + position.1)});
+            plot.set_selection(Selection::Connection { block_id, output, start, position: (start.0 + position.0, start.1 + position.1)});
             area.queue_draw();
         }
         Selection::Area(area_start, _) => {
-            data.set_selection(Selection::Area(area_start, (area_start.0 + position.0, area_start.1 + position.1)));
+            plot.set_selection(Selection::Area(area_start, (area_start.0 + position.0, area_start.1 + position.1)));
             area.queue_draw();
         }
         _ => ()
     }
 }
 
-fn drag_end(data: &ApplicationDataRef, area: &gtk::DrawingArea, scale: f64, x: f64, y: f64) {
+fn drag_end(plot: &mut Plot, area: &gtk::DrawingArea, scale: f64, x: f64, y: f64) {
     if x == 0. && y == 0. {
         return;
     }
 
     let position = ((x / scale) as i32, (y / scale) as i32);
-    let mut data = data.lock().unwrap();
 
-    match data.selection().clone() { 
+    match plot.selection().clone() { 
         Selection::Single(index) => {
-            let block = data.current_plot_mut().get_block_mut(index).unwrap();
+            let block = plot.get_block_mut(index).unwrap();
             let (start_x, start_y) = block.start_pos();
             block.set_position((start_x + position.0, start_y + position.1));
         },
         Selection::Connection { block_id, output, start: _, position } => {
-            if let Some(block) = data.current_plot().get_block_at(position) {
-                if let Some(i) = data.current_plot().get_block(block).unwrap().position_on_connection(position, true) {
-                    data.current_plot_mut()
-                        .get_block_mut(block_id)
+            if let Some(block) = plot.get_block_at(position) {
+                if let Some(i) = plot.get_block(block).unwrap().position_on_connection(position, true) {
+                    plot.get_block_mut(block_id)
                         .unwrap()
                         .add_connection(output, Connection::new(Linkage { block_id, port: output }, Linkage { block_id: block, port: i }));
                 }
             }
 
-            data.set_selection(Selection::None);
+            plot.set_selection(Selection::None);
         }
         Selection::Area(_, _) => {
-            data.highlight_area();
+            plot.highlight_area();
         }
         _ => {}
     }

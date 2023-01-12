@@ -13,7 +13,7 @@ fn create_new_module(app: Application, name: String, num_inputs: u8, num_outputs
         return Err("Invalid name".to_string());
     }
 
-    if app.imp().data().lock().unwrap().module_exists(&name) {
+    if app.imp().project().lock().unwrap().module(&name).is_some() {
         let err = format!("Module with name \"{}\" already exists", name);
         warn!("{err}");
         return Err(err);

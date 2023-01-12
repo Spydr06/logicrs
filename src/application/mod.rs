@@ -1,12 +1,10 @@
 pub mod template;
-pub mod data;
-pub mod selection;
 pub mod actions;
 
 use std::{cell::RefCell, rc::Rc};
 use adw::traits::MessageDialogExt;
 use gtk::{prelude::*, subclass::prelude::*, gio, glib};
-use crate::{config, application::data::ApplicationData, ui::dialogs};
+use crate::{config, ui::dialogs};
 
 glib::wrapper! {
     pub struct Application(ObjectSubclass<template::ApplicationTemplate>)

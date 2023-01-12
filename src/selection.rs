@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-use crate::renderer::Renderable;
+use crate::{renderer::Renderable, simulator::Plot};
 use std::cmp;
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -23,31 +23,8 @@ impl Default for Selection {
     }
 }
 
-impl Selection {
-    pub fn is_area(&self) -> bool {
-        match self {
-            Self::Area(_, _) => true,
-            _ => false
-        }
-    }
-
-    pub fn area_start(&self) -> Option<(i32, i32)> {
-        match self {
-            Self::Area(start, _) => Some(*start),
-            _ => None
-        }
-    }
-
-    pub fn area_end(&self) -> Option<(i32, i32)> {
-        match self {
-            Self::Area(_, end) => Some(*end),
-            _ => None
-        }
-    }
-}
-
 impl Renderable for Selection {
-    fn render<R>(&self, renderer: &R, _data: &super::data::ApplicationData) -> Result<(), R::Error>
+    fn render<R>(&self, renderer: &R, _data: &Plot) -> Result<(), R::Error>
         where R: crate::renderer::Renderer {
 
         match self {
@@ -75,4 +52,13 @@ impl Renderable for Selection {
             _ => Ok(())
         }
     }
+}
+
+pub trait SelectionField {
+    fn selection(&self) -> &Selection;
+    fn set_selection(&mut self, selection: Selection);
+
+    fn unhighlight(&mut self);
+    fn delete_selected(&mut self);
+    fn highlight_area(&mut self);
 }

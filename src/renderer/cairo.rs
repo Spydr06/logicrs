@@ -1,4 +1,5 @@
-use crate::application::data::ApplicationDataRef;
+use crate::{simulator::Plot, selection::*};
+
 use super::*;
 use gtk::cairo::{
     Context,
@@ -38,7 +39,7 @@ impl Renderer for CairoRenderer {
     type Context = cairo::Context;
     type Error = cairo::Error;
 
-    fn callback(&mut self, data: &ApplicationDataRef, _area: &DrawingArea, context: &Self::Context, width: i32, height: i32) -> Result<(), Self::Error> {
+    fn callback(&mut self, plot: &Plot, _area: &DrawingArea, context: &Self::Context, width: i32, height: i32) -> Result<(), Self::Error> {
         self.set_size((width, height)).set_context(Some(context.clone()));     
         if width == 0 || height == 0 {
             return Ok(());
@@ -53,12 +54,10 @@ impl Renderer for CairoRenderer {
         context.set_font_face(&self.font);
         context.set_font_size(15.0);
 
-        let data = data.lock().unwrap();
-        let plot = data.current_plot();
-        plot.render(self, &data)?;
+        plot.render(self, plot)?;
 
         // render selection
-        data.selection().render(self, &data)
+        plot.selection().render(self, plot)
     }
 
     #[inline]

@@ -1,6 +1,6 @@
 use super::Module;
 
-lazy_static::lazy_static! {
+lazy_static! {
    pub static ref BUILTINS: Vec<Module> = {
       vec![
          Module::new_builtin("And", 2, 1),

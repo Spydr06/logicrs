@@ -1,6 +1,6 @@
 use gtk::{prelude::*, subclass::prelude::*, gio, glib};
 use adw::subclass::prelude::AdwApplicationWindowImpl;
-use crate::{application::Application, modules::Module};
+use crate::{application::Application, modules::Module, simulator::PlotProvider};
 use super::{
     circuit_panel::{CircuitPanel, CircuitPanelTemplate},
     module_list::{ModuleList, ModuleListTemplate}, circuit_view::CircuitView,
@@ -23,14 +23,12 @@ impl MainWindow {
         module_list.initialize();
 
         let panel = window.imp().circuit_panel.imp();
+        panel.set_title(&app.imp().file_name());
+        panel.new_tab("Main Circuit", PlotProvider::Main(app.imp().project().clone()));
 
-        let data = app.imp().data();
-        let data = data.lock().unwrap();
-
-        panel.set_title(data.filename().as_str());
-        panel.new_tab("Main");
-
-        data.modules().iter().for_each(|(_, module)| window.add_module_to_ui(app, module));
+        let project = app.imp().project();
+        let project = project.lock().unwrap();
+        project.modules().iter().for_each(|(_, module)| window.add_module_to_ui(app, module));
 
         window
     }
@@ -38,19 +36,16 @@ impl MainWindow {
     pub fn add_module_to_ui(&self, app: &Application, module: &Module) {
         let panel = self.imp().circuit_panel.imp();
         let module_list = &self.imp().module_list;
-
         if !module.builtin() {
-            panel.new_tab(module.name());
+            panel.new_tab(module.name(), PlotProvider::Module(app.imp().project().clone(), module.name().clone()));
         }
-
         module_list.add_module_to_ui(app, module);
     }
 
     pub fn rerender_circuit(&self) {
-        println!("rerender");
         if let Some(a) = self.imp().circuit_panel.imp().view.selected_page() {
             if let Ok(view ) = a.child().downcast::<CircuitView>() {
-                view.queue_draw();
+                view.imp().rerender();
             }
         }
     }

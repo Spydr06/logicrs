@@ -1,17 +1,59 @@
 use super::Block;
-use crate::{renderer::{Renderable, Renderer}, application::data::ApplicationData};
-use std::collections::HashMap;
+use crate::{renderer::*, selection::*, project::ProjectRef};
+use std::{collections::HashMap, cmp};
 use serde::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone)]
+pub enum PlotProvider {
+    None,
+    Main(ProjectRef),
+    Module(ProjectRef, String),
+}
+
+impl Default for PlotProvider {
+    fn default() -> Self {
+        Self::None
+    }
+}
+
+impl PlotProvider {
+    #[inline]
+    pub fn with(&self, func: impl Fn(&Plot)) {
+        match self {
+            Self::Main(project) => func(project.lock().unwrap().main_plot()),
+            Self::Module(project, module) => 
+                if let Some(plot) = project.lock().unwrap().plot(module) {
+                    func(plot);
+                },
+            Self::None => {}
+        };
+    }
+
+    #[inline]
+    pub fn with_mut(&self, func: impl Fn(&mut Plot)) {
+        match self {
+            Self::Main(project) => func(project.try_lock().unwrap().main_plot_mut()),
+            Self::Module(project, module) => {
+                if let Some(plot) = project.lock().unwrap().plot_mut(module) {
+                    func(plot);
+                };
+            }
+            Self::None => {}
+        };
+    }
+}
+
+#[derive(Serialize, Debug, Default, Deserialize)]
 pub struct Plot {
-    blocks: HashMap<u32, Block>   
+    blocks: HashMap<u32, Block>,
+    selection: Selection
 }
 
 impl Plot {
     pub fn new() -> Self {
         Self {
-            blocks: HashMap::new()
+            blocks: HashMap::new(),
+            selection: Selection::None
         }
     }
 
@@ -59,7 +101,7 @@ impl Plot {
 }
 
 impl Renderable for Plot {
-    fn render<R>(&self, renderer: &R, data: &ApplicationData) -> Result<(), R::Error>
+    fn render<R>(&self, renderer: &R, plot: &Plot) -> Result<(), R::Error>
         where R: Renderer
     {
         let (width, height) = renderer.size();
@@ -70,7 +112,7 @@ impl Renderable for Plot {
         for (_, block) in self.blocks() {
             for c in block.connections() {
                 if let Some(connection) = c {
-                    connection.render(renderer, data)?;
+                    connection.render(renderer, plot)?;
                 }
             }
         }
@@ -79,10 +121,67 @@ impl Renderable for Plot {
         renderer.set_line_width(2.);
         for (_, block) in self.blocks() {
             if block.is_in_area((0, 0, (width as f64 / scale) as i32, (height as f64 / scale) as i32)) {
-                block.render(renderer, data)?;
+                block.render(renderer, plot)?;
             }
         }
 
         Ok(())
+    }
+}
+
+impl SelectionField for Plot {
+    fn selection(&self) -> &Selection {
+        &self.selection
+    }
+
+    fn set_selection(&mut self, selection: Selection) {
+        self.selection = selection;
+    }
+
+    fn unhighlight(&mut self) {
+        match self.selection.clone() {
+            Selection::Single(id) => {
+                self.get_block_mut(id).map(|b| b.set_highlighted(false));
+            },
+            Selection::Many(ids) => {
+                ids.iter().for_each(|id| {
+                    self.get_block_mut(*id).map(|b| b.set_highlighted(false));
+                });
+            },
+            Selection::Area(_, _) => self.blocks_mut().iter_mut().for_each(|(_, v)| v.set_highlighted(false)),
+            Selection::Connection { block_id: _, output: _, start: _, position: _ } => (),
+            Selection::None => ()
+        }
+
+        self.selection = Selection::None
+    }
+
+    fn delete_selected(&mut self) {
+        match self.selection.clone() {
+            Selection::Single(id) => self.delete_block(id),
+            Selection::Many(ids) => ids.iter().for_each(|id| self.delete_block(*id)),
+            Selection::Area(_, _) => {}
+            Selection::None | Selection::Connection {block_id: _, output: _, start: _, position: _} => {},
+        }
+    }
+
+    fn highlight_area(&mut self) {
+        if let Selection::Area(selection_start, selection_end) = self.selection {
+            let mut selected = Vec::new();
+
+            let x1 = cmp::min(selection_start.0, selection_end.0);
+            let y1 = cmp::min(selection_start.1, selection_end.1);
+            let x2 = cmp::max(selection_start.0, selection_end.0);
+            let y2 = cmp::max(selection_start.1, selection_end.1);
+            
+            for (_, block) in self.blocks_mut().iter_mut() {
+                if block.is_in_area((x1, y1, x2, y2)) {
+                    block.set_highlighted(true);
+                    selected.push(block.id());
+                }
+            }
+
+            self.selection = Selection::Many(selected)
+        }
     }
 }

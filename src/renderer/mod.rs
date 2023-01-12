@@ -3,10 +3,10 @@ use gtk::DrawingArea;
 pub mod cairo;
 pub use cairo::*;
 
-use crate::application::data::{ApplicationDataRef, ApplicationData};
+use crate::simulator::Plot;
 
 pub trait Renderable {
-    fn render<R>(&self, renderer: &R, data: &ApplicationData) -> Result<(), R::Error>
+    fn render<R>(&self, renderer: &R, data: &Plot) -> Result<(), R::Error>
         where R: Renderer;
 }
 
@@ -15,7 +15,7 @@ pub trait Renderer {
     type Error;
 
     // render callback
-    fn callback(&mut self, data: &ApplicationDataRef, _area: &DrawingArea, context: &Self::Context, width: i32, height: i32) -> Result<(), Self::Error>;
+    fn callback(&mut self, data: &Plot, _area: &DrawingArea, context: &Self::Context, width: i32, height: i32) -> Result<(), Self::Error>;
 
     // getter/setter
     fn size(&self) -> (i32, i32);

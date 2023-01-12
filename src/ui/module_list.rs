@@ -54,14 +54,19 @@ impl ModuleListTemplate {
             .build();
         
         let name = module.name().to_owned();
-        let data = application.imp().data();
-        click_gesture.connect_pressed(move |_, _, _, _| {
-                let mut data = data.lock().unwrap();
-                if let Some(module) = data.get_module(&name) {
-                    let block = Block::new(&module, (0, 0), data.new_id());
-                    data.current_plot_mut().add_block(block);
+        let project = application.imp().project().clone();
+        click_gesture.connect_pressed(glib::clone!(@weak application => move |_, _, _, _| {
+                let mut project = project.lock().unwrap();
+                let id = project.new_id();
+                if let Some(module) = project.module(&name) {
+                    println!("here");
+                    let block = Block::new(&module, (0, 0), id);
+                    drop(module);
+                    drop(project);
+
+                    application.imp().with_current_plot_mut(move |plot| plot.add_block(block.clone()));
                 }
-        });
+        }));
         
         item.add_controller(&click_gesture);
         item.add_css_class("module-list-item");

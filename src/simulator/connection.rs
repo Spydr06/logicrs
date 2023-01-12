@@ -1,22 +1,18 @@
-use crate::{renderer::{
-    Renderable,
-    Renderer
-}, application::data::ApplicationData};
-use super::Connector;
-use std::sync::{atomic::{AtomicBool, Ordering}};
+use crate::renderer::*;
+use super::{Connector, Plot};
 use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct Linkage {
     pub block_id: u32,
     pub port: u8,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct Connection {
     from: Linkage,
     to: Linkage,
-    active: AtomicBool
+    active: bool
 }
 
 impl Connection {
@@ -24,7 +20,7 @@ impl Connection {
         Self {
             from,
             to,
-            active: AtomicBool::new(false)
+            active: false
         }
     }
 
@@ -34,16 +30,15 @@ impl Connection {
 }
 
 impl Renderable for Connection {
-    fn render<R>(&self, renderer: &R, data: &ApplicationData) -> Result<(), R::Error>
+    fn render<R>(&self, renderer: &R, plot: &Plot) -> Result<(), R::Error>
         where R: Renderer
     {
-        let plot = data.current_plot();
         let from = plot.get_block(self.from.block_id);
         let to = plot.get_block(self.to.block_id);
         if from.is_none() || to.is_none() {
             return Ok(())
         }
-        if self.active.load(Ordering::Relaxed) {
+        if self.active {
             renderer.set_color(0.0784313, 0.3215686, 0.18745098, 1.);
         }
         else {

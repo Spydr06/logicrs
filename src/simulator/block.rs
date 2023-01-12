@@ -1,22 +1,16 @@
 use std::{f64, cmp};
 
-use crate::{
-    modules::Module,
-    renderer::{
-        Renderer,
-        Renderable
-    }, application::data::ApplicationData
-};
+use crate::{modules::Module, renderer::*};
 use serde::{Serialize, Deserialize};
 
-use super::{Connection, Linkage};
+use super::{Connection, Linkage, Plot};
 
 pub enum Connector {
     Input(u8),
     Output(u8)
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Block {
     id: u32,
     name: String,
@@ -174,7 +168,7 @@ impl Block {
 
 
 impl Renderable for Block {
-    fn render<R>(&self, renderer: &R, _data: &ApplicationData) -> Result<(), R::Error>
+    fn render<R>(&self, renderer: &R, _plot: &Plot) -> Result<(), R::Error>
         where R: Renderer 
     {
         renderer.set_line_width(2.);

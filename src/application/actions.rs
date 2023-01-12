@@ -1,5 +1,5 @@
 use super::*;
-use crate::fatal::die;
+use crate::{fatal::die, project::Project};
 
 impl Application {
     pub(super) fn quit(&self) {
@@ -7,7 +7,7 @@ impl Application {
             match response {
                 "Cancel" => return,
                 "No" =>  {},
-                "Yes" => app.imp().save(),
+                "Yes" => {app.imp().save();}
                 _ => panic!("unexpected response \"{}\"", response)
             };
 
@@ -24,7 +24,7 @@ impl Application {
             .transient_for(&window)
             .modal(true)
             .heading("Save File?")
-            .body(format!("There are unsaved changes in \"{}\". Do you want to save them?", self.imp().data().lock().unwrap().filename()).as_str())
+            .body(format!("There are unsaved changes in \"{}\". Do you want to save them?", self.imp().file_name()).as_str())
             .close_response("Cancel")
             .default_response("Yes")
             .build();
@@ -45,11 +45,11 @@ impl Application {
             match response {
                 "Cancel" => return,
                 "No" =>  {},
-                "Yes" => app.imp().save(),
+                "Yes" => {app.imp().save();}
                 _ => panic!("unexpected response \"{}\"", response)
             };
 
-            app.imp().data().lock().unwrap().reset();
+            app.imp().reset();
         }));
     }
 
@@ -58,7 +58,7 @@ impl Application {
             match response {
                 "Cancel" => return,
                 "No" =>  {},
-                "Yes" => app.imp().save(),
+                "Yes" => {app.imp().save();}
                 _ => panic!("unexpected response \"{}\"", response)
             };
 
@@ -90,8 +90,8 @@ impl Application {
                                         .downcast()
                                         .expect("unexpected type returned from file chooser");
 
-                                    if let Ok(data) = ApplicationData::build(file) {
-                                        *obj.imp().data().lock().unwrap() = data;
+                                    if let Ok(project) = Project::load_from(&file) {
+                                        obj.imp().set_project(project);
                                     }
                                     else {
                                         error!("Error opening file");
@@ -144,8 +144,8 @@ impl Application {
                                         die(err.message());
                                     }
                                 }
-                                app.imp().data().lock().unwrap().set_file(Some(file));
-                                if let Err(err) = app.imp().data().lock().unwrap().save() {
+                                app.imp().set_file(file);
+                                if let Err(err) = app.imp().save() {
                                     die(err.as_str());
                                 }
                             }

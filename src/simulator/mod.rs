@@ -4,16 +4,16 @@ pub mod plot;
 
 pub use {block::*, connection::*, plot::*};
 use std::thread::*;
-use crate::application::data::ApplicationDataRef;
+use crate::project::ProjectRef;
 
 pub struct Simulator {
     thread: JoinHandle<()>
 }
 
 impl Simulator {
-    pub fn new(_data: ApplicationDataRef) -> Self {
+    pub fn new(project: ProjectRef) -> Self {
         Self{
-            thread: spawn(|| simulate()),
+            thread: spawn(|| simulate(project)),
         }
     }
 
@@ -22,5 +22,5 @@ impl Simulator {
     }
 }
 
-fn simulate() {
+fn simulate(_project: ProjectRef) {
 }
