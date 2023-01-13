@@ -1,7 +1,7 @@
 pub mod template;
 pub mod actions;
 
-use std::{cell::RefCell, rc::Rc};
+use std::cell::RefCell;
 use adw::traits::MessageDialogExt;
 use gtk::{prelude::*, subclass::prelude::*, gio, glib};
 use crate::{config, ui::dialogs};
@@ -42,7 +42,13 @@ impl Application {
 
         let save_action = gio::SimpleAction::new("save", None);
         save_action.connect_activate(glib::clone!(@weak self as app => move |_, _| {
-            app.imp().save();
+            if let Err(err) = app.imp().save() {
+                let message =  format!("Error saving to '{}': {}", app.imp().file_name(), err);
+                error!("{}", message);
+                if let Some(window) = app.active_window() {
+                    dialogs::run(app, window, message, dialogs::basic_error);
+                }
+            }
         }));
         self.add_action(&save_action);
 
@@ -73,7 +79,7 @@ impl Application {
         let create_new_module_action = gio::SimpleAction::new("create-new-module", None);
         create_new_module_action.connect_activate(glib::clone!(@weak self as app => move |_, _| {
             if let Some(window) = app.active_window() {
-                dialogs::new(app, Rc::new(window), dialogs::new_module); 
+                dialogs::run(app, window, (), dialogs::new_module); 
             }
         }));
         self.add_action(&create_new_module_action);

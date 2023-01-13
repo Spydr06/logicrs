@@ -5,7 +5,7 @@ use gtk::{
     ButtonsType, Entry, MessageDialog, ResponseType, ComboBoxText, Orientation, Box, 
 };
 
-use std::{future::Future, rc::Rc};
+use std::future::Future;
 use crate::{modules::Module, application::Application};
 
 fn create_new_module(app: Application, name: String, num_inputs: u8, num_outputs: u8) -> Result<(), String> {
@@ -25,9 +25,9 @@ fn create_new_module(app: Application, name: String, num_inputs: u8, num_outputs
     Ok(())
 }
 
-pub async fn invalid_module(window: Rc<gtk::Window>, msg: String) {
+pub async fn invalid_module(window: gtk::Window, msg: String) {
     let dialog = MessageDialog::builder()
-        .transient_for(&*window)
+        .transient_for(&window)
         .modal(true)
         .buttons(ButtonsType::Ok)
         .text(format!("Error creating module: {}", msg).as_str())
@@ -52,7 +52,7 @@ const INPUTS: [&'static str; 16] = [
     "13 Inputs", "14 Inputs", "15 Inputs", "16 Inputs",
 ];
 
-pub async fn new_module(app: Application, window: Rc<gtk::Window>) {
+pub async fn new_module(app: Application, window: gtk::Window, _data: ()) {
     let content = Box::builder()
         .orientation(Orientation::Horizontal)
         .hexpand(true)
@@ -85,7 +85,7 @@ pub async fn new_module(app: Application, window: Rc<gtk::Window>) {
     content.append(&output_chooser);
 
     let dialog = MessageDialog::builder()
-        .transient_for(&*window)
+        .transient_for(&window)
         .modal(true)
         .buttons(ButtonsType::OkCancel)
         .text("Create a New Module")
@@ -109,9 +109,23 @@ pub async fn new_module(app: Application, window: Rc<gtk::Window>) {
     }
 }
 
-pub fn new<F>(application: Application, window: Rc<gtk::Window>, dialog: fn(Application, Rc<gtk::Window>) -> F) 
+pub async fn basic_error(_app: Application, window: gtk::Window, message: String) {
+    let dialog = MessageDialog::builder()
+        .transient_for(&window)
+        .modal(true)
+        .buttons(ButtonsType::Ok)
+        .resizable(false)
+        .text(&message)
+        .title("Error")
+        .build();
+    
+    dialog.run_future().await;
+    dialog.close();
+}
+
+pub fn run <F, T>(application: Application, window: gtk::Window, data: T, dialog: fn(Application, gtk::Window, T) -> F) 
 where
-    F: Future<Output = ()> + 'static
+    F: Future<Output = ()> + 'static,
 {
-    gtk::glib::MainContext::default().spawn_local(dialog(application, window.clone()));
+    gtk::glib::MainContext::default().spawn_local(dialog(application, window.clone(), data));
 }

@@ -7,7 +7,16 @@ impl Application {
             match response {
                 "Cancel" => return,
                 "No" =>  {},
-                "Yes" => {app.imp().save();}
+                "Yes" => {
+                    if let Err(err) = app.imp().save() {
+                        let message = format!("Error saving to '{}': {}", app.imp().file_name(), err);
+                        error!("{}", message);
+                        if let Some(window) = app.active_window() {
+                            dialogs::run(app, window, message, dialogs::basic_error);
+                        }
+                        return;
+                    }
+                }
                 _ => panic!("unexpected response \"{}\"", response)
             };
 
@@ -45,7 +54,16 @@ impl Application {
             match response {
                 "Cancel" => return,
                 "No" =>  {},
-                "Yes" => {app.imp().save();}
+                "Yes" => {
+                    if let Err(err) = app.imp().save() {
+                        let message = format!("Error saving to '{}': {}", app.imp().file_name(), err);
+                        error!("{}", message);
+                        if let Some(window) = app.active_window() {
+                            dialogs::run(app, window, message, dialogs::basic_error);
+                        }
+                        return;
+                    }
+                }
                 _ => panic!("unexpected response \"{}\"", response)
             };
 
@@ -58,7 +76,16 @@ impl Application {
             match response {
                 "Cancel" => return,
                 "No" =>  {},
-                "Yes" => {app.imp().save();}
+                "Yes" => {
+                    if let Err(err) = app.imp().save() {
+                        let message = format!("Error saving to '{}': {}", app.imp().file_name(), err);
+                        error!("{}", message);
+                        if let Some(window) = app.active_window() {
+                            dialogs::run(app, window, message, dialogs::basic_error);
+                        }
+                        return;
+                    }
+                }
                 _ => panic!("unexpected response \"{}\"", response)
             };
 

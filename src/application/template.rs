@@ -2,7 +2,7 @@ use gtk::{prelude::*, subclass::prelude::*, gio, glib, gdk};
 use adw::subclass::prelude::*;
 use std::cell::RefCell;
 use crate::{
-    ui::{main_window::MainWindow, circuit_view::CircuitView},
+    ui::{main_window::MainWindow, circuit_view::CircuitView, dialogs},
     fatal::*, modules::*, project::*, selection::*,
     simulator::*,
 };
@@ -48,18 +48,18 @@ impl ApplicationTemplate {
     }
 
     pub fn save(&self) -> Result<(), String> {
-        let project = self.project.lock().unwrap();
         if let Some(file) = self.file.borrow().as_ref() { 
+            let project = self.project.lock().unwrap();
             project.write_to(file)?;
             if let Some(window) = self.window.borrow().as_ref() {
                 window.set_subtitle(&self.file_name());
             }
-            Ok(())
         }
         else {
             self.instance().save_as();
-            Ok(())
         }
+
+        Ok(())
     }
 
     pub fn add_module(&self, module: Module) {
@@ -167,23 +167,30 @@ impl ApplicationImpl for ApplicationTemplate {
             die("File path is None");
         }
 
-        let data = Project::load_from(file);
-        if let Err(err) = data {
-            die(err.as_str());
+        match Project::load_from(file) {
+            Ok(data) => {
+                let mut old_data = self.project.lock().unwrap();
+                *old_data = data;
+                std::mem::drop(old_data);
+
+                self.file.replace(Some(file.to_owned()));
+                self.create_window(&self.instance());
+                self.start_simulation();
+            }
+            Err(err) => {
+                self.create_window(&self.instance());
+                self.start_simulation();
+
+                dialogs::run(self.instance().to_owned(), self.instance().active_window().unwrap(), err, dialogs::basic_error);
+            }
         }
-        
-        let mut old_data = self.project.lock().unwrap();
-        *old_data = data.unwrap();
-        std::mem::drop(old_data);
-        
-        self.file.replace(Some(file.to_owned()));
-        self.create_window(&self.instance());
-        self.start_simulation();
     }
 
     fn shutdown(&self) {
         self.stop_simulation();
-        self.save();
+        if let Err(err) = self.save() {
+            error!("Error saving to: {}: {err}", self.file_name());
+        }
     }
 }
 impl GtkApplicationImpl for ApplicationTemplate {}
