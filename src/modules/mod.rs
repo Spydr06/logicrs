@@ -8,6 +8,7 @@ use serde::{Serialize, Deserialize};
 pub struct Module {
     name: String,
     builtin: bool,
+    hidden: bool,
     plot: Option<Plot>,
     num_inputs: u8,
     num_outputs: u8
@@ -18,16 +19,18 @@ impl Module {
         Self {
             name,
             builtin: false,
+            hidden: false,
             plot: Some(Plot::new()),
             num_inputs,
             num_outputs
         }
     }
 
-    pub fn new_builtin<'a>(name: &'a str, num_inputs: u8, num_outputs: u8) -> Self {
+    pub fn new_builtin<'a>(name: &'a str, hidden: bool, num_inputs: u8, num_outputs: u8) -> Self {
         Self {
             name: name.to_string(),
             builtin: true,
+            hidden,
             plot: None,
             num_inputs,
             num_outputs
@@ -44,6 +47,10 @@ impl Module {
 
     pub fn builtin(&self) -> bool {
         self.builtin
+    }
+
+    pub fn hidden(&self) -> bool {
+        self.hidden
     }
 
     pub fn name(&self) -> &String {
@@ -87,10 +94,11 @@ impl Clone for Module {
 
         Self { 
             name: self.name.clone(),
-            builtin: self.builtin.clone(),
+            builtin: self.builtin,
             plot: None,
-            num_inputs: self.num_inputs.clone(),
-            num_outputs: self.num_outputs.clone()
+            hidden: self.hidden,
+            num_inputs: self.num_inputs,
+            num_outputs: self.num_outputs
         }
     }
 }

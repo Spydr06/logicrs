@@ -28,9 +28,7 @@ pub struct Block {
 }
 
 impl Block {
-    pub fn new(module: &&Module, position: (i32, i32), id: u32) -> Self {
-        let num_inputs = module.get_num_inputs();
-        let num_outputs = module.get_num_outputs();
+    pub fn new_sized(module: &&Module, position: (i32, i32), id: u32, num_inputs: u8, num_outputs: u8) -> Self {
         let mut connections = Vec::with_capacity(num_outputs as usize);
         for _ in 0..num_outputs {
             connections.push(None);
@@ -52,6 +50,10 @@ impl Block {
             name,
             connections,
         }
+    }
+
+    pub fn new(module: &&Module, position: (i32, i32), id: u32) -> Self {
+        Self::new_sized(module, position, id, module.get_num_inputs(), module.get_num_outputs())
     }
 
     pub fn id(&self) -> u32 {

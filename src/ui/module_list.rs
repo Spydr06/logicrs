@@ -59,7 +59,6 @@ impl ModuleListTemplate {
                 let mut project = project.lock().unwrap();
                 let id = project.new_id();
                 if let Some(module) = project.module(&name) {
-                    println!("here");
                     let block = Block::new(&module, (0, 0), id);
                     drop(module);
                     drop(project);

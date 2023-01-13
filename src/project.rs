@@ -78,7 +78,21 @@ impl Project {
         &self.modules
     }
 
-    pub fn add_module(&mut self, module: Module) {
+    pub fn add_module(&mut self, mut module: Module) {
+        let num_inputs = module.get_num_inputs();
+        let num_outputs = module.get_num_outputs();
+
+        // generate Input/Output blocks inside the new module
+        if let Some(plot) = module.plot_mut() {
+            let id = self.new_id();
+            let input_module = self.modules.get(&*builtin::INPUT_MODULE_NAME).unwrap();
+            plot.add_block(Block::new_sized(&input_module, (50, 50), id, 0,  num_inputs));
+
+            let id = self.new_id();
+            let output_module = self.modules.get(&*builtin::OUTPUT_MODULE_NAME).unwrap();
+            plot.add_block(Block::new_sized(&output_module, (400, 50), id, num_outputs, 0));
+        }
+
         self.modules.insert(module.name().clone(), module);
     }
 

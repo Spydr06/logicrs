@@ -45,7 +45,7 @@ impl MainWindow {
 
         let project = app.imp().project();
         let project = project.lock().unwrap();
-        project.modules().iter().for_each(|(_, module)| self.add_module_to_ui(app, module));
+        project.modules().iter().filter(|(_, module)| !module.hidden()).for_each(|(_, module)| self.add_module_to_ui(app, module));
     }
 
     pub fn reset_ui(&self, app: &Application) {
