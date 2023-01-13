@@ -19,6 +19,11 @@
                 <property name="menu_model">block_context_menu</property>
               </object>
             </child>
+            <child>
+              <object class="GtkPopoverMenu" id="area_context_menu">
+                <property name="menu_model">area_block_context_menu</property>
+              </object>
+            </child>
           </object>
         </property>
         
@@ -110,6 +115,14 @@
       <item>
         <attribute name="label" translatable="yes">_Delete</attribute>
         <attribute name="action">app.delete-block</attribute>
+      </item>
+    </section>
+  </menu>
+  <menu id="area_block_context_menu">
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">_Paste</attribute>
+        <attribute name="action">app.paste-block</attribute>
       </item>
     </section>
   </menu>

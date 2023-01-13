@@ -36,6 +36,9 @@ pub struct CircuitViewTemplate {
     #[template_child]
     context_menu: TemplateChild<gtk::PopoverMenu>,
 
+    #[template_child]
+    area_context_menu: TemplateChild<gtk::PopoverMenu>,
+
     renderer: RefCell<Option<Arc<RefCell<CairoRenderer>>>>,
     plot_provider: RefCell<PlotProvider>,
 }
@@ -171,7 +174,10 @@ impl CircuitViewTemplate {
                         self.context_menu.popup();
                     }
                 }
-                None => {}
+                None => {
+                    self.area_context_menu.set_pointing_to(Some(&gdk::Rectangle::new(position.0, position.1, 1, 1)));
+                    self.area_context_menu.popup();
+                }
             }
         });
 
