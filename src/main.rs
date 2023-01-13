@@ -1,6 +1,5 @@
 mod application;
 mod ui;
-mod modules;
 mod renderer;
 mod simulator;
 mod config;

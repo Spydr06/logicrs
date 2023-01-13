@@ -24,6 +24,7 @@ pub trait Renderer {
     fn set_scale(&mut self, scale: f64) -> &mut Self;
     fn set_color(&self, red: f64, green: f64, blue: f64, alpha: f64) -> &Self;
     fn set_line_width(&self, width: f64) -> &Self;
+    fn set_font_size(&self, size: f64) -> &Self;
 
     // shape functions
     fn arc(&self, position: (i32, i32), radius: f64, angle1: f64, angle2: f64) -> &Self;

@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::*, fs::{OpenOptions, File}, io::{Write, BufReader}};
 use serde::{Serialize, Deserialize};
 use gtk::{gio, prelude::FileExt};
-use crate::{modules::*, simulator::*};
+use crate::simulator::*;
 
 pub type ProjectRef = Arc<Mutex<Project>>;
 

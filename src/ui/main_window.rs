@@ -1,6 +1,6 @@
 use gtk::{prelude::*, subclass::prelude::*, gio, glib};
 use adw::subclass::prelude::AdwApplicationWindowImpl;
-use crate::{application::*, modules::*, simulator::*};
+use crate::{application::*, simulator::*};
 use super::{circuit_panel::*, module_list::*, circuit_view::*};
 
 glib::wrapper! {

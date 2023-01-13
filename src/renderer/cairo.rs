@@ -10,6 +10,7 @@ use gtk::cairo::{
 pub const DEFAULT_SCALE: f64 = 1.;
 pub const MINIMUM_SCALE: f64 = 0.1;
 pub const MAXIMUM_SCALE: f64 = 2.;
+pub const DEFAULT_FONT_SIZE: f64 = 15.0;
 
 pub struct CairoRenderer {
     size: (i32, i32),
@@ -52,7 +53,7 @@ impl Renderer for CairoRenderer {
         context.paint()?;
 
         context.set_font_face(&self.font);
-        context.set_font_size(15.0);
+        context.set_font_size(DEFAULT_FONT_SIZE);
 
         plot.render(self, plot)?;
 
@@ -94,6 +95,14 @@ impl Renderer for CairoRenderer {
     fn set_line_width(&self, width: f64) -> &Self {
         if let Some(context) = &self.context {
             context.set_line_width(width);
+        }
+        self
+    }
+
+    #[inline]
+    fn set_font_size(&self, size: f64) -> &Self {
+        if let Some(context) = &self.context {
+            context.set_font_size(size);
         }
         self
     }

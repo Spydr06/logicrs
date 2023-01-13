@@ -1,8 +1,11 @@
 pub mod block;
 pub mod connection;
 pub mod plot;
+pub mod decoration;
+pub mod builtin;
+pub mod modules;
 
-pub use {block::*, connection::*, plot::*};
+pub use {block::*, connection::*, plot::*, decoration::*, modules::*};
 use std::thread::*;
 use crate::project::ProjectRef;
 

@@ -1,9 +1,9 @@
 use std::{f64, cmp};
 
-use crate::{modules::Module, renderer::*};
+use crate::renderer::*;
 use serde::{Serialize, Deserialize};
 
-use super::{Connection, Linkage, Plot};
+use super::{Connection, Linkage, Plot, Decoration, Module};
 
 pub enum Connector {
     Input(u8),
@@ -16,23 +16,25 @@ pub struct Block {
     name: String,
 
     position: (i32, i32),
-    start_pos: (i32, i32), // starting position of drag movements
     size: (i32, i32),
+
+    #[serde(skip)]
+    start_pos: (i32, i32), // starting position of drag movements
 
     #[serde(skip)]
     highlighted: bool,
     
     num_inputs: u8,
     num_outputs: u8,
-    connections: Vec<Option<Connection>>
+    connections: Vec<Option<Connection>>,
+
+    decoration: Decoration,
 }
 
 impl Block {
     pub fn new_sized(module: &&Module, position: (i32, i32), id: u32, num_inputs: u8, num_outputs: u8) -> Self {
         let mut connections = Vec::with_capacity(num_outputs as usize);
-        for _ in 0..num_outputs {
-            connections.push(None);
-        }
+        (0..num_outputs).for_each(|_| connections.push(None));
 
         let name = module.name().clone();
 
@@ -49,6 +51,7 @@ impl Block {
             num_outputs,
             name,
             connections,
+            decoration: module.decoration().clone(),
         }
     }
 
@@ -88,6 +91,10 @@ impl Block {
 
     pub fn position(&self) -> (i32, i32) {
         self.position
+    }
+
+    pub fn size(&self) -> (i32, i32) {
+        self.size
     }
 
     pub fn set_start_pos(&mut self, start_pos: (i32, i32)) {
@@ -200,6 +207,8 @@ impl Renderable for Block {
         for i in 0..self.num_outputs {
             self.draw_connector(renderer, (self.position.0 + self.size.0, self.position.1 + 25 * i as i32 + 50))?;
         }
+
+        self.decoration.render(renderer, self)?;
 
         Ok(())
     }

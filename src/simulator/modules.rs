@@ -1,5 +1,3 @@
-pub mod builtin;
-
 use crate::simulator::*;
 
 use serde::{Serialize, Deserialize};
@@ -11,7 +9,8 @@ pub struct Module {
     hidden: bool,
     plot: Option<Plot>,
     num_inputs: u8,
-    num_outputs: u8
+    num_outputs: u8,
+    decoration: Decoration,
 }
 
 impl Module {
@@ -22,18 +21,20 @@ impl Module {
             hidden: false,
             plot: Some(Plot::new()),
             num_inputs,
-            num_outputs
+            num_outputs,
+            decoration: Decoration::None
         }
     }
 
-    pub fn new_builtin<'a>(name: &'a str, hidden: bool, num_inputs: u8, num_outputs: u8) -> Self {
+    pub fn new_builtin<'a>(name: &'a str, hidden: bool, num_inputs: u8, num_outputs: u8, decoration: Decoration) -> Self {
         Self {
             name: name.to_string(),
             builtin: true,
             hidden,
             plot: None,
             num_inputs,
-            num_outputs
+            num_outputs,
+            decoration
         }
     }
 
@@ -63,6 +64,10 @@ impl Module {
 
     pub fn get_num_outputs(&self) -> u8 {
         self.num_outputs
+    }
+
+    pub fn decoration(&self) -> &Decoration {
+        &self.decoration
     }
 }
 
@@ -98,7 +103,8 @@ impl Clone for Module {
             plot: None,
             hidden: self.hidden,
             num_inputs: self.num_inputs,
-            num_outputs: self.num_outputs
+            num_outputs: self.num_outputs,
+            decoration: self.decoration.clone()
         }
     }
 }

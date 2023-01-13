@@ -1,6 +1,6 @@
 use gtk::{prelude::*, subclass::prelude::*, glib, gdk};
 
-use crate::{application::Application, modules::Module, simulator::Block};
+use crate::{application::Application, simulator::*};
 
 glib::wrapper! {
     pub struct ModuleList(ObjectSubclass<ModuleListTemplate>)

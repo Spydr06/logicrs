@@ -3,7 +3,7 @@ use adw::subclass::prelude::*;
 use std::cell::RefCell;
 use crate::{
     ui::{main_window::MainWindow, circuit_view::CircuitView, dialogs},
-    fatal::*, modules::*, project::*, selection::*,
+    fatal::*, project::*, selection::*,
     simulator::*,
 };
 
