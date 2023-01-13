@@ -50,10 +50,15 @@ impl ApplicationTemplate {
     pub fn save(&self) -> Result<(), String> {
         let project = self.project.lock().unwrap();
         if let Some(file) = self.file.borrow().as_ref() { 
-            project.write_to(file)
+            project.write_to(file)?;
+            if let Some(window) = self.window.borrow().as_ref() {
+                window.set_subtitle(&self.file_name());
+            }
+            Ok(())
         }
         else {
-            Err(String::from("File was none"))
+            self.instance().save_as();
+            Ok(())
         }
     }
 
@@ -71,9 +76,16 @@ impl ApplicationTemplate {
         });
     }
 
-    pub fn set_project(&self, project: Project) {
+    pub fn set_project(&self, project: Project, file: Option<gio::File>) {
         let mut old = self.project.lock().unwrap();
         *old = project;
+
+        drop(old);
+
+        self.file.replace(file);
+        if let Some(window) = self.window.borrow().as_ref() {
+            window.reset_ui(&self.instance());
+        }
     }
 
     pub fn project(&self) -> &ProjectRef {
@@ -85,8 +97,10 @@ impl ApplicationTemplate {
     }
 
     pub fn reset(&self) {
-        self.set_project(Project::default());
-        self.file.replace(None);
+        self.set_project(Project::default(), None);
+        if let Some(window) = self.window.borrow().as_ref() {
+            window.reset_ui(&self.instance());
+        }
     }
 
     pub fn file_name(&self) -> String {

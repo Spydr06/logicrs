@@ -91,7 +91,7 @@ impl Application {
                                         .expect("unexpected type returned from file chooser");
 
                                     if let Ok(project) = Project::load_from(&file) {
-                                        obj.imp().set_project(project);
+                                        obj.imp().set_project(project, Some(file));
                                     }
                                     else {
                                         error!("Error opening file");

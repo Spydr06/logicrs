@@ -69,6 +69,12 @@ impl CircuitPanelTemplate {
     pub fn set_title<'a>(&self, title: &'a str) {
         (self.header_bar.title_widget().unwrap().downcast_ref().unwrap() as &adw::WindowTitle).set_subtitle(title);
     }
+
+    pub fn close_tabs(&self) {
+        for i in (0..self.view.n_pages()).rev() {
+            self.view.close_page(&self.view.nth_page(i));
+        }
+    }
 }
 
 #[glib::object_subclass]

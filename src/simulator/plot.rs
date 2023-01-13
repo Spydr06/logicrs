@@ -32,7 +32,7 @@ impl PlotProvider {
     #[inline]
     pub fn with_mut(&self, func: impl Fn(&mut Plot)) {
         match self {
-            Self::Main(project) => func(project.try_lock().unwrap().main_plot_mut()),
+            Self::Main(project) => func(project.lock().unwrap().main_plot_mut()),
             Self::Module(project, module) => {
                 if let Some(plot) = project.lock().unwrap().plot_mut(module) {
                     func(plot);

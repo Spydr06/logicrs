@@ -90,13 +90,12 @@ impl ModuleListTemplate {
 
     }
 
-    pub fn initialize(&self) {
-        let order_alphabetically = |a: &gtk::ListBoxRow, b: &gtk::ListBoxRow| gtk::Ordering::from(
-            (a.first_child().unwrap().downcast_ref().unwrap() as &gtk::Label).label()
-            .cmp(&(b.first_child().unwrap().downcast_ref().unwrap() as &gtk::Label).label())
+    pub fn clear_list(&self) {
+        [&self.builtin_list_box, &self.custom_list_box].iter().for_each(|list| 
+            while let Some(row) = list.row_at_index(0) {
+                list.remove(&row);
+            }
         );
-        self.builtin_list_box.set_sort_func(order_alphabetically);
-        self.custom_list_box.set_sort_func(order_alphabetically);
     }
 }
 
@@ -118,6 +117,13 @@ impl ObjectSubclass for ModuleListTemplate {
 impl ObjectImpl for ModuleListTemplate {
     fn constructed(&self) {
         self.parent_constructed();
+
+        let order_alphabetically = |a: &gtk::ListBoxRow, b: &gtk::ListBoxRow| gtk::Ordering::from(
+            (a.first_child().unwrap().downcast_ref().unwrap() as &gtk::Label).label()
+            .cmp(&(b.first_child().unwrap().downcast_ref().unwrap() as &gtk::Label).label())
+        );
+        self.builtin_list_box.set_sort_func(order_alphabetically);
+        self.custom_list_box.set_sort_func(order_alphabetically);
     }
 }
 
