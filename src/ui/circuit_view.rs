@@ -37,6 +37,12 @@ pub struct CircuitViewTemplate {
     #[template_child]
     area_context_menu: TemplateChild<gtk::PopoverMenu>,
 
+    #[template_child]
+    left_osd_box: TemplateChild<gtk::Box>,
+
+    #[template_child]
+    left_osd_label: TemplateChild<gtk::Label>,
+
     renderer: RefCell<CairoRenderer>,
     plot_provider: RefCell<PlotProvider>,
 
@@ -89,10 +95,12 @@ impl CircuitViewTemplate {
             
             if *widget.ctrl_down.borrow() {
                 widget.renderer.borrow_mut().save_translation();
+                widget.set_left_osd_visible(true);
             }
             else {
                 widget.plot_provider.borrow().with_mut(|plot| drag_begin(plot, &widget.drawing_area, widget.renderer.borrow().world_coords(x, y)));
             }
+
         }));
 
         gesture_drag.connect_drag_update(glib::clone!(@weak self as widget => move |gesture, x, y| {
@@ -103,16 +111,22 @@ impl CircuitViewTemplate {
                 let original_translation = widget.renderer.borrow().original_translation();
                 widget.renderer.borrow_mut().translate((x / scale + original_translation.0, y / scale + original_translation.1));
                 widget.drawing_area.queue_draw();
+                let translation = widget.renderer.borrow().translation();
+                widget.set_left_osd_label(&format!("{}, {}", translation.0 as i32, translation.1 as i32));
             }
             else {
                 widget.plot_provider.borrow().with_mut(|plot| drag_update(plot, &widget.drawing_area, ((x / scale) as i32, (y / scale) as i32)));
             }
+
         }));
 
         gesture_drag.connect_drag_end(glib::clone!(@weak self as widget => move |gesture, x, y| {
             gesture.set_state(gtk::EventSequenceState::Claimed);
 
-            if !*widget.ctrl_down.borrow() && (x != 0. || y != 0.) {
+            if *widget.ctrl_down.borrow() && (x != 0. || y != 0.) {
+                widget.set_left_osd_visible(false);
+            }
+            else {
                 let scale = widget.renderer.borrow().scale();
                 widget.plot_provider.borrow().with_mut(|plot| drag_end(plot, &widget.drawing_area, ((x / scale) as i32, (y / scale) as i32)));
             }
@@ -204,6 +218,14 @@ impl CircuitViewTemplate {
         });
 
         self.drawing_area.queue_draw();
+    }
+
+    fn set_left_osd_visible(&self, visible: bool) {
+        self.left_osd_box.set_visible(visible);
+    }
+
+    fn set_left_osd_label<'a>(&self, label: &'a str) {
+        self.left_osd_label.set_text(label);
     }
 }
 

@@ -29,6 +29,24 @@
         
         <!-- Overlay Widgets -->
         <child type="overlay">
+          <object class="GtkBox" id="left_osd_box">
+            <property name="halign">start</property>
+            <property name="valign">start</property>
+            <property name="orientation">horizontal</property>
+            <property name="visible">False</property>
+            <style>
+              <class name="osd-box"></class>
+              <class name="osd"/>
+              <class name="osd-label-box"></class>
+            </style>
+            <child>
+              <object class="GtkLabel" id="left_osd_label">
+                <property name="label"></property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child type="overlay">
           <object class="GtkBox" id="osd_box">
             <property name="halign">end</property>
             <property name="valign">start</property>

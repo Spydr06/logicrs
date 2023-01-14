@@ -42,6 +42,7 @@ impl Renderable for Selection {
                 let position = (cmp::min(start.0, end.0), cmp::min(start.1, end.1));
                 let size = (cmp::max(start.0, end.0) - position.0, cmp::max(start.1, end.1) - position.1);
                 renderer.rectangle(position, size)
+                    .set_line_width(1.)
                     .set_color(&DEFAULT_THEME.accent_bg_color)
                     .fill_preserve()?;
                 renderer.set_color(&DEFAULT_THEME.accent_fg_color)

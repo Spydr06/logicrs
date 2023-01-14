@@ -35,6 +35,7 @@ pub trait Renderer: Default {
     fn set_line_width(&self, width: f64) -> &Self;
     fn set_font_size(&self, size: f64) -> &Self;
 
+    #[inline]
     fn world_coords(&self, x: f64, y: f64) -> (i32, i32) {
         let screen_center = (self.size().0 / 2, self.size().1 / 2);
         (
@@ -43,6 +44,7 @@ pub trait Renderer: Default {
         )
     }
 
+    #[inline]
     fn screen_space(&self) -> (i32, i32, i32, i32) {
         let ((a, b), (c, d)) = (
             self.world_coords(0., 0.),
