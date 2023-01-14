@@ -146,15 +146,15 @@ impl CircuitViewTemplate {
 
     fn init_keyboard(&self) {
         let key_controller = gtk::EventControllerKey::new();
-        key_controller.connect_key_pressed(glib::clone!(@weak self as widget => @default-panic, move |_, _, modifier, _| {
-            if modifier == 37 /* left ctrl key */ {
+        key_controller.connect_key_pressed(glib::clone!(@weak self as widget => @default-panic, move |_, key, _, _| {
+            if key == gdk::Key::Control_L {
                 widget.ctrl_down.replace(true);
             }
             gtk::Inhibit(true)
         }));
 
-        key_controller.connect_key_released(glib::clone!(@weak self as widget => @default-panic, move |_, _, modifier, _| 
-            if modifier == 37 /* left ctrl key */ {
+        key_controller.connect_key_released(glib::clone!(@weak self as widget => @default-panic, move |_, key, _, _| 
+            if key == gdk::Key::Control_L {
                 widget.ctrl_down.replace(false);
             }
         ));
