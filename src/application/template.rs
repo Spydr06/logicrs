@@ -121,12 +121,10 @@ impl ApplicationTemplate {
     // }
 
     pub fn with_current_plot_mut(&self, func: impl Fn(&mut Plot)) {
-        if let Some(window) = self.window.borrow().as_ref() {
-            if let Some(page) = window.imp().circuit_panel.imp().view.selected_page() {
-                if let Ok(view) = page.child().downcast::<CircuitView>() {
-                    view.imp().plot_provider().with_mut(func);
-                }
-            }
+        if let Some(window) = self.window.borrow().as_ref() &&
+            let Some(page) = window.imp().circuit_panel.imp().view.selected_page() &&
+            let Ok(view) = page.child().downcast::<CircuitView>() {
+            view.imp().plot_provider().with_mut(func);
         }
     }
 }

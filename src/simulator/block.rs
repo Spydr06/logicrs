@@ -1,6 +1,6 @@
 use std::{f64, cmp};
 
-use crate::renderer::*;
+use crate::{renderer::*, selection::SelectionField};
 use serde::{Serialize, Deserialize};
 
 use super::{Connection, Linkage, Plot, Decoration, Module};
@@ -157,18 +157,16 @@ impl Block {
         None
     }
 
-    fn draw_connector<R>(&self, renderer: &R, position: (i32, i32)) -> Result<(), R::Error>
+    fn draw_connector<R>(&self, renderer: &R, position: (i32, i32), highlighted: bool) -> Result<(), R::Error>
         where R: Renderer
     {
         renderer.arc(position, 6., 0., f64::consts::TAU);
         
-        renderer.set_color(0.5, 0.1, 0.7, 1.);
+        renderer.set_color(if highlighted { &DEFAULT_THEME.suggestion_fg_color } else { &DEFAULT_THEME.disabled_fg_color });
         renderer.fill_preserve()?;
 
-        match self.highlighted {
-            true => renderer.set_color(0.2078, 0.5176, 0.894, 1.),
-            false => renderer.set_color(0.23, 0.23, 0.23, 1.)       
-        };   
+        renderer.set_color(if self.highlighted { &DEFAULT_THEME.accent_fg_color } else { &DEFAULT_THEME.border_color });
+
         renderer.stroke()?;
             
         Ok(())
@@ -177,35 +175,36 @@ impl Block {
 
 
 impl Renderable for Block {
-    fn render<R>(&self, renderer: &R, _plot: &Plot) -> Result<(), R::Error>
+    fn render<R>(&self, renderer: &R, plot: &Plot) -> Result<(), R::Error>
         where R: Renderer 
     {
         renderer.set_line_width(2.);
-        renderer.rounded_rect(self.position, self.size, 5);
-        
-        renderer.set_color(0.13, 0.13, 0.13, 1.).fill()?;
+        renderer.rounded_rect(self.position, self.size, 5)
+            .set_color(&DEFAULT_THEME.block_bg_color).fill()?;
+
         renderer.top_rounded_rect(self.position, (self.size.0, 25), 5)
-            .set_color(0.23, 0.23, 0.23, 1.)
+            .set_color(&DEFAULT_THEME.border_color)
             .fill()?;
 
         renderer.move_to((self.position.0 + 5, self.position.1 + 18))
-            .set_color(1., 1., 1., 1.)
+            .set_color(&DEFAULT_THEME.block_fg_color)
             .show_text(self.name.as_str())?;
 
         renderer.rounded_rect(self.position, self.size, 5);
         match self.highlighted {
-            true => renderer.set_color(0.2078, 0.5176, 0.894, 1.),
-            false => renderer.set_color(0.23, 0.23, 0.23, 1.)    
+            true => renderer.set_color(&DEFAULT_THEME.accent_fg_color),
+            false => renderer.set_color(&DEFAULT_THEME.border_color)    
         };
         renderer.stroke()?;
 
         renderer.set_line_width(1.);
+        let highlight_inputs = plot.selection().connecting();
         for i in 0..self.num_inputs {
-            self.draw_connector(renderer, (self.position.0, self.position.1 + 25 * i as i32 + 50))?;
+            self.draw_connector(renderer, (self.position.0, self.position.1 + 25 * i as i32 + 50), highlight_inputs)?;
         }
 
         for i in 0..self.num_outputs {
-            self.draw_connector(renderer, (self.position.0 + self.size.0, self.position.1 + 25 * i as i32 + 50))?;
+            self.draw_connector(renderer, (self.position.0 + self.size.0, self.position.1 + 25 * i as i32 + 50), false)?;
         }
 
         self.decoration.render(renderer, self)?;

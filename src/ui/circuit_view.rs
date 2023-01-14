@@ -1,4 +1,4 @@
-use std::{cell::RefCell, sync::Arc};
+use std::{cell::RefCell, rc::Rc, sync::atomic::{AtomicBool, Ordering}};
 
 use gtk::{prelude::*, subclass::prelude::*, gio, glib, gdk};
 
@@ -39,20 +39,15 @@ pub struct CircuitViewTemplate {
     #[template_child]
     area_context_menu: TemplateChild<gtk::PopoverMenu>,
 
-    renderer: RefCell<Option<Arc<RefCell<CairoRenderer>>>>,
+    renderer: Rc<RefCell<CairoRenderer>>,
     plot_provider: RefCell<PlotProvider>,
+
+    ctrl_down: RefCell<bool>
 }
 
 impl CircuitViewTemplate {
     pub fn rerender(&self) {
         self.drawing_area.queue_draw();
-    }
-
-    fn renderer(&self) -> Option<Arc<RefCell<CairoRenderer>>> {
-        match self.renderer.borrow().as_ref() {
-            Some(renderer) => Some(renderer.clone()),
-            None => None
-        }
     }
 
     pub fn plot_provider(&self) -> PlotProvider {
@@ -65,15 +60,16 @@ impl CircuitViewTemplate {
     }
 
     fn setup_buttons(&self) {
-        let renderer = self.renderer().unwrap();
-        let r = renderer.clone();
+        let r = self.renderer.clone();
         let w = self.drawing_area.to_owned();
         self.zoom_reset.connect_clicked(move |_| {
-            r.borrow_mut().set_scale(DEFAULT_SCALE);
+            let mut r = r.borrow_mut();
+            r.set_scale(DEFAULT_SCALE);
+            r.translate((0., 0.));
             w.queue_draw();
             //println!("scale: {}%", r.lock().unwrap().scale() * 100.);
         });
-        let r = renderer.clone();
+        let r = self.renderer.clone();
         let w = self.drawing_area.to_owned();
         self.zoom_in.connect_clicked(move |_| {
             let mut r = r.borrow_mut();
@@ -82,7 +78,7 @@ impl CircuitViewTemplate {
             w.queue_draw();
             //println!("scale: {}%", scale * 100.);
         });
-        let r = renderer.clone();
+        let r = self.renderer.clone();
         let w = self.drawing_area.to_owned();
         self.zoom_out.connect_clicked(move |_| {
             let mut r = r.borrow_mut();
@@ -96,31 +92,51 @@ impl CircuitViewTemplate {
     fn init_dragging(&self) {
         let gesture_drag = gtk::GestureDrag::builder().button(gdk::ffi::GDK_BUTTON_PRIMARY as u32).build();
         let area = self.drawing_area.to_owned();
-        let renderer = self.renderer().unwrap();
+        let renderer = self.renderer.clone();
 
         let original_provider = self.plot_provider.borrow();
 
         let provider = original_provider.clone();
-        gesture_drag.connect_drag_begin(move |gesture, x, y| {
+        gesture_drag.connect_drag_begin(glib::clone!(@weak self as widget => move |gesture, x, y| {
             gesture.set_state(gtk::EventSequenceState::Claimed);
-            provider.with_mut(|plot| drag_begin(plot, &area, renderer.borrow().scale(), x, y));
-        });
+            area.grab_focus();
+            
+            if *widget.ctrl_down.borrow() {
+                renderer.borrow_mut().save_translation();
+            }
+            else {
+                provider.with_mut(|plot| drag_begin(plot, &area, renderer.borrow().world_coords(x, y)));
+            }
+        }));
 
         let area = self.drawing_area.to_owned();
-        let renderer = self.renderer().unwrap();
+        let renderer = self.renderer.clone();
         let provider = original_provider.clone();
-        gesture_drag.connect_drag_update(move |gesture, x, y| {
+        gesture_drag.connect_drag_update(glib::clone!(@weak self as widget => move |gesture, x, y| {
             gesture.set_state(gtk::EventSequenceState::Claimed);
-            provider.with_mut(|plot| drag_update(plot, &area, renderer.borrow().scale(), x, y));
-        });
+            let scale = renderer.borrow().scale();
+
+            if *widget.ctrl_down.borrow() {
+                let original_translation = renderer.borrow().original_translation();
+                renderer.borrow_mut().translate((x / scale + original_translation.0, y / scale + original_translation.1));
+                widget.drawing_area.queue_draw();
+            }
+            else {
+                provider.with_mut(|plot| drag_update(plot, &area, ((x / scale) as i32, (y / scale) as i32)));
+            }
+        }));
 
         let area = self.drawing_area.to_owned();
-        let renderer = self.renderer().unwrap();
+        let renderer = self.renderer.clone();
         let provider = original_provider.clone();
-        gesture_drag.connect_drag_end(move |gesture, x, y| {
+        gesture_drag.connect_drag_end(glib::clone!(@weak self as widget => move |gesture, x, y| {
             gesture.set_state(gtk::EventSequenceState::Claimed);
-            provider.with_mut(|plot| drag_end(plot, &area, renderer.borrow().scale(), x, y));
-        });
+
+            if !*widget.ctrl_down.borrow() && (x != 0. || y != 0.) {
+                let scale = renderer.borrow().scale();
+                provider.with_mut(|plot| drag_end(plot, &area, ((x / scale) as i32, (y / scale) as i32)));
+            }
+        }));
 
         self.drawing_area.add_controller(&gesture_drag);
     }
@@ -134,11 +150,27 @@ impl CircuitViewTemplate {
         self.drawing_area.add_controller(&gesture);
     }
 
+    fn init_keyboard(&self) {
+        let key_controller = gtk::EventControllerKey::builder().build();
+        key_controller.connect_key_pressed(glib::clone!(@weak self as widget => @default-panic, move |_, _, modifier, _| {
+            if modifier == 37 /* left ctrl key */ {
+                widget.ctrl_down.replace(true);
+            }
+            gtk::Inhibit(true)
+        }));
+
+        key_controller.connect_key_released(glib::clone!(@weak self as widget => @default-panic, move |_, _, modifier, _| 
+            if modifier == 37 /* left ctrl key */ {
+                widget.ctrl_down.replace(false);
+            }
+        ));
+        self.drawing_area.add_controller(&key_controller);
+    }
+
     fn initialize(&self) {
-        *self.renderer.borrow_mut() = Some(Arc::new(RefCell::new(CairoRenderer::new())));
-        let renderer = self.renderer().unwrap();
+        let renderer = self.renderer.clone();
         let provider = self.plot_provider.borrow().clone();
-        self.drawing_area.set_draw_func(move |area: &gtk::DrawingArea, context: &gtk::cairo::Context, width: i32, height: i32| {
+        self.drawing_area.set_draw_func(move |area, context, width, height| {
             provider.with_mut(|plot| {
                 if let Err(err) = renderer.borrow_mut().callback(plot, area, context, width, height) {
                     eprintln!("Error rendering CircuitView: {}", err);
@@ -146,14 +178,19 @@ impl CircuitViewTemplate {
                 }
             });
         });
-        
+
+        self.drawing_area.set_focusable(true);
+        self.drawing_area.grab_focus();
+        self.drawing_area.set_focus_on_click(true);
+
         self.setup_buttons();
         self.init_dragging();
+        self.init_keyboard();
         self.init_context_menu();
     }
 
     fn context_menu(&self, x: f64, y: f64) {        
-        let scale = if let Some(r) = self.renderer.borrow().as_ref() { r.borrow().scale() } else { 1.0 };
+        let scale = self.renderer.borrow().scale();
         let position = ((x / scale) as i32, (y / scale) as i32);
 
         self.plot_provider.borrow_mut().with_mut(|plot| {
@@ -219,9 +256,7 @@ impl WidgetImpl for CircuitViewTemplate {
 
 impl BoxImpl for CircuitViewTemplate {}
 
-fn drag_begin(plot: &mut Plot, area: &gtk::DrawingArea, scale: f64, x: f64, y: f64) {
-    let position = ((x / scale) as i32, (y / scale) as i32);
-
+fn drag_begin(plot: &mut Plot, area: &gtk::DrawingArea, position: (i32, i32)) {
     plot.unhighlight();
     
     match plot.get_block_at(position) {
@@ -251,40 +286,32 @@ fn drag_begin(plot: &mut Plot, area: &gtk::DrawingArea, scale: f64, x: f64, y: f
     area.queue_draw();
 }
 
-fn drag_update(plot: &mut Plot, area: &gtk::DrawingArea, scale: f64, x: f64, y: f64) {
-    let position = ((x / scale) as i32, (y / scale) as i32);
-
+fn drag_update(plot: &mut Plot, area: &gtk::DrawingArea, offset: (i32, i32)) {
     match plot.selection().clone() {
         Selection::Single(index) => {
             let block = plot.get_block_mut(index).unwrap();
             let (start_x, start_y) = block.start_pos();
-            block.set_position((start_x + position.0, start_y + position.1));
+            block.set_position((start_x + offset.0, start_y + offset.1));
             area.queue_draw();
         }
         Selection::Connection { block_id, output, start, position: _ } => {
-            plot.set_selection(Selection::Connection { block_id, output, start, position: (start.0 + position.0, start.1 + position.1)});
+            plot.set_selection(Selection::Connection { block_id, output, start, position: (start.0 + offset.0, start.1 + offset.1)});
             area.queue_draw();
         }
         Selection::Area(area_start, _) => {
-            plot.set_selection(Selection::Area(area_start, (area_start.0 + position.0, area_start.1 + position.1)));
+            plot.set_selection(Selection::Area(area_start, (area_start.0 + offset.0, area_start.1 + offset.1)));
             area.queue_draw();
         }
         _ => ()
     }
 }
 
-fn drag_end(plot: &mut Plot, area: &gtk::DrawingArea, scale: f64, x: f64, y: f64) {
-    if x == 0. && y == 0. {
-        return;
-    }
-
-    let position = ((x / scale) as i32, (y / scale) as i32);
-
+fn drag_end(plot: &mut Plot, area: &gtk::DrawingArea, offset: (i32, i32)) {
     match plot.selection().clone() { 
         Selection::Single(index) => {
             let block = plot.get_block_mut(index).unwrap();
             let (start_x, start_y) = block.start_pos();
-            block.set_position((start_x + position.0, start_y + position.1));
+            block.set_position((start_x + offset.0, start_y + offset.1));
         },
         Selection::Connection { block_id, output, start: _, position } => {
             if let Some(block) = plot.get_block_at(position) {

@@ -109,8 +109,8 @@ impl Application {
                 let obj = app.downgrade();
                 let file_chooser = RefCell::new(Some(open_dialog.clone()));
                 move |_, response| {
-                    if let Some(obj) = obj.upgrade() {
-                        if let Some(file_chooser) = file_chooser.take() {
+                    if let Some(obj) = obj.upgrade() &&
+                        let Some(file_chooser) = file_chooser.take() {
                             if response == gtk::ResponseType::Accept {
                                 for file in file_chooser.files().snapshot().into_iter() {
                                     let file: gio::File = file
@@ -126,10 +126,6 @@ impl Application {
                                 }
                             }
                         }
-                        else {
-                            warn!("got file chooser response more than once");
-                        }
-                    }
                     else {
                         warn!("got file chooser response after window was freed");
                     }

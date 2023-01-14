@@ -1,3 +1,6 @@
+#![feature(const_fn_floating_point_arithmetic)]
+#![feature(let_chains)]
+
 mod application;
 mod ui;
 mod renderer;

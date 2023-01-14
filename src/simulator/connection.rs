@@ -39,10 +39,10 @@ impl Renderable for Connection {
             return Ok(())
         }
         if self.active {
-            renderer.set_color(0.0784313, 0.3215686, 0.18745098, 1.);
+            renderer.set_color(&DEFAULT_THEME.enabled_bg_color);
         }
         else {
-            renderer.set_color(0.346, 0.155, 0.41, 1.);
+            renderer.set_color(&DEFAULT_THEME.disabled_bg_color);
         }
         let start = from.unwrap().get_connector_pos(Connector::Output(self.from.port));
         let end = to.unwrap().get_connector_pos(Connector::Input(self.to.port));
