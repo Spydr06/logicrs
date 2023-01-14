@@ -60,8 +60,11 @@ impl Renderer for CairoRenderer {
             return Ok(());
         }
 
+        let screen_center = (width as f64 / 2., height as f64 / 2.);
+
+        context.translate(screen_center.0, screen_center.1);
         context.scale(self.scale, self.scale);
-        context.translate(self.translation.0 as f64, self.translation.1 as f64);
+        context.translate(self.translation.0, self.translation.1);
 
         context.set_antialias(Antialias::Default);
         context.set_source_rgb(0.1, 0.1, 0.1);
@@ -106,6 +109,12 @@ impl Renderer for CairoRenderer {
     #[inline]
     fn set_scale(&mut self, scale: f64) -> &mut Self {
         self.scale = scale.clamp(MINIMUM_SCALE, MAXIMUM_SCALE);
+        self
+    }
+
+    #[inline]
+    fn zoom(&mut self, amount: f64) -> &mut Self {
+        self.set_scale(self.scale * amount);
         self
     }
 

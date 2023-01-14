@@ -68,16 +68,14 @@ impl CircuitViewTemplate {
 
         self.zoom_in.connect_clicked(glib::clone!(@weak self as widget => move |_| {
             let mut r = widget.renderer.borrow_mut();
-            let scale = r.scale();
-            r.set_scale(scale * 1.1);
+            r.zoom(1.1);
             widget.drawing_area.queue_draw();
             //println!("scale: {}%", scale * 100.);
         }));
 
         self.zoom_out.connect_clicked(glib::clone!(@weak self as widget => move |_| {
             let mut r = widget.renderer.borrow_mut();
-            let scale = r.scale();
-            r.set_scale(scale / 1.1);
+            r.zoom(0.9);
             widget.drawing_area.queue_draw();
             //println!("scale: {}%", scale * 100.);
         }));
@@ -152,8 +150,7 @@ impl CircuitViewTemplate {
     fn init_scrolling(&self) {
         let scroll_controller = gtk::EventControllerScroll::new(gtk::EventControllerScrollFlags::VERTICAL);
         scroll_controller.connect_scroll(glib::clone!(@weak self as widget => @default-panic, move |_, _, y| {
-            let scale = widget.renderer.borrow().scale();
-            widget.renderer.borrow_mut().set_scale(if y > 0. { scale * 0.9 } else { scale * 1.1 });
+            widget.renderer.borrow_mut().zoom(if y > 0. { 0.9 } else { 1.1 });
             widget.drawing_area.queue_draw();
 
             gtk::Inhibit(true)

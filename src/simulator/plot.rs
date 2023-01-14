@@ -104,6 +104,8 @@ impl Renderable for Plot {
     fn render<R>(&self, renderer: &R, plot: &Plot) -> Result<(), R::Error>
         where R: Renderer
     {
+        let screen_space = renderer.screen_space();
+
         // render grid
         renderer.set_line_width(4.);
         for (_, block) in self.blocks() {
@@ -115,11 +117,8 @@ impl Renderable for Plot {
         }
         
         // render all blocks
-        renderer.set_line_width(2.);
-        for (_, block) in self.blocks() {
-            if block.is_in_area(renderer.screen_space()) {
-                block.render(renderer, plot)?;
-            }
+        for (_, block) in self.blocks().iter().filter(|(_, block)| block.is_in_area(screen_space)) {
+            block.render(renderer, plot)?
         }
 
         Ok(())

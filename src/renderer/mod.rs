@@ -30,23 +30,24 @@ pub trait Renderer: Default {
     fn set_size(&mut self, size: (i32, i32)) -> &mut Self;
     fn scale(&self) -> f64;
     fn set_scale(&mut self, scale: f64) -> &mut Self;
+    fn zoom(&mut self, amount: f64) -> &mut Self;
     fn set_color(&self, color: &Color) -> &Self;
     fn set_line_width(&self, width: f64) -> &Self;
     fn set_font_size(&self, size: f64) -> &Self;
 
     fn world_coords(&self, x: f64, y: f64) -> (i32, i32) {
         (
-            ((x) / self.scale()  - self.translation().0) as i32,
-            ((y) / self.scale()  - self.translation().1) as i32
+            (x / self.scale() - self.translation().0) as i32 - ((self.size().0 / 2) as f64 / self.scale()) as i32,
+            (y / self.scale() - self.translation().1) as i32 - ((self.size().1 / 2) as f64 / self.scale()) as i32
         )
     }
 
     fn screen_space(&self) -> (i32, i32, i32, i32) {
         (
-            -self.translation().0 as i32,
-            -self.translation().1 as i32,
-            ((self.size().0 as f64) / self.scale() - self.translation().0) as i32,
-            ((self.size().1 as f64) / self.scale() - self.translation().1) as i32
+            ((-self.size().0 as f64 / 2.) / self.scale() - self.translation().0) as i32,
+            ((-self.size().1 as f64 / 2.) / self.scale() - self.translation().1) as i32,
+            ((self.size().0 as f64 / 2.) / self.scale() - self.translation().0) as i32,
+            ((self.size().1 as f64 / 2.) / self.scale() - self.translation().1) as i32
         )
     }
 
