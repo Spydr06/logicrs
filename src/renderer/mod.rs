@@ -36,19 +36,19 @@ pub trait Renderer: Default {
     fn set_font_size(&self, size: f64) -> &Self;
 
     fn world_coords(&self, x: f64, y: f64) -> (i32, i32) {
+        let screen_center = (self.size().0 / 2, self.size().1 / 2);
         (
-            (x / self.scale() - self.translation().0) as i32 - ((self.size().0 / 2) as f64 / self.scale()) as i32,
-            (y / self.scale() - self.translation().1) as i32 - ((self.size().1 / 2) as f64 / self.scale()) as i32
+            ((x - screen_center.0 as f64) / self.scale() - self.translation().0) as i32 + screen_center.0,
+            ((y - screen_center.1 as f64) / self.scale() - self.translation().1) as i32 + screen_center.1
         )
     }
 
     fn screen_space(&self) -> (i32, i32, i32, i32) {
-        (
-            ((-self.size().0 as f64 / 2.) / self.scale() - self.translation().0) as i32,
-            ((-self.size().1 as f64 / 2.) / self.scale() - self.translation().1) as i32,
-            ((self.size().0 as f64 / 2.) / self.scale() - self.translation().0) as i32,
-            ((self.size().1 as f64 / 2.) / self.scale() - self.translation().1) as i32
-        )
+        let ((a, b), (c, d)) = (
+            self.world_coords(0., 0.),
+            self.world_coords(self.size().0 as f64, self.size().1 as f64)
+        );
+        (a, b, c, d)
     }
 
     // shape functions

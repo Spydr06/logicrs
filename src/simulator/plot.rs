@@ -88,8 +88,6 @@ impl Plot {
     }
 
     pub fn delete_block(&mut self, id: u32) {
-        info!("Remove block {id}");
-
         self.blocks.values_mut().for_each(|block| 
             block.connections_mut().iter_mut().filter(
                 |c| c.as_ref().map(|c| c.contains(id)
@@ -109,16 +107,14 @@ impl Renderable for Plot {
         // render grid
         renderer.set_line_width(4.);
         for (_, block) in self.blocks() {
-            for c in block.connections() {
-                if let Some(connection) = c {
-                    connection.render(renderer, plot)?;
-                }
+            for c in block.connections().iter().filter(|c| c.is_some()) {
+                c.as_ref().unwrap().render(renderer, plot)?;
             }
         }
         
         // render all blocks
         for (_, block) in self.blocks().iter().filter(|(_, block)| block.is_in_area(screen_space)) {
-            block.render(renderer, plot)?
+            block.render(renderer, plot)?;
         }
 
         Ok(())
