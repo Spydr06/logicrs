@@ -156,6 +156,7 @@ impl CircuitViewTemplate {
         key_controller.connect_key_released(glib::clone!(@weak self as widget => @default-panic, move |_, key, _, _| 
             if key == gdk::Key::Control_L {
                 widget.ctrl_down.replace(false);
+                widget.set_left_osd_visible(false);
             }
         ));
         self.drawing_area.add_controller(&key_controller);
