@@ -64,6 +64,7 @@ impl ModuleListTemplate {
                     drop(project);
 
                     application.imp().with_current_plot_mut(move |plot| plot.add_block(block.clone()));
+                    application.imp().rerender_editor();
                 }
         }));
         

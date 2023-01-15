@@ -13,4 +13,10 @@
     <file compressed="true">style/overlay.css</file>
     <file compressed="true">style/module-list.css</file>
   </gresource>
+  <!-- Icons -->
+  <gresource>
+    <file compressed="true" preprocess="xml-stripblanks">style/icons/zoom-in-symbolic.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">style/icons/zoom-out-symbolic.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">style/icons/zoom-original-symbolic.svg</file>
+  </gresource>
 </gresources>
