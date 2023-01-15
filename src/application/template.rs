@@ -120,11 +120,21 @@ impl ApplicationTemplate {
     //     }
     // }
 
+    pub fn current_circuit_view(&self) -> Option<CircuitView> {
+        self.window.borrow().as_ref()
+            .and_then(|window| window.imp().circuit_panel.imp().view.selected_page())
+            .and_then(|page| page.child().downcast::<CircuitView>().ok())
+    }
+
     pub fn with_current_plot_mut(&self, func: impl Fn(&mut Plot)) {
-        if let Some(window) = self.window.borrow().as_ref() &&
-            let Some(page) = window.imp().circuit_panel.imp().view.selected_page() &&
-            let Ok(view) = page.child().downcast::<CircuitView>() {
+        if let Some(view) = self.current_circuit_view() {
             view.imp().plot_provider().with_mut(func);
+        }
+    }
+
+    pub fn rerender_editor(&self) {
+        if let Some(view) = self.current_circuit_view() {
+            view.imp().rerender();
         }
     }
 }
