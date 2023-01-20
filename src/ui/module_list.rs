@@ -1,6 +1,6 @@
-use gtk::{prelude::*, subclass::prelude::*, glib, gdk};
+use gtk::{prelude::*, subclass::prelude::*, glib, gdk, gio};
 
-use crate::{application::Application, simulator::*};
+use crate::{application::{Application, action::Action}, simulator::*};
 
 glib::wrapper! {
     pub struct ModuleList(ObjectSubclass<ModuleListTemplate>)
@@ -29,10 +29,10 @@ pub struct ModuleListTemplate {
     pub header_bar: TemplateChild<adw::HeaderBar>,
 
     #[template_child]
-    pub builtin_list_box: TemplateChild<gtk::ListBox>,
+    builtin_list_box: TemplateChild<gtk::ListBox>,
 
     #[template_child]
-    pub custom_list_box: TemplateChild<gtk::ListBox>
+    custom_list_box: TemplateChild<gtk::ListBox>,
 }
 
 impl ModuleListTemplate {
@@ -41,37 +41,47 @@ impl ModuleListTemplate {
     }
 
     fn add_module_to_ui(&self, application: &Application, module: &Module) {
-        let label = gtk::Label::builder()
-            .label(module.name().as_str())
-            .build();
-        
         let item = gtk::ListBoxRow::builder()
-            .child(&label)
+            .child(&gtk::Label::new(Some(&module.name())))
+            .css_classes(vec![String::from("module-list-item")])
             .build();
+
+        module.builtin()
+            .then_some(&self.builtin_list_box)
+            .unwrap_or(&self.custom_list_box)
+            .append(&item);
             
-        let click_gesture = gtk::GestureClick::builder()
+        let left_click_gesture = gtk::GestureClick::builder()
             .button(gdk::ffi::GDK_BUTTON_PRIMARY as u32)
             .build();
         
         let name = module.name().to_owned();
-        let project = application.imp().project().clone();
-        click_gesture.connect_pressed(glib::clone!(@weak application => move |_, _, _, _| {
-                let mut project = project.lock().unwrap();
-                let id = project.new_id();
-                if let Some(module) = project.module(&name) {
-                    let block = Block::new(&module, (0, 0), id);
-                    drop(module);
-                    drop(project);
-
-                    application.imp().with_current_plot_mut(move |plot| plot.add_block(block.clone()));
-                    application.imp().rerender_editor();
-                }
+        left_click_gesture.connect_pressed(glib::clone!(@weak application => move |_, _, _, _| {
+            let project = application.imp().project().clone();
+            let mut project = project.lock().unwrap();
+            let id = project.new_id();
+            if let Some(module) = project.module(&name) && let Some(plot) = application.imp().current_plot() {
+                let block = Block::new(&module, (0, 0), id);
+                drop(project);
+                application.new_action(Action::NewBlock(plot, block));
+            }
         }));
-        
-        item.add_controller(&click_gesture);
-        item.add_css_class("module-list-item");
-        
-        if module.builtin() { &self.builtin_list_box } else { &self.custom_list_box }.append(&item);
+        item.add_controller(&left_click_gesture);
+
+        let right_click_gesture = gtk::GestureClick::builder()
+            .button(gdk::ffi::GDK_BUTTON_SECONDARY as u32)
+            .build();
+        item.add_controller(&right_click_gesture);
+
+        let name = module.name().to_owned();
+        let is_builtin = module.builtin();
+        right_click_gesture.connect_pressed(glib::clone!(@weak self as widget => move |_, _, x, y| {
+            if is_builtin {
+                return;
+            }
+
+            widget.custom_module_context(&item, &name, x as i32, y as i32);
+        }));
     }
 
     fn remove_module(&self, module: &Module) {
@@ -97,6 +107,15 @@ impl ModuleListTemplate {
             }
         );
     }
+
+    fn custom_module_context(&self, item: &gtk::ListBoxRow, _name: &String, x: i32, y: i32) {
+        let model = gio::MenuModel::NONE; // TODO
+
+        let popover = gtk::PopoverMenu::from_model(model);
+        popover.set_parent(item);
+        popover.set_pointing_to(Some(&gdk::Rectangle::new(x, y, 1, 1)));
+        popover.popup();
+    }   
 }
 
 #[glib::object_subclass]

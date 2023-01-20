@@ -14,9 +14,11 @@
     <file compressed="true">style/module-list.css</file>
   </gresource>
   <!-- Icons -->
-  <gresource>
-    <file compressed="true" preprocess="xml-stripblanks">style/icons/zoom-in-symbolic.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">style/icons/zoom-out-symbolic.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">style/icons/zoom-original-symbolic.svg</file>
+  <gresource prefix="/com/spydr06/logicrs/icons/scalable/actions/">
+    <file compressed="true" preprocess="xml-stripblanks" alias="zoom-in-symbolic.svg">style/icons/zoom-in-symbolic.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="zoom-out-symbolic.svg">style/icons/zoom-out-symbolic.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="zoom-original-symbolic.svg">style/icons/zoom-original-symbolic.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="right-large-symbolic.svg">style/icons/right-large-symbolic.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="left-large-symbolic.svg">style/icons/left-large-symbolic.svg</file>
   </gresource>
 </gresources>

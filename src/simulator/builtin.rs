@@ -9,7 +9,7 @@ lazy_static! {
       vec![
          Module::new_builtin("And",    false, 2, 1, Decoration::Label(String::from("&"))),
          Module::new_builtin("Or",     false, 2, 1, Decoration::Label(String::from("≥1"))),
-         Module::new_builtin("Not",    false, 1, 1, Decoration::Label(String::from("1"))),
+         Module::new_builtin("Not",    false, 1, 1, Decoration::NotLabel(String::from("1"))),
          Module::new_builtin("Xor",    false, 2, 1, Decoration::Label(String::from("=1"))),
          Module::new_builtin("Button", false, 0, 1, Decoration::None),
          Module::new_builtin("Switch", false, 0, 1, Decoration::None),

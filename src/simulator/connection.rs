@@ -27,6 +27,14 @@ impl Connection {
     pub fn contains(&self, id: u32) -> bool {
         self.from.block_id == id || self.to.block_id == id
     }
+
+    pub fn origin(&self) -> u8 {
+        self.from.port
+    }
+
+    pub fn origin_id(&self) -> u32 {
+        self.from.block_id
+    }
 }
 
 impl Renderable for Connection {

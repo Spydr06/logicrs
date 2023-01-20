@@ -61,6 +61,10 @@ impl MainWindow {
         let panel = self.imp().circuit_panel.imp();
         panel.set_title(text);
     }
+
+    pub fn panel(&self) -> &CircuitPanel {
+        &self.imp().circuit_panel
+    }
 }
 
 #[derive(gtk::CompositeTemplate, Default)]

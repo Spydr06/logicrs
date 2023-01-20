@@ -1,10 +1,12 @@
 pub mod template;
 pub mod actions;
+pub mod action;
 
+use action::*;
 use std::cell::RefCell;
 use adw::traits::MessageDialogExt;
 use gtk::{prelude::*, subclass::prelude::*, gio, glib};
-use crate::{config, ui::dialogs};
+use crate::{config, ui::dialogs, selection::SelectionField};
 
 glib::wrapper! {
     pub struct Application(ObjectSubclass<template::ApplicationTemplate>)
@@ -25,6 +27,18 @@ impl Application {
             ("application-id", &"com.spydr06.logicrs"),
             ("flags", &gio::ApplicationFlags::HANDLES_OPEN),
         ])
+    }
+
+    pub fn new_action(&self, action: Action) {
+        self.imp().action_stack().borrow_mut().add(self, action);
+    }
+
+    pub fn undo_action(&self) {
+        self.imp().action_stack().borrow_mut().undo(self);
+    }
+
+    pub fn redo_action(&self) {
+        self.imp().action_stack().borrow_mut().redo(self);
     }
 
     pub(self) fn setup_gactions(&self) {
@@ -72,7 +86,12 @@ impl Application {
 
         let delete_block_action = gio::SimpleAction::new("delete-block", None);
         delete_block_action.connect_activate(glib::clone!(@weak self as app => move |_, _| {
-            app.imp().delete_selected_blocks();
+            if let Some(plot_provider) = app.imp().current_plot() {
+                let blocks = plot_provider.with_mut(|plot| 
+                    plot.selected().iter().map(|id| plot.get_block(*id).unwrap().to_owned()).collect()
+                ).unwrap_or_default();
+                app.new_action(Action::DeleteSelection(plot_provider, blocks, vec![]));
+            }
         }));
         self.add_action(&delete_block_action);
 
@@ -83,5 +102,17 @@ impl Application {
             }
         }));
         self.add_action(&create_new_module_action);
+
+        let undo_action = gio::SimpleAction::new("undo", None);
+        undo_action.connect_activate(glib::clone!(@weak self as app => move |_, _| {
+            app.undo_action();
+        }));
+        self.add_action(&undo_action);
+
+        let redo_action = gio::SimpleAction::new("redo", None);
+        redo_action.connect_activate(glib::clone!(@weak self as app => move |_, _| {
+            app.redo_action();
+        }));
+        self.add_action(&redo_action);
     }
 }

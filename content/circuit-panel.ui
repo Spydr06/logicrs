@@ -17,10 +17,32 @@
               </object>
             </child>
             <child>
-              <object class="GtkButton" id="open_button">
-                <property name="tooltip-text" translatable="yes">Open file</property>
-                <property name="label" translatable="yes">Open</property>
-                <signal name="clicked" handler="on_open_button_activate" swapped="true" />
+              <object class="GtkBox">
+                <style>
+                  <class name="undo-box"></class>
+                </style>
+                <child>
+                  <object class="GtkButton" id="undo_button">
+                    <property name="tooltip-text" translatable="yes">Un-do last action (Ctrl+Z)</property>
+                    <property name="icon-name">left-large-symbolic</property>
+                    <property name="sensitive">False</property>
+                    <signal name="clicked" handler="undo_latest" swapped="true" />
+                    <style>
+                      <class name="undo-button"></class>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="redo_button">
+                    <property name="tooltip-text" translatable="yes">Re-do last action (Ctrl+Y)</property>
+                    <property name="icon-name">right-large-symbolic</property>
+                    <property name="sensitive">False</property>
+                    <signal name="clicked" handler="redo_latest" swapped="true" />
+                    <style>
+                      <class name="redo-button"></class>
+                    </style>
+                  </object>
+                </child>
               </object>
             </child>
             <property name="title-widget">

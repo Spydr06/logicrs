@@ -1,4 +1,4 @@
-use super::Block;
+use super::{Block, Connection};
 use crate::{renderer::*, selection::*, project::ProjectRef};
 use std::{collections::HashMap, cmp};
 use serde::{Serialize, Deserialize};
@@ -18,28 +18,21 @@ impl Default for PlotProvider {
 
 impl PlotProvider {
     #[inline]
-    pub fn with(&self, func: impl Fn(&Plot)) {
+    pub fn with<T>(&self, func: impl Fn(&Plot) -> T) -> Option<T> {
         match self {
-            Self::Main(project) => func(project.lock().unwrap().main_plot()),
-            Self::Module(project, module) => 
-                if let Some(plot) = project.lock().unwrap().plot(module) {
-                    func(plot);
-                },
-            Self::None => {}
-        };
+            Self::Main(project) => Some(func(project.lock().unwrap().main_plot())),
+            Self::Module(project, module) => project.lock().unwrap().plot(module).map(|plot| func(plot)),
+            Self::None => None
+        }
     }
 
     #[inline]
-    pub fn with_mut(&self, func: impl Fn(&mut Plot)) {
+    pub fn with_mut<T>(&self, func: impl Fn(&mut Plot) -> T) -> Option<T> {
         match self {
-            Self::Main(project) => func(project.lock().unwrap().main_plot_mut()),
-            Self::Module(project, module) => {
-                if let Some(plot) = project.lock().unwrap().plot_mut(module) {
-                    func(plot);
-                };
-            }
-            Self::None => {}
-        };
+            Self::Main(project) => Some(func(project.lock().unwrap().main_plot_mut())),
+            Self::Module(project, module) => project.lock().unwrap().plot_mut(module).map(|plot| func(plot)),
+            Self::None => None
+        }
     }
 }
 
@@ -87,14 +80,24 @@ impl Plot {
         None
     }
 
-    pub fn delete_block(&mut self, id: u32) {
-        self.blocks.values_mut().for_each(|block| 
-            block.connections_mut().iter_mut().filter(
-                |c| c.as_ref().map(|c| c.contains(id)
-            ).unwrap_or(false)).for_each(|c| *c = None)
+    pub fn delete_block(&mut self, id: u32) -> Vec<Connection> {
+        let mut deleted_connections = vec![];
+        self.blocks.values_mut().for_each(|block| {
+                let connections = block.connections_mut().iter_mut().filter(
+                    |c| c.as_ref().map(|c| c.contains(id)
+                ).unwrap_or(false));
+
+                let mut vec: Vec<Connection> = connections.map(|c| c.as_ref().unwrap().clone()).collect();
+                deleted_connections.append(&mut vec);
+
+                block.connections_mut().iter_mut().filter(
+                    |c| c.as_ref().map(|c| c.contains(id)
+                ).unwrap_or(false)).for_each(|c| *c = None);
+            }
         );
 
         self.blocks.remove(&id);
+        deleted_connections
     }
 }
 
@@ -148,12 +151,11 @@ impl SelectionField for Plot {
         self.selection = Selection::None
     }
 
-    fn delete_selected(&mut self) {
+    fn selected(&self) -> Vec<u32> {
         match self.selection.clone() {
-            Selection::Single(id) => self.delete_block(id),
-            Selection::Many(ids) => ids.iter().for_each(|id| self.delete_block(*id)),
-            Selection::Area(_, _) => {}
-            Selection::None | Selection::Connection {block_id: _, output: _, start: _, position: _} => {},
+            Selection::Single(id) => vec![id],
+            Selection::Many(ids) => ids,
+            _ => vec![]
         }
     }
 

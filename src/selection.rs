@@ -70,6 +70,6 @@ pub trait SelectionField {
     fn set_selection(&mut self, selection: Selection);
 
     fn unhighlight(&mut self);
-    fn delete_selected(&mut self);
+    fn selected(&self) -> Vec<u32>;
     fn highlight_area(&mut self);
 }

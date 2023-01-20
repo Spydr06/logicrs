@@ -7,6 +7,7 @@ use super::Block;
 pub enum Decoration {
     None,
     Label(String),
+    NotLabel(String),
 }
 
 impl Default for Decoration {
@@ -29,6 +30,27 @@ impl Decoration {
                     .show_text(label)?;
                 renderer.set_font_size(DEFAULT_FONT_SIZE);
                 Ok(())
+            },
+            Decoration::NotLabel(label) => {
+                let offset = (
+                    7 * label.chars().count() as i32,
+                    block.position().1 + block.size().1 / 2 - 2
+                );
+                let position = (
+                    block.position().0 + (block.size().0 / 2 - offset.0), 
+                    block.position().1 + (block.size().1 / 2 + 20)
+                );
+                renderer
+                    .set_font_size(26.0)    
+                    .move_to(position)
+                    .set_color(&DEFAULT_THEME.decoration_fg_color)
+                    .show_text(label)?;
+                renderer.set_font_size(DEFAULT_FONT_SIZE);
+                renderer
+                    .move_to((position.0, offset.1))
+                    .set_line_width(2.5)
+                    .line_to((position.0 + 2 * offset.0, offset.1))
+                    .stroke()
             }
         }
     }

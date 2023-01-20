@@ -4,3 +4,5 @@ pub const DESCRIPTION: &'static str = env!("CARGO_PKG_DESCRIPTION");
 pub const AUTHORS:     &'static str = env!("CARGO_PKG_AUTHORS");
 pub const COPYRIGHT:   &'static str = "© 2022 Spydr06";
 pub const REPOSITORY:  &'static str = env!("CARGO_PKG_REPOSITORY");
+
+pub const MAX_ACTION_STACK_SIZE: usize = 100;

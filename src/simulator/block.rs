@@ -117,6 +117,11 @@ impl Block {
         self
     }
 
+    pub fn remove_connection(&mut self, port: u8) -> &mut Self {
+        self.connections[port as usize] = None;
+        self
+    }
+
     pub fn connect_to(&mut self, port: u8, to: Linkage) -> &mut Self {
         self.connections[port as usize] = Some(Connection::new(
             Linkage {block_id: self.id, port},
@@ -131,10 +136,6 @@ impl Block {
 
     pub fn connections_mut(&mut self) -> &mut Vec<Option<Connection>> {
         &mut self.connections
-    }
-
-    pub fn remove_connection(&mut self, index: usize) {
-        self.connections.remove(index);
     }
 
     pub fn position_on_connection(&self, position: (i32, i32), is_input: bool) -> Option<u8> {

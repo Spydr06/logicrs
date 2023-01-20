@@ -3,9 +3,10 @@ use adw::subclass::prelude::*;
 use std::cell::RefCell;
 use crate::{
     ui::{main_window::MainWindow, circuit_view::CircuitView, dialogs},
-    fatal::*, project::*, selection::*,
-    simulator::*,
+    fatal::*, project::*, simulator::*,
 };
+
+use super::action::*;
 
 #[derive(Default)]
 pub struct ApplicationTemplate {
@@ -13,6 +14,7 @@ pub struct ApplicationTemplate {
     window: RefCell<Option<MainWindow>>,
     simulator: RefCell<Option<Simulator>>,
     file: RefCell<Option<gio::File>>,
+    action_stack: RefCell<ActionStack>,
 }
 
 impl ApplicationTemplate {
@@ -59,6 +61,7 @@ impl ApplicationTemplate {
             self.instance().save_as();
         }
 
+        self.action_stack().borrow_mut().set_dirty(false);
         Ok(())
     }
 
@@ -69,13 +72,6 @@ impl ApplicationTemplate {
         (&mut*self.project.lock().unwrap()).add_module(module);
     }
 
-    pub fn delete_selected_blocks(&self) {
-        self.with_current_plot_mut(|plot| {
-                plot.delete_selected();
-                self.window.borrow().as_ref().unwrap().rerender_circuit();
-        });
-    }
-
     pub fn set_project(&self, project: Project, file: Option<gio::File>) {
         let mut old = self.project.lock().unwrap();
         *old = project;
@@ -83,6 +79,7 @@ impl ApplicationTemplate {
         drop(old);
 
         self.file.replace(file);
+        self.action_stack.borrow_mut().reset();
         if let Some(window) = self.window.borrow().as_ref() {
             window.reset_ui(&self.instance());
         }
@@ -120,6 +117,15 @@ impl ApplicationTemplate {
     //     }
     // }
 
+    pub fn current_plot(&self) -> Option<PlotProvider> {
+        if let Some(view) = self.current_circuit_view() {
+            Some(view.imp().plot_provider())
+        }
+        else {
+            None
+        }
+    }
+
     pub fn current_circuit_view(&self) -> Option<CircuitView> {
         self.window.borrow().as_ref()
             .and_then(|window| window.imp().circuit_panel.imp().view.selected_page())
@@ -136,6 +142,22 @@ impl ApplicationTemplate {
         if let Some(view) = self.current_circuit_view() {
             view.imp().rerender();
         }
+    }
+
+    pub fn undo_button(&self) -> gtk::Button {
+        self.window.borrow().as_ref().unwrap().panel().undo_button().to_owned()
+    }
+
+    pub fn redo_button(&self) -> gtk::Button {
+        self.window.borrow().as_ref().unwrap().panel().redo_button().to_owned()
+    }
+
+    pub fn action_stack(&self) -> &RefCell<ActionStack> {
+        &self.action_stack
+    }
+
+    pub fn is_dirty(&self) -> bool {
+        self.action_stack.borrow().is_dirty()
     }
 }
 
@@ -159,6 +181,8 @@ impl ObjectImpl for ApplicationTemplate {
         obj.set_accels_for_action("app.open", &["<primary>O"]);
         obj.set_accels_for_action("app.new", &["<primary>N"]);
         obj.set_accels_for_action("app.delete-block", &["Delete"]);
+        obj.set_accels_for_action("app.undo", &["<primary>Z"]);
+        obj.set_accels_for_action("app.redo", &["<primary>Y"]);
     }
 }
 impl ApplicationImpl for ApplicationTemplate {

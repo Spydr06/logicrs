@@ -28,6 +28,11 @@ impl Application {
     where
         F: Fn(&str) + 'static,
     {
+        if !self.imp().is_dirty() {
+            after("No");
+            return;
+        }
+
         let window = self.active_window().unwrap();
         let save_dialog = adw::MessageDialog::builder()
             .transient_for(&window)

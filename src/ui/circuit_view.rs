@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 use gtk::{prelude::*, subclass::prelude::*, gio, glib, gdk};
-use crate::{selection::*, renderer::*, simulator::*, fatal::FatalResult};
+use crate::{selection::*, renderer::*, simulator::*, fatal::FatalResult, application::{Application, action::Action}};
 
 glib::wrapper! {
     pub struct CircuitView(ObjectSubclass<CircuitViewTemplate>)
@@ -9,9 +9,12 @@ glib::wrapper! {
 }
 
 impl CircuitView {
-    pub fn new(plot_provider: PlotProvider) -> Self {
+    pub fn new(app: Application, plot_provider: PlotProvider) -> Self {
         let circuit_view: Self = glib::Object::new::<Self>(&[]);
-        circuit_view.imp().set_plot_provider(plot_provider).initialize();
+        circuit_view.imp()
+            .set_application(app)
+            .set_plot_provider(plot_provider)
+            .initialize();
         circuit_view
     }
 }
@@ -45,8 +48,8 @@ pub struct CircuitViewTemplate {
 
     renderer: RefCell<CairoRenderer>,
     plot_provider: RefCell<PlotProvider>,
-
-    ctrl_down: RefCell<bool>
+    ctrl_down: RefCell<bool>,
+    application: RefCell<Application>
 }
 
 impl CircuitViewTemplate {
@@ -60,6 +63,11 @@ impl CircuitViewTemplate {
 
     fn set_plot_provider(&self, plot_provider: PlotProvider) -> &Self {
         self.plot_provider.replace(plot_provider);
+        self
+    }
+
+    fn set_application(&self, app: Application) -> &Self {
+        self.application.replace(app);
         self
     }
 
@@ -120,7 +128,8 @@ impl CircuitViewTemplate {
 
         }));
 
-        gesture_drag.connect_drag_end(glib::clone!(@weak self as widget => move |gesture, x, y| {
+        let app = &*self.application.borrow();
+        gesture_drag.connect_drag_end(glib::clone!(@weak self as widget, @weak app => move |gesture, x, y| {
             gesture.set_state(gtk::EventSequenceState::Claimed);
 
             if *widget.ctrl_down.borrow() && (x != 0. || y != 0.) {
@@ -128,7 +137,7 @@ impl CircuitViewTemplate {
             }
             else {
                 let scale = widget.renderer.borrow().scale();
-                widget.plot_provider.borrow().with_mut(|plot| drag_end(plot, &widget.drawing_area, ((x / scale) as i32, (y / scale) as i32)));
+                widget.drag_end(((x / scale) as i32, (y / scale) as i32));
             }
         }));
 
@@ -228,6 +237,43 @@ impl CircuitViewTemplate {
     fn set_left_osd_label<'a>(&self, label: &'a str) {
         self.left_osd_label.set_text(label);
     }
+
+    fn drag_end(&self, offset: (i32, i32)) {
+        let plot_provider = self.plot_provider.borrow();
+        let selection = plot_provider.with(|plot| plot.selection().clone()).unwrap();
+        match selection {
+            Selection::Single(index) => {
+                let action = plot_provider.with(|plot| {
+                    let block = plot.get_block(index).unwrap();
+                    let (start_x, start_y) = block.start_pos();
+                    Action::MoveBlock(plot_provider.clone(), block.id(), block.start_pos(), (start_x + offset.0, start_y + offset.1))
+                });
+
+                if let Some(action) = action {
+                    self.application.borrow().new_action(action);
+                }
+            },
+            Selection::Connection { block_id, output, start: _, position } => {
+                let connection = plot_provider.with_mut(|plot| {
+                    plot.set_selection(Selection::None);
+                    plot.get_block_at(position)
+                        .and_then(|block| plot.get_block(block).unwrap().position_on_connection(position, true).map(|i| (block, i)))
+                        .map(|(block, i)| Connection::new(Linkage { block_id, port: output }, Linkage { block_id: block, port: i }))
+                });
+
+                if let Some(connection) = connection.flatten() {
+                    self.application.borrow().new_action(Action::NewConnection(plot_provider.clone(), block_id, connection));
+                }
+                self.drawing_area.queue_draw()
+            }
+            Selection::Area(_, _) => {
+                plot_provider.with_mut(|plot| plot.highlight_area());
+                self.drawing_area.queue_draw()
+            }
+            _ => {}
+        };
+    }
+    
 }
 
 #[glib::object_subclass]
@@ -258,6 +304,8 @@ impl WidgetImpl for CircuitViewTemplate {
     }
 
     fn unrealize(&self) {
+        WidgetExt::unrealize(&*self.context_menu);
+        WidgetExt::unrealize(&*self.area_context_menu);
         self.parent_unrealize();
     }
 }
@@ -312,30 +360,4 @@ fn drag_update(plot: &mut Plot, area: &gtk::DrawingArea, offset: (i32, i32)) {
         }
         _ => ()
     }
-}
-
-fn drag_end(plot: &mut Plot, area: &gtk::DrawingArea, offset: (i32, i32)) {
-    match plot.selection().clone() { 
-        Selection::Single(index) => {
-            let block = plot.get_block_mut(index).unwrap();
-            let (start_x, start_y) = block.start_pos();
-            block.set_position((start_x + offset.0, start_y + offset.1));
-        },
-        Selection::Connection { block_id, output, start: _, position } => {
-            if let Some(block) = plot.get_block_at(position) {
-                if let Some(i) = plot.get_block(block).unwrap().position_on_connection(position, true) {
-                    plot.get_block_mut(block_id)
-                        .unwrap()
-                        .add_connection(output, Connection::new(Linkage { block_id, port: output }, Linkage { block_id: block, port: i }));
-                }
-            }
-
-            plot.set_selection(Selection::None);
-        }
-        Selection::Area(_, _) => {
-            plot.highlight_area();
-        }
-        _ => {}
-    }
-    area.queue_draw()
 }

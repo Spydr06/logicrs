@@ -1,2 +1,19 @@
 @import "overlay.css";
 @import "module-list.css";
+
+.undo-box {
+}
+
+.undo-button {
+    border-top-right-radius: 0px;
+    border-bottom-right-radius: 0px;
+}
+
+.redo-button {
+    border-top-left-radius: 0px;
+    border-bottom-left-radius: 0px;
+    /* border-left-color: @accent_bg_color;
+    border-left-width: 1px;
+    border-style: solid;
+    background-color: @dialog_bg_color; */
+}

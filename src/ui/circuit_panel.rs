@@ -20,8 +20,21 @@ impl CircuitPanel {
     }
 
     #[template_callback]
-    pub fn on_open_button_activate(&self, _btn: &gtk::Button) {
-        self.imp().application.borrow().open();
+    pub fn undo_latest(&self, _btn: &gtk::Button) {
+        self.imp().application.borrow().undo_action();
+    }
+
+    #[template_callback]
+    pub fn redo_latest(&self, _btn: &gtk::Button) {
+        self.imp().application.borrow().redo_action();
+    }
+
+    pub fn undo_button(&self) -> &gtk::Button {
+        &self.imp().undo_button
+    }
+
+    pub fn redo_button(&self) -> &gtk::Button {
+        &self.imp().redo_button        
     }
 }
 
@@ -35,13 +48,16 @@ pub struct CircuitPanelTemplate {
     pub back_button: TemplateChild<gtk::Button>,
 
     #[template_child]
-    pub open_button: TemplateChild<gtk::Button>,
-
-    #[template_child]
     pub view: TemplateChild<adw::TabView>,
 
     #[template_child]
     pub tab_bar: TemplateChild<adw::TabBar>,
+
+    #[template_child]
+    undo_button: TemplateChild<gtk::Button>,
+
+    #[template_child]
+    redo_button: TemplateChild<gtk::Button>,
 
     application: RefCell<Application>
 }
@@ -59,7 +75,7 @@ impl CircuitPanelTemplate {
     }
 
     pub fn new_tab<'a>(&self, title: &'a str, plot_provider: PlotProvider) -> adw::TabPage {
-        let content = CircuitView::new(plot_provider);
+        let content = CircuitView::new(self.application.borrow().clone(), plot_provider);
         let page = self.add_page(&content, title);
         self.view.set_selected_page(&page);
 
