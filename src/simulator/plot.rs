@@ -1,4 +1,4 @@
-use super::{Block, Connection};
+use super::{Block, BlockID, Connection};
 use crate::{renderer::*, selection::*, project::ProjectRef};
 use std::{collections::HashMap, cmp};
 use serde::{Serialize, Deserialize};
@@ -38,7 +38,7 @@ impl PlotProvider {
 
 #[derive(Serialize, Debug, Default, Deserialize)]
 pub struct Plot {
-    blocks: HashMap<u32, Block>,
+    blocks: HashMap<BlockID, Block>,
     selection: Selection
 }
 
@@ -50,11 +50,11 @@ impl Plot {
         }
     }
 
-    pub fn blocks(&self) -> &HashMap<u32, Block> {
+    pub fn blocks(&self) -> &HashMap<BlockID, Block> {
         &self.blocks
     }
 
-    pub fn blocks_mut(&mut self) -> &mut HashMap<u32, Block> {
+    pub fn blocks_mut(&mut self) -> &mut HashMap<BlockID, Block> {
         &mut self.blocks
     }
 
@@ -62,15 +62,15 @@ impl Plot {
         self.blocks.insert(block.id(), block);
     }
 
-    pub fn get_block(&self, id: u32) -> Option<&Block> {
+    pub fn get_block(&self, id: BlockID) -> Option<&Block> {
         self.blocks.get(&id)
     }
 
-    pub fn get_block_mut(&mut self, id: u32) -> Option<&mut Block> {
+    pub fn get_block_mut(&mut self, id: BlockID) -> Option<&mut Block> {
         self.blocks.get_mut(&id)
     }
 
-    pub fn get_block_at(&self, position: (i32, i32)) -> Option<u32> {
+    pub fn get_block_at(&self, position: (i32, i32)) -> Option<BlockID> {
         for (i, block) in self.blocks.iter() {
             if block.touches(position) {
                 return Some(*i);
@@ -80,7 +80,7 @@ impl Plot {
         None
     }
 
-    pub fn delete_block(&mut self, id: u32) -> Vec<Connection> {
+    pub fn delete_block(&mut self, id: BlockID) -> Vec<Connection> {
         let mut deleted_connections = vec![];
         self.blocks.values_mut().for_each(|block| {
                 let connections = block.connections_mut().iter_mut().filter(
@@ -151,7 +151,7 @@ impl SelectionField for Plot {
         self.selection = Selection::None
     }
 
-    fn selected(&self) -> Vec<u32> {
+    fn selected(&self) -> Vec<BlockID> {
         match self.selection.clone() {
             Selection::Single(id) => vec![id],
             Selection::Many(ids) => ids,

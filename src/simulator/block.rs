@@ -10,9 +10,11 @@ pub enum Connector {
     Output(u8)
 }
 
+pub type BlockID = u32;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Block {
-    id: u32,
+    id: BlockID,
     name: String,
 
     position: (i32, i32),
@@ -32,7 +34,7 @@ pub struct Block {
 }
 
 impl Block {
-    pub fn new_sized(module: &&Module, position: (i32, i32), id: u32, num_inputs: u8, num_outputs: u8) -> Self {
+    pub fn new_sized(module: &&Module, position: (i32, i32), id: BlockID, num_inputs: u8, num_outputs: u8) -> Self {
         let mut connections = Vec::with_capacity(num_outputs as usize);
         (0..num_outputs).for_each(|_| connections.push(None));
 
@@ -55,11 +57,11 @@ impl Block {
         }
     }
 
-    pub fn new(module: &&Module, position: (i32, i32), id: u32) -> Self {
+    pub fn new(module: &&Module, position: (i32, i32), id: BlockID) -> Self {
         Self::new_sized(module, position, id, module.get_num_inputs(), module.get_num_outputs())
     }
 
-    pub fn id(&self) -> u32 {
+    pub fn id(&self) -> BlockID {
         self.id
     }
 

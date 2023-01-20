@@ -1,10 +1,10 @@
 use crate::renderer::*;
-use super::{Connector, Plot};
+use super::{Connector, Plot, BlockID};
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct Linkage {
-    pub block_id: u32,
+    pub block_id: BlockID,
     pub port: u8,
 }
 
@@ -24,7 +24,7 @@ impl Connection {
         }
     }
 
-    pub fn contains(&self, id: u32) -> bool {
+    pub fn contains(&self, id: BlockID) -> bool {
         self.from.block_id == id || self.to.block_id == id
     }
 
@@ -32,7 +32,7 @@ impl Connection {
         self.from.port
     }
 
-    pub fn origin_id(&self) -> u32 {
+    pub fn origin_id(&self) -> BlockID {
         self.from.block_id
     }
 }

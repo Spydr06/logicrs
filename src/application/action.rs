@@ -73,8 +73,8 @@ impl ActionStack {
 
 pub enum Action {
     NewBlock(PlotProvider, Block),
-    MoveBlock(PlotProvider, u32, (i32, i32), (i32, i32)),
-    NewConnection(PlotProvider, u32, Connection),
+    MoveBlock(PlotProvider, BlockID, (i32, i32), (i32, i32)),
+    NewConnection(PlotProvider, BlockID, Connection),
     DeleteSelection(PlotProvider, Vec<Block>, Vec<Connection>),
 }
 
