@@ -106,9 +106,8 @@ impl CircuitViewTemplate {
                 widget.set_left_osd_visible(true);
             }
             else {
-                widget.plot_provider.borrow().with_mut(|plot| drag_begin(plot, &widget.drawing_area, widget.renderer.borrow().world_coords(x, y)));
+                widget.drag_begin(widget.renderer.borrow().world_coords(x, y));
             }
-
         }));
 
         gesture_drag.connect_drag_update(glib::clone!(@weak self as widget => move |gesture, x, y| {
@@ -123,9 +122,8 @@ impl CircuitViewTemplate {
                 widget.set_left_osd_label(&format!("{}, {}", translation.0 as i32, translation.1 as i32));
             }
             else {
-                widget.plot_provider.borrow().with_mut(|plot| drag_update(plot, &widget.drawing_area, ((x / scale) as i32, (y / scale) as i32)));
+                widget.drag_update(((x / scale) as i32, (y / scale) as i32));
             }
-
         }));
 
         let app = &*self.application.borrow();
@@ -184,7 +182,12 @@ impl CircuitViewTemplate {
 
     fn initialize(&self) {
         self.drawing_area.set_draw_func(glib::clone!(@weak self as widget => move |area, context, width, height|
-            widget.plot_provider.borrow().with_mut(|plot| widget.renderer.borrow_mut().callback(plot, area, context, width, height).unwrap_or_die());
+            widget.plot_provider.borrow().with_mut(|plot| 
+                widget.renderer.borrow_mut()
+                    .callback(plot, area, context, width, height)
+                    .map(|_| ())
+                    .unwrap_or_die()
+            );
         ));
 
         self.drawing_area.set_focusable(true);
@@ -238,11 +241,68 @@ impl CircuitViewTemplate {
         self.left_osd_label.set_text(label);
     }
 
+    fn drag_begin(&self, position: (i32, i32)) {
+        self.plot_provider.borrow().with_mut(|plot| {
+            plot.unhighlight();
+            match plot.get_block_at(position) {
+                Some(index) => {
+                    if let Some(block) = plot.get_block_mut(index) {
+                        if let Some(i) = block.position_on_connection(position, false) {
+                            let start = block.get_connector_pos(Connector::Output(i));
+                            plot.set_selection(Selection::Connection {
+                                block_id: index,
+                                output: i,
+                                start,
+                                position: start
+                            });
+                        }
+                        else {
+                            block.set_start_pos(block.position());
+                            block.set_highlighted(true);
+                            plot.set_selection(Selection::Single(index));
+                        }
+                    }
+                }
+                _ => {
+                    plot.set_selection(Selection::Area(position, position));
+                }
+            }
+        });
+    
+        self.drawing_area.queue_draw();
+    }
+        
+    fn drag_update(&self, offset: (i32, i32)) {
+        self.plot_provider.borrow().with_mut(|plot|
+            match plot.selection().clone() {
+                Selection::Single(index) => {
+                    let block = plot.get_block_mut(index).unwrap();
+                    let (start_x, start_y) = block.start_pos();
+                    block.set_position((start_x + offset.0, start_y + offset.1));
+                    self.drawing_area.queue_draw();
+                }
+                Selection::Connection { block_id, output, start, position: _ } => {
+                    plot.set_selection(Selection::Connection { block_id, output, start, position: (start.0 + offset.0, start.1 + offset.1)});
+                    self.drawing_area.queue_draw();
+                }
+                Selection::Area(area_start, _) => {
+                    plot.set_selection(Selection::Area(area_start, (area_start.0 + offset.0, area_start.1 + offset.1)));
+                    self.drawing_area.queue_draw();
+                }
+                _ => ()
+            }
+        );
+    }
+
     fn drag_end(&self, offset: (i32, i32)) {
         let plot_provider = self.plot_provider.borrow();
         let selection = plot_provider.with(|plot| plot.selection().clone()).unwrap();
         match selection {
             Selection::Single(index) => {
+                if offset.0 == 0 && offset.1 == 0 {
+                    return;
+                }
+
                 let action = plot_provider.with(|plot| {
                     let block = plot.get_block(index).unwrap();
                     let (start_x, start_y) = block.start_pos();
@@ -273,7 +333,6 @@ impl CircuitViewTemplate {
             _ => {}
         };
     }
-    
 }
 
 #[glib::object_subclass]
@@ -311,53 +370,3 @@ impl WidgetImpl for CircuitViewTemplate {
 }
 
 impl BoxImpl for CircuitViewTemplate {}
-
-fn drag_begin(plot: &mut Plot, area: &gtk::DrawingArea, position: (i32, i32)) {
-    plot.unhighlight();
-    
-    match plot.get_block_at(position) {
-        Some(index) => {
-            if let Some(block) = plot.get_block_mut(index) {
-                if let Some(i) = block.position_on_connection(position, false) {
-                    let start = block.get_connector_pos(Connector::Output(i));
-                    plot.set_selection(Selection::Connection {
-                        block_id: index,
-                        output: i,
-                        start,
-                        position: start
-                    });
-                }
-                else {
-                    block.set_start_pos(block.position());
-                    block.set_highlighted(true);
-                    plot.set_selection(Selection::Single(index));
-                }
-            }
-        }
-        _ => {
-            plot.set_selection(Selection::Area(position, position));
-        }
-    }
-
-    area.queue_draw();
-}
-
-fn drag_update(plot: &mut Plot, area: &gtk::DrawingArea, offset: (i32, i32)) {
-    match plot.selection().clone() {
-        Selection::Single(index) => {
-            let block = plot.get_block_mut(index).unwrap();
-            let (start_x, start_y) = block.start_pos();
-            block.set_position((start_x + offset.0, start_y + offset.1));
-            area.queue_draw();
-        }
-        Selection::Connection { block_id, output, start, position: _ } => {
-            plot.set_selection(Selection::Connection { block_id, output, start, position: (start.0 + offset.0, start.1 + offset.1)});
-            area.queue_draw();
-        }
-        Selection::Area(area_start, _) => {
-            plot.set_selection(Selection::Area(area_start, (area_start.0 + offset.0, area_start.1 + offset.1)));
-            area.queue_draw();
-        }
-        _ => ()
-    }
-}

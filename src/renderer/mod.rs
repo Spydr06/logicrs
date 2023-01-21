@@ -21,7 +21,7 @@ pub trait Renderer: Default {
     type Error;
 
     // render callback
-    fn callback(&mut self, data: &Plot, _area: &DrawingArea, context: &Self::Context, width: i32, height: i32) -> Result<(), Self::Error>;
+    fn callback(&mut self, data: &Plot, _area: &DrawingArea, context: &Self::Context, width: i32, height: i32) -> Result<&mut Self, Self::Error>;
 
     // getter/setter
     fn translate(&mut self, translation: (f64, f64)) -> &mut Self;
@@ -62,10 +62,10 @@ pub trait Renderer: Default {
     fn line_to(&self, position: (i32, i32)) -> &Self;
 
     // drawing functions
-    fn fill(&self) -> Result<(), Self::Error>;
-    fn fill_preserve(&self) -> Result<(), Self::Error>;
-    fn stroke(&self) -> Result<(), Self::Error>;
-    fn show_text<'a>(&self, text: &'a str) -> Result<(), Self::Error>;
+    fn fill(&self) -> Result<&Self, Self::Error>;
+    fn fill_preserve(&self) -> Result<&Self, Self::Error>;
+    fn stroke(&self) -> Result<&Self, Self::Error>;
+    fn show_text<'a>(&self, text: &'a str) -> Result<&Self, Self::Error>;
 
     //
     // more complex shapes building on the backend-specific basic functions

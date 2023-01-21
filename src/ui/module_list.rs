@@ -76,11 +76,9 @@ impl ModuleListTemplate {
         let name = module.name().to_owned();
         let is_builtin = module.builtin();
         right_click_gesture.connect_pressed(glib::clone!(@weak self as widget => move |_, _, x, y| {
-            if is_builtin {
-                return;
+            if !is_builtin {
+                widget.custom_module_context(&item, &name, x as i32, y as i32);
             }
-
-            widget.custom_module_context(&item, &name, x as i32, y as i32);
         }));
     }
 

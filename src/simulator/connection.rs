@@ -60,6 +60,6 @@ impl Renderable for Connection {
         );
         renderer.move_to(start)
             .curve_to(offset.0, offset.1, end)
-            .stroke()
+            .stroke().map(|_| ())
     }
 }

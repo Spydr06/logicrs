@@ -18,12 +18,8 @@ pub enum Selection {
 }
 
 impl Selection {
-    #[inline]
     pub fn connecting(&self) -> bool {
-        match self {
-            Self::Connection {..} => true,
-            _ => false
-        }
+        matches!(self, Self::Connection {..})
     }
 }
 
@@ -44,9 +40,9 @@ impl Renderable for Selection {
                 renderer.rectangle(position, size)
                     .set_line_width(1.)
                     .set_color(&DEFAULT_THEME.accent_bg_color)
-                    .fill_preserve()?;
-                renderer.set_color(&DEFAULT_THEME.accent_fg_color)
-                    .stroke()
+                    .fill_preserve()?
+                    .set_color(&DEFAULT_THEME.accent_fg_color)
+                    .stroke().map(|_| ())
             }
             Self::Connection {start, position: end , ..} => {
                 let offset = (
@@ -58,7 +54,7 @@ impl Renderable for Selection {
                     .set_color(&DEFAULT_THEME.disabled_bg_color)    
                     .move_to(*start)
                     .curve_to(offset.0, offset.1, *end)
-                    .stroke()
+                    .stroke().map(|_| ())
             }
             _ => Ok(())
         }

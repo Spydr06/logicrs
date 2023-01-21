@@ -54,10 +54,10 @@ impl Renderer for CairoRenderer {
     type Context = cairo::Context;
     type Error = cairo::Error;
 
-    fn callback(&mut self, plot: &Plot, _area: &DrawingArea, context: &Self::Context, width: i32, height: i32) -> Result<(), Self::Error> {
+    fn callback(&mut self, plot: &Plot, _area: &DrawingArea, context: &Self::Context, width: i32, height: i32) -> Result<&mut Self, Self::Error> {
         self.set_size((width, height)).set_context(Some(context.clone()));     
         if width == 0 || height == 0 {
-            return Ok(());
+            return Ok(self);
         }
 
         let screen_center = (width as f64 / 2., height as f64 / 2.);
@@ -76,7 +76,7 @@ impl Renderer for CairoRenderer {
         plot.render(self, plot)?;
 
         // render selection
-        plot.selection().render(self, plot)
+        plot.selection().render(self, plot).map(|_| self)
     }
 
     #[inline]
@@ -143,34 +143,34 @@ impl Renderer for CairoRenderer {
     }
 
     #[inline]
-    fn fill(&self) -> Result<(), Self::Error> {
+    fn fill(&self) -> Result<&Self, Self::Error> {
         match &self.context {
-            Some(context) => context.fill(),
-            None => Ok(()) // TODO: error handling
+            Some(context) => context.fill().map(|_| self),
+            None => Ok(self) // TODO: error handling
         }
     }
 
     #[inline]
-    fn fill_preserve(&self) -> Result<(), Self::Error> {
+    fn fill_preserve(&self) -> Result<&Self, Self::Error> {
         match &self.context {
-            Some(context) => context.fill_preserve(),
-            None => Ok(()) // TODO: error handling
+            Some(context) => context.fill_preserve().map(|_| self),
+            None => Ok(self) // TODO: error handling
         }
     }
 
     #[inline]
-    fn stroke(&self) -> Result<(), Self::Error> {
+    fn stroke(&self) -> Result<&Self, Self::Error> {
         match &self.context {
-            Some(context) => context.stroke(),
-            None => Ok(()) // TODO: error handling
+            Some(context) => context.stroke().map(|_| self),
+            None => Ok(self) // TODO: error handling
         }
     }
 
     #[inline]
-    fn show_text<'a>(&self, text: &'a str) -> Result<(), Error> {
+    fn show_text<'a>(&self, text: &'a str) -> Result<&Self, Error> {
         match &self.context {
-            Some(context) => context.show_text(text),
-            None => Ok(())
+            Some(context) => context.show_text(text).map(|_| self),
+            None => Ok(self)
         }
     }
 

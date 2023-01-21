@@ -21,53 +21,36 @@ impl Default for Project {
 impl Project {
     pub fn new(modules: &Vec<Module>) -> Self {
         Self {
-            modules: modules.iter().map(|module| (module.name().to_owned(), module.to_owned())).collect::<HashMap<_, _>>(),
+            modules: modules.iter().map(|module| (module.name().to_owned(), module.to_owned())).collect(),
             main_plot: Plot::new(),
             id_counter: 0
         }
     }
 
     pub fn load_from(file: &gio::File) -> Result<Self, String> {
-       let f = File::open(file.path().unwrap());
-       if let Err(err) = f {
-           return Err(err.to_string());
-       }
-       let reader = BufReader::new(f.unwrap());
-
-       let result: serde_json::Result<Project> = serde_json::from_reader(reader);
-       match result {
-           Ok(data) => {
-               info!("Opened file `{}`", file.path().unwrap().to_str().unwrap());
-               Ok(data)
-           },
-           Err(err) => Err(err.to_string()),
-       }
+        let f = File::open(file.path().unwrap())
+            .map_err(|err| err.to_string())?;
+        let project = serde_json::from_reader(BufReader::new(f))
+            .map_err(|err| err.to_string())?;
+        info!("Opened file `{}`", file.path().unwrap().to_str().unwrap());
+        Ok(project)
     }
 
     pub fn write_to(&self, file: &gio::File) -> Result<(), String> {
         info!("Writing to `{}` ...", file.path().unwrap().to_str().unwrap());
-        let res = OpenOptions::new().write(true).truncate(true).open(file.path().unwrap());
-        if let Err(err) = res {
-            return Err(err.to_string());
-        }
+        let mut f = OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .open(file.path().unwrap())
+            .map_err(|err| err.to_string())?;
 
-        let mut f = res.unwrap();
-        let result = serde_json::to_string(self);
-        match result {
-            Ok(serialized) => {
-                let res = f.write(serialized.as_bytes());
-                match res {
-                    Ok(bytes_written) => {
-                        info!("Wrote {} bytes to `{}` successfully", bytes_written, file.path().unwrap().to_str().unwrap());
-                        Ok(())
-                    }
-                    Err(err) => {
-                        Err(err.to_string())
-                    }
-                }
-            },
-            Err(err) => Err(err.to_string())
-        }
+        let serialized = serde_json::to_string(self)
+            .map_err(|err| err.to_string())?;
+        let bytes_written = f.write(serialized.as_bytes())
+            .map_err(|err| err.to_string())?;
+
+        info!("Wrote {bytes_written} bytes to `{}` successfully", file.path().unwrap().to_str().unwrap());
+        Ok(())
     }
 
     pub fn module(&self, name: &String) -> Option<&Module> {

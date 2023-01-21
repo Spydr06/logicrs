@@ -21,7 +21,11 @@ impl PlotProvider {
     pub fn with<T>(&self, func: impl Fn(&Plot) -> T) -> Option<T> {
         match self {
             Self::Main(project) => Some(func(project.lock().unwrap().main_plot())),
-            Self::Module(project, module) => project.lock().unwrap().plot(module).map(|plot| func(plot)),
+            Self::Module(project, module) => project
+                .lock()
+                .unwrap()
+                .plot(module)
+                .map(|plot| func(plot)),
             Self::None => None
         }
     }
@@ -30,7 +34,11 @@ impl PlotProvider {
     pub fn with_mut<T>(&self, func: impl Fn(&mut Plot) -> T) -> Option<T> {
         match self {
             Self::Main(project) => Some(func(project.lock().unwrap().main_plot_mut())),
-            Self::Module(project, module) => project.lock().unwrap().plot_mut(module).map(|plot| func(plot)),
+            Self::Module(project, module) => project
+                .lock()
+                .unwrap()
+                .plot_mut(module)
+                .map(|plot| func(plot)),
             Self::None => None
         }
     }
@@ -144,8 +152,7 @@ impl SelectionField for Plot {
                 });
             },
             Selection::Area(_, _) => self.blocks_mut().iter_mut().for_each(|(_, v)| v.set_highlighted(false)),
-            Selection::Connection { block_id: _, output: _, start: _, position: _ } => (),
-            Selection::None => ()
+            _ => ()
         }
 
         self.selection = Selection::None

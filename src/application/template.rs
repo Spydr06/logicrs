@@ -69,7 +69,7 @@ impl ApplicationTemplate {
         if let Some(window) = self.window.borrow().as_ref() {
             window.add_module_to_ui(&self.instance(), &module);
         }
-        (&mut*self.project.lock().unwrap()).add_module(module);
+        self.project.lock().unwrap().add_module(module);
     }
 
     pub fn set_project(&self, project: Project, file: Option<gio::File>) {
@@ -107,23 +107,8 @@ impl ApplicationTemplate {
         }
     }
 
-    // pub fn with_current_plot(&self, func: impl Fn(&Plot)) {
-    //     if let Some(window) = self.window.borrow().as_ref() {
-    //         if let Some(page) = window.imp().circuit_panel.imp().view.selected_page() {
-    //             if let Ok(view) = page.child().downcast::<CircuitView>() {
-    //                 view.imp().plot_provider().with(func);
-    //             }
-    //         }
-    //     }
-    // }
-
     pub fn current_plot(&self) -> Option<PlotProvider> {
-        if let Some(view) = self.current_circuit_view() {
-            Some(view.imp().plot_provider())
-        }
-        else {
-            None
-        }
+        self.current_circuit_view().map(|view| view.imp().plot_provider())
     }
 
     pub fn current_circuit_view(&self) -> Option<CircuitView> {

@@ -1,5 +1,5 @@
 use super::*;
-use crate::{fatal::die, project::Project};
+use crate::{fatal::{die, FatalResult}, project::Project};
 
 impl Application {
     pub(super) fn quit(&self) {
@@ -111,30 +111,26 @@ impl Application {
                 .build();
             
             open_dialog.connect_response({
-                let obj = app.downgrade();
                 let file_chooser = RefCell::new(Some(open_dialog.clone()));
-                move |_, response| {
-                    if let Some(obj) = obj.upgrade() &&
-                        let Some(file_chooser) = file_chooser.take() {
-                            if response == gtk::ResponseType::Accept {
-                                for file in file_chooser.files().snapshot().into_iter() {
-                                    let file: gio::File = file
-                                        .downcast()
-                                        .expect("unexpected type returned from file chooser");
-
-                                    if let Ok(project) = Project::load_from(&file) {
-                                        obj.imp().set_project(project, Some(file));
-                                    }
-                                    else {
-                                        error!("Error opening file");
-                                    }
-                                }
+                glib::clone!(@weak app => move |_, response| {
+                    if let Some(file_chooser) = file_chooser.take() {
+                        if response != gtk::ResponseType::Accept {
+                            return;
+                        }
+                        for file in file_chooser.files().snapshot().into_iter() {
+                            let file = file
+                                .downcast()
+                                .expect("unexpected type returned from file chooser");
+                            match Project::load_from(&file) {
+                                Ok(project) => app.imp().set_project(project, Some(file)),
+                                _ => error!("Error opening file")
                             }
                         }
+                    }
                     else {
                         warn!("got file chooser response after window was freed");
                     }
-                }
+                })
             });
             
             open_dialog.show();
@@ -142,14 +138,14 @@ impl Application {
     }
 
     pub(super) fn save_as(&self) {
-        //let window = self.active_window().unwrap();
+        let window = self.active_window().unwrap();
 
         let json_filter = gtk::FileFilter::new();
         json_filter.set_name(Some("JSON files"));
         json_filter.add_mime_type("application/json");
 
         let save_dialog = gtk::FileChooserNative::builder()
-       //     .transient_for(&window)
+            .transient_for(&window)
             .modal(true)
             .title("Open File")
             .action(gtk::FileChooserAction::Save)
@@ -158,31 +154,28 @@ impl Application {
             .cancel_label("Cancel")
             .build();
 
-            save_dialog.connect_response({
-                let file_chooser = RefCell::new(Some(save_dialog.clone()));
-                glib::clone!(@weak self as app => move |_, response| {
-                    if let Some(file_chooser) = file_chooser.take() {
-                        if response == gtk::ResponseType::Accept {
-                            for file in file_chooser.files().snapshot().into_iter() {
-                                let file: gio::File = file
-                                    .downcast()
-                                    .expect("unexpected type returned from file chooser");
-                                if !file.query_exists(gio::Cancellable::NONE) {
-                                    if let Err(err) = file.create(gio::FileCreateFlags::NONE, gio::Cancellable::NONE) {
-                                        die(err.message());
-                                    }
-                                }
-                                app.imp().set_file(file);
-                                if let Err(err) = app.imp().save() {
-                                    die(err.as_str());
-                                }
-                            }
-                        }
-                    } else {
-                        warn!("got file chooser response more than once");
+        save_dialog.connect_response({
+            let file_chooser = RefCell::new(Some(save_dialog.clone()));
+            glib::clone!(@weak self as app => move |_, response| {
+                if let Some(file_chooser) = file_chooser.take() {
+                    if response != gtk::ResponseType::Accept {
+                        return;
                     }
-                })
-            });
+                    for file in file_chooser.files().snapshot().into_iter() {
+                        let file: gio::File = file
+                            .downcast()
+                            .expect("unexpected type returned from file chooser");
+                        if !file.query_exists(gio::Cancellable::NONE) {
+                            file.create(gio::FileCreateFlags::NONE, gio::Cancellable::NONE).unwrap_or_die();
+                        }
+                        app.imp().set_file(file);
+                        app.imp().save().unwrap_or_die();
+                    }
+                } else {
+                    warn!("got file chooser response more than once");
+                }
+            })
+        });
 
         save_dialog.show();
     }

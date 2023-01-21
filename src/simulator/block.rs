@@ -163,16 +163,13 @@ impl Block {
     fn draw_connector<R>(&self, renderer: &R, position: (i32, i32), highlighted: bool) -> Result<(), R::Error>
         where R: Renderer
     {
-        renderer.arc(position, 6., 0., f64::consts::TAU);
-        
-        renderer.set_color(if highlighted { &DEFAULT_THEME.suggestion_fg_color } else { &DEFAULT_THEME.disabled_fg_color });
-        renderer.fill_preserve()?;
-
-        renderer.set_color(if self.highlighted { &DEFAULT_THEME.accent_fg_color } else { &DEFAULT_THEME.border_color });
-
-        renderer.stroke()?;
-            
-        Ok(())
+        renderer
+            .arc(position, 6., 0., f64::consts::TAU)
+            .set_color(if highlighted { &DEFAULT_THEME.suggestion_fg_color } else { &DEFAULT_THEME.disabled_fg_color })
+            .fill_preserve()?
+            .set_color(if self.highlighted { &DEFAULT_THEME.accent_fg_color } else { &DEFAULT_THEME.border_color })
+            .stroke()
+            .map(|_| ())
     }
 }
 
@@ -210,8 +207,6 @@ impl Renderable for Block {
             self.draw_connector(renderer, (self.position.0 + self.size.0, self.position.1 + 25 * i as i32 + 50), false)?;
         }
 
-        self.decoration.render(renderer, self)?;
-
-        Ok(())
+        self.decoration.render(renderer, self).map(|_| ())
     }
 }
