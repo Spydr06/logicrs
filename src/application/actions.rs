@@ -1,5 +1,5 @@
 use super::*;
-use crate::{fatal::{die, FatalResult}, project::Project};
+use crate::{fatal::*, project::Project};
 
 impl Application {
     pub(super) fn quit(&self) {
