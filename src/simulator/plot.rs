@@ -102,6 +102,10 @@ impl Plot {
     }
 
     pub fn delete_block(&mut self, id: BlockID) -> Vec<Connection> {
+        if let Some(block) = self.blocks.get(&id) && !block.deleteable() {
+            return vec![];
+        }
+
         let mut deleted_connections = vec![];
         self.blocks.values_mut().for_each(|block| {
                 let connections = block.connections_mut().iter_mut().filter(

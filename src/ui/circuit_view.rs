@@ -81,6 +81,7 @@ impl CircuitViewTemplate {
             r.set_scale(DEFAULT_SCALE);
             r.translate((0., 0.));
             widget.drawing_area.queue_draw();
+            widget.left_osd_label.set_label("0, 0");
             //println!("scale: {}%", r.lock().unwrap().scale() * 100.);
         }));
 
@@ -358,6 +359,7 @@ impl ObjectSubclass for CircuitViewTemplate {
 impl ObjectImpl for CircuitViewTemplate {
     fn constructed(&self) {
         self.parent_constructed();
+        self.left_osd_label.set_label("0, 0");
     }
 }
 
