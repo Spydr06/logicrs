@@ -1,11 +1,17 @@
-/*.module_list_box {
-    margin: 12px 12px 0px 12px;
-}*/
-
-.module_list_frame {
-    margin: 6px 6px 0px 6px;
+.module_list_label {
+    margin: 10px 10px 10px 10px;
+    font-weight: bold;
 }
 
-.module-list-item {
-    margin: 3px 6px 3px 6px;
+.module_list_box {
+    margin-left: 6px;
+    margin-right: 6px;
+    background-color: @window_bg_color;
+}
+
+.module_list_item {
+    margin-top: 1px;
+    margin-bottom: 1px;
+    padding: 10px 10px 10px 10px;
+    border-radius: 6px;
 }

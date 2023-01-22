@@ -40,10 +40,27 @@ impl ModuleListTemplate {
         Self::from_instance(parent)
     }
 
+    fn module_item_content(&self, module: &Module) -> gtk::Box {        
+        let b = gtk::Box::builder()
+            .orientation(gtk::Orientation::Horizontal)
+            .build();
+
+//        let icon_theme = gtk::IconTheme::for_display(&gdk::Display::default().unwrap());
+        b.append(&gtk::Image::builder().icon_name("module-symbolic").margin_end(12).build());
+
+        b.append(&gtk::Label::builder()
+            .label(&module.name())
+            .xalign(0.0)
+            .build()
+        );
+
+        b
+    }
+
     fn add_module_to_ui(&self, application: &Application, module: &Module) {
         let item = gtk::ListBoxRow::builder()
-            .child(&gtk::Label::new(Some(&module.name())))
-            .css_classes(vec![String::from("module-list-item")])
+            .child(&self.module_item_content(module))
+            .css_classes(vec![String::from("module_list_item")])
             .build();
 
         module.builtin()
@@ -136,8 +153,8 @@ impl ObjectImpl for ModuleListTemplate {
         self.parent_constructed();
 
         let order_alphabetically = |a: &gtk::ListBoxRow, b: &gtk::ListBoxRow| gtk::Ordering::from(
-            (a.first_child().unwrap().downcast_ref().unwrap() as &gtk::Label).label()
-            .cmp(&(b.first_child().unwrap().downcast_ref().unwrap() as &gtk::Label).label())
+            ((a.first_child().unwrap().downcast_ref().unwrap() as &gtk::Box).last_child().unwrap().downcast_ref().unwrap() as &gtk::Label).label()
+            .cmp(&((b.first_child().unwrap().downcast_ref().unwrap() as &gtk::Box).last_child().unwrap().downcast_ref().unwrap() as &gtk::Label).label())
         );
         self.builtin_list_box.set_sort_func(order_alphabetically);
         self.custom_list_box.set_sort_func(order_alphabetically);

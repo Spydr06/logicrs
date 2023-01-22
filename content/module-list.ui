@@ -34,48 +34,38 @@
             <child>
               <object class="GtkBox">
                 <property name="orientation">vertical</property>
-
                 <child>
-                  <object class="GtkFrame">
-                    <property name="label-xalign">0.5</property>
+                  <object class="GtkLabel">
+                    <property name="label">Builtin Modules</property>
+                    <property name="xalign">0.0</property>
                     <style>
-                      <class name="module_list_frame"/>
+                      <class name="module_list_label"/>
                     </style>
-                    <child type="label">
-                      <object class="GtkLabel">
-                        <property name="label">Builtin Modules</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkListBox"  id="builtin_list_box">
-                        <property name="selection-mode">single</property>
-                        <style>
-                          <class name="module_list_box"/>
-                        </style>
-                      </object>
-                    </child>
                   </object>
                 </child>
-
                 <child>
-                  <object class="GtkFrame">
-                    <property name="label-xalign">0.5</property>
+                  <object class="GtkListBox"  id="builtin_list_box">
+                    <property name="selection-mode">browse</property>
                     <style>
-                      <class name="module_list_frame"/>
+                      <class name="module_list_box"/>
                     </style>
-                    <child type="label">
-                      <object class="GtkLabel">
-                        <property name="label">Custom Modules</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkListBox"  id="custom_list_box">
-                        <property name="selection-mode">single</property>
-                        <style>
-                          <class name="module_list_box"/>
-                        </style>
-                      </object>
-                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label">Custom Modules</property>
+                    <property name="xalign">0.0</property>
+                    <style>
+                      <class name="module_list_label"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkListBox"  id="custom_list_box">
+                    <property name="selection-mode">browse</property>
+                    <style>
+                      <class name="module_list_box"/>
+                    </style>
                   </object>
                 </child>
               </object>
