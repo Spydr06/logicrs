@@ -47,15 +47,28 @@ impl PlotProvider {
 #[derive(Serialize, Debug, Default, Deserialize)]
 pub struct Plot {
     blocks: HashMap<BlockID, Block>,
-    selection: Selection
+    id_counter: BlockID,
+
+    #[serde(skip)]
+    selection: Selection,
 }
 
 impl Plot {
     pub fn new() -> Self {
         Self {
             blocks: HashMap::new(),
-            selection: Selection::None
+            selection: Selection::None,
+            id_counter: 0
         }
+    }
+
+    pub fn next_id(&mut self) -> BlockID {
+        self.id_counter += 1;
+        self.id_counter
+    }
+
+    pub fn current_id(&self) -> BlockID {
+        self.id_counter
     }
 
     pub fn blocks(&self) -> &HashMap<BlockID, Block> {
@@ -184,5 +197,10 @@ impl SelectionField for Plot {
 
             self.selection = Selection::Many(selected)
         }
+    }
+
+    fn select_all(&mut self) {
+        self.selection = Selection::Many(self.blocks.keys().map(|id| *id).collect());
+        self.blocks.iter_mut().for_each(|(_, block)| block.set_highlighted(true));
     }
 }

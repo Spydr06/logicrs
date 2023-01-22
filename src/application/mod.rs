@@ -1,12 +1,13 @@
 pub mod template;
 pub mod actions;
 pub mod action;
+pub mod clipboard;
 
 use action::*;
 use std::cell::RefCell;
 use adw::traits::MessageDialogExt;
 use gtk::{prelude::*, subclass::prelude::*, gio, glib};
-use crate::{config, ui::dialogs, selection::SelectionField};
+use crate::{config, ui::dialogs, selection::SelectionField, application::clipboard::Clipboard};
 
 glib::wrapper! {
     pub struct Application(ObjectSubclass<template::ApplicationTemplate>)
@@ -39,6 +40,57 @@ impl Application {
 
     pub fn redo_action(&self) {
         self.imp().action_stack().borrow_mut().redo(self);
+    }
+
+    pub fn apply_clipboard(&self, clipboard: Clipboard) {
+        match clipboard {
+            Clipboard::Blocks(_) => {
+                match clipboard.paste_to(self.imp().current_plot().unwrap())
+                {
+                    Ok(action) => self.new_action(action),
+                    Err(err) => dialogs::run(self.to_owned(), self.active_window().unwrap(), err, dialogs::basic_error)
+                }
+            }
+            Clipboard::Module(_) => todo!(),
+            Clipboard::Empty => {},
+        }
+    }
+
+    pub fn paste_clipboard(&self) {
+        let display = RootExt::display(&self.active_window().unwrap());
+        display.clipboard().read_text_async(None as Option<&gio::Cancellable>, glib::clone!(@weak self as app => move |pasted| {
+            match pasted
+                .map_err(|err| err.to_string())
+                .and_then(|text| text.ok_or(String::new()))
+                .and_then(|text| Clipboard::deserialize(text.as_str()))
+            {
+                Ok(clipboard) => app.apply_clipboard(clipboard),
+                Err(err) => warn!("Error pasting from clipboard: {err}")
+            }
+        }));
+    }
+
+    pub fn cut_clipboard(&self, clipboard: Clipboard) {
+        match clipboard {
+            Clipboard::Blocks(blocks) => self.new_action(Action::DeleteSelection(self.imp().current_plot().unwrap(), blocks, vec![])),
+            Clipboard::Module(_) => todo!(),
+            Clipboard::Empty => {}
+        }
+    }
+
+    pub fn copy_clipboard(&self, cut: bool) {
+        let display = RootExt::display(&self.active_window().unwrap());
+        let clipboard = self.imp().generate_clipboard();
+
+        match clipboard.serialize() {
+            Ok(serialized) => {
+                display.clipboard().set_text(&serialized);
+                if cut {
+                    self.cut_clipboard(clipboard);
+                }
+            }
+            Err(err) => warn!("Error serializing clipboard: {err}")
+        }
     }
 
     pub(self) fn setup_gactions(&self) {
@@ -114,5 +166,30 @@ impl Application {
             app.redo_action();
         }));
         self.add_action(&redo_action);
+
+        let copy_action = gio::SimpleAction::new("copy", None);
+        copy_action.connect_activate(glib::clone!(@weak self as app => move |_, _| {
+            app.copy_clipboard(false);
+        }));
+        self.add_action(&copy_action);
+
+        let cut_action = gio::SimpleAction::new("cut", None);
+        cut_action.connect_activate(glib::clone!(@weak self as app => move |_, _|  {
+            app.copy_clipboard(true);
+        }));
+        self.add_action(&cut_action);
+
+        let paste_action = gio::SimpleAction::new("paste", None);
+        paste_action.connect_activate(glib::clone!(@weak self as app => move |_, _| {
+            app.paste_clipboard();
+        }));
+        self.add_action(&paste_action);
+
+        let select_all_action = gio::SimpleAction::new("select-all", None);
+        select_all_action.connect_activate(glib::clone!(@weak self as app => move |_, _| {
+            app.imp().with_current_plot_mut(|plot| plot.select_all());
+            app.imp().rerender_editor();
+        }));
+        self.add_action(&select_all_action);
     }
 }

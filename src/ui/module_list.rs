@@ -57,9 +57,9 @@ impl ModuleListTemplate {
         
         let name = module.name().to_owned();
         left_click_gesture.connect_pressed(glib::clone!(@weak application => move |_, _, _, _| {
+            let id = application.imp().with_current_plot_mut(|plot| plot.next_id()).unwrap();
             let project = application.imp().project().clone();
-            let mut project = project.lock().unwrap();
-            let id = project.new_id();
+            let project = project.lock().unwrap();
             if let Some(module) = project.module(&name) && let Some(plot) = application.imp().current_plot() {
                 let block = Block::new(&module, (0, 0), id);
                 drop(project);

@@ -3,10 +3,10 @@ use adw::subclass::prelude::*;
 use std::cell::RefCell;
 use crate::{
     ui::{main_window::MainWindow, circuit_view::CircuitView, dialogs},
-    fatal::*, project::*, simulator::*,
+    fatal::*, project::*, simulator::*, selection::{SelectionField, Selection},
 };
 
-use super::action::*;
+use super::{action::*, clipboard::Clipboard};
 
 #[derive(Default)]
 pub struct ApplicationTemplate {
@@ -15,7 +15,7 @@ pub struct ApplicationTemplate {
     simulator: RefCell<Option<Simulator>>,
     file: RefCell<Option<gio::File>>,
     action_stack: RefCell<ActionStack>,
-}
+} 
 
 impl ApplicationTemplate {
     const CSS_RESOURCE: &'static str = "/style/style.css";
@@ -117,10 +117,14 @@ impl ApplicationTemplate {
             .and_then(|page| page.child().downcast::<CircuitView>().ok())
     }
 
-    pub fn with_current_plot_mut(&self, func: impl Fn(&mut Plot)) {
-        if let Some(view) = self.current_circuit_view() {
-            view.imp().plot_provider().with_mut(func);
-        }
+    pub fn with_current_plot<T>(&self, func: impl Fn(&Plot) -> T) -> Option<T> {
+        self.current_circuit_view()
+            .and_then(|view| view.imp().plot_provider().with(func))
+    }
+
+    pub fn with_current_plot_mut<T>(&self, func: impl Fn(&mut Plot) -> T) -> Option<T> {
+        self.current_circuit_view()
+            .and_then(|view| view.imp().plot_provider().with_mut(func))
     }
 
     pub fn rerender_editor(&self) {
@@ -143,6 +147,15 @@ impl ApplicationTemplate {
 
     pub fn is_dirty(&self) -> bool {
         self.action_stack.borrow().is_dirty()
+    }
+
+    pub fn generate_clipboard(&self) -> Clipboard {
+        if let Some(selected) = self.with_current_plot(|plot| !matches!(plot.selection(), Selection::None)) && selected {
+            self.with_current_plot(|plot| Clipboard::from(plot)).unwrap_or_default()
+        }
+        else {
+            Clipboard::Empty
+        }
     }
 }
 
@@ -168,6 +181,10 @@ impl ObjectImpl for ApplicationTemplate {
         obj.set_accels_for_action("app.delete-block", &["Delete"]);
         obj.set_accels_for_action("app.undo", &["<primary>Z"]);
         obj.set_accels_for_action("app.redo", &["<primary>Y"]);
+        obj.set_accels_for_action("app.copy", &["<primary>C"]);
+        obj.set_accels_for_action("app.cut", &["<primary>X"]);
+        obj.set_accels_for_action("app.paste", &["<primary>V"]);
+        obj.set_accels_for_action("app.select-all", &["<primary>A"]);
     }
 }
 impl ApplicationImpl for ApplicationTemplate {

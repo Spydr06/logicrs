@@ -65,6 +65,18 @@ impl Block {
         self.id
     }
 
+    pub fn refactor_id(&mut self, id: BlockID) -> &mut Self {
+        self.id = id;
+        
+        self.connections.iter_mut().for_each(|c| 
+            if let Some(connection) = c {
+                connection.set_origin_id(id);
+            }
+        );
+
+        self
+    }
+
     pub fn is_in_area(&self, area: (i32, i32, i32, i32)) -> bool {
         !(
             self.position.0 > area.2 || 

@@ -35,6 +35,18 @@ impl Connection {
     pub fn origin_id(&self) -> BlockID {
         self.from.block_id
     }
+
+    pub fn set_origin_id(&mut self, origin_id: BlockID) {
+        self.from.block_id = origin_id;
+    }
+
+    pub fn destination_id(&self) -> BlockID {
+        self.to.block_id
+    }
+
+    pub fn set_destination_id(&mut self, block_id: BlockID) {
+        self.to.block_id = block_id;
+    }
 }
 
 impl Renderable for Connection {

@@ -17,6 +17,10 @@ impl CircuitView {
             .initialize();
         circuit_view
     }
+
+    pub fn focused(&self) -> bool {
+        self.imp().drawing_area.has_focus()
+    }
 }
 
 #[derive(gtk::CompositeTemplate, Default)]

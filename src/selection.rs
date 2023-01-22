@@ -64,6 +64,7 @@ impl Renderable for Selection {
 pub trait SelectionField {
     fn selection(&self) -> &Selection;
     fn set_selection(&mut self, selection: Selection);
+    fn select_all(&mut self);
 
     fn unhighlight(&mut self);
     fn selected(&self) -> Vec<u32>;

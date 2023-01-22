@@ -9,7 +9,6 @@ pub type ProjectRef = Arc<Mutex<Project>>;
 pub struct Project {
     modules: HashMap<String, Module>,
     main_plot: Plot,
-    id_counter: u32
 }
 
 impl Default for Project {
@@ -23,7 +22,6 @@ impl Project {
         Self {
             modules: modules.iter().map(|module| (module.name().to_owned(), module.to_owned())).collect(),
             main_plot: Plot::new(),
-            id_counter: 0
         }
     }
 
@@ -67,21 +65,16 @@ impl Project {
 
         // generate Input/Output blocks inside the new module
         if let Some(plot) = module.plot_mut() {
-            let id = self.new_id();
+            let id = plot.next_id();
             let input_module = self.modules.get(&*builtin::INPUT_MODULE_NAME).unwrap();
             plot.add_block(Block::new_sized(&input_module, (50, 50), id, 0,  num_inputs));
 
-            let id = self.new_id();
+            let id = plot.next_id();
             let output_module = self.modules.get(&*builtin::OUTPUT_MODULE_NAME).unwrap();
             plot.add_block(Block::new_sized(&output_module, (400, 50), id, num_outputs, 0));
         }
 
         self.modules.insert(module.name().clone(), module);
-    }
-
-    pub fn new_id(&mut self) -> u32 {
-        self.id_counter += 1;
-        self.id_counter
     }
 
     pub fn main_plot(&self) -> &Plot {

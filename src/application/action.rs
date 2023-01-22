@@ -73,6 +73,7 @@ impl ActionStack {
 
 pub enum Action {
     NewBlock(PlotProvider, Block),
+    PasteBlocks(PlotProvider, Vec<Block>),
     MoveBlock(PlotProvider, BlockID, (i32, i32), (i32, i32)),
     NewConnection(PlotProvider, BlockID, Connection),
     DeleteSelection(PlotProvider, Vec<Block>, Vec<Connection>),
@@ -83,6 +84,12 @@ impl Action {
         match self {
             Self::NewBlock(plot_provider, block) => { // place a new block
                 plot_provider.with_mut(|plot| plot.add_block(block.clone()));
+                app.imp().rerender_editor();
+            }
+            Self::PasteBlocks(plot_provier, blocks) => {
+                plot_provier.with_mut(|plot| 
+                    blocks.iter().for_each(|block| plot.add_block(block.clone()))
+                );
                 app.imp().rerender_editor();
             }
             Self::MoveBlock(plot_provider, block_id, _from, to) => {
@@ -106,6 +113,8 @@ impl Action {
                     connections
                 }).unwrap_or_default();
 
+                blocks.iter_mut().for_each(|block| block.set_highlighted(false));
+
                 *incoming_connections = connections;
                 app.imp().rerender_editor();
             }
@@ -116,6 +125,14 @@ impl Action {
         match self {
             Self::NewBlock(plot_provider, block) => { // remove a block
                 plot_provider.with_mut(|plot| plot.delete_block(block.id()));
+                app.imp().rerender_editor();
+            }
+            Self::PasteBlocks(plot_provier, blocks) => {
+                plot_provier.with_mut(|plot| 
+                    blocks.iter().for_each(|block| { 
+                        plot.delete_block(block.id());
+                    })
+                );
                 app.imp().rerender_editor();
             }
             Self::MoveBlock(plot_provider, block_id, from, _to) => {
