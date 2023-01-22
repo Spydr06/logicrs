@@ -122,11 +122,11 @@
     <section>
       <item>
         <attribute name="label" translatable="yes">_Copy</attribute>
-        <attribute name="action">app.copy-block</attribute>
+        <attribute name="action">app.copy</attribute>
       </item>
       <item>
         <attribute name="label" translatable="yes">C_ut</attribute>
-        <attribute name="action">app.cut-block</attribute>
+        <attribute name="action">app.cut</attribute>
       </item>
     </section>
     <section>
@@ -140,7 +140,13 @@
     <section>
       <item>
         <attribute name="label" translatable="yes">_Paste</attribute>
-        <attribute name="action">app.paste-block</attribute>
+        <attribute name="action">app.paste</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">Select _All</attribute>
+        <attribute name="action">app.select-all</attribute>
       </item>
     </section>
   </menu>
