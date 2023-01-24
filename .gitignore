@@ -1,3 +1,7 @@
 /target
 Cargo.lock
 .vscode/
+vendor/
+gtk4-rs/
+.vs/
+*.zip
