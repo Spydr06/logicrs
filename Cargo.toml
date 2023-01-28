@@ -28,3 +28,7 @@ serde = {version = "1.0.147", features = ["derive"]}
 log = "0.4.0"
 env_logger = "0.9.0"
 lazy_static = "1.4.0"
+
+[profile.release]
+strip = true  # Automatically strip symbols from the binary.
+lto = true

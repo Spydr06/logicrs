@@ -29,20 +29,25 @@ function Create-Shortcut {
     $Shortcut.Save()
 }
 
+function Test-Remove {
+    param (
+        [string]$Path
+    )
+
+    if (Test-Path $Path) {
+        Write-Warning "Warn: Removing old file $Path."
+        Remove-Item -Path $Path
+    }
+}
+
 # go to script dir
 $scriptpath = $MyInvocation.MyCommand.Path
 $dir = Split-Path $scriptpath
 Push-Location $dir
     # delete old files
-    if (Test-Path "$dist_dir\$shortcut") {
-        Write-Warning "Warn: Removing old shortcut $dist_dir\$shortcut."
-        Remove-Item -Path "$dist_dir\$shortcut"
-    }
-
-    if (Test-Path "$dist_dir\bin\$executable") {
-        Write-Warning "Warn: Removing old executable $dist_dir\bin\$executable."
-        Remove-Item -Path "$dist_dir\bin\$executable"
-    }
+    Test-Remove -Path $zip_name
+    Test-Remove -Path "$dist_dir\$shortcut"
+    Test-Remove -Path "$dist_dir\bin\$executable"
 
     # compile for release
     cargo rustc --release -- -Clink-args="-Wl,--subsystem,windows"
@@ -79,7 +84,7 @@ Push-Location $dir
     Pop-Location # dist directory
 
     # create the distributable zip archive
-    Compress-Archive -Path $dist_dir -Update -DestinationPath $zip_name
+    Compress-Archive -Path "$dist_dir\*" -Update -DestinationPath $zip_name
 
     if (!(Test-Path $zip_name)) {
         Write-Error "Error: $zip_name not created."
