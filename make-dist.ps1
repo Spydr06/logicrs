@@ -17,12 +17,15 @@ $strip_debug_script = "strip-debug-symbols.ps1"
 function Create-Shortcut {
     param (
         [string]$SourceExe,
+        [string]$Arguments,
         [string]$DestinationPath
     )
+
     Write-Output "Info: Creating shortcut $DestinationPath to $SourceExe."
-    $WshShell = New-Object -comObject WScript.Shell
+    $WshShell = New-Object -ComObject ("WScript.Shell")
     $Shortcut = $WshShell.CreateShortcut($DestinationPath)
     $Shortcut.TargetPath = $SourceExe
+    $Shortcut.Arguments = $Arguments
     $Shortcut.Save()
 }
 
@@ -42,15 +45,17 @@ Push-Location $dir
     }
 
     # compile for release
-    cargo build --release
+    cargo rustc --release -- -Clink-args="-Wl,--subsystem,windows"
 
     if (!(Test-Path $target)) {
         Write-Error "Error: $target not found."
+        Pop-Location
         exit 1
     }
 
     if (!(Test-Path $dist_dir)) {
         Write-Error "Error: $dist_dir not found."
+        Pop-Location
         exit 1
     }
 
@@ -67,7 +72,10 @@ Push-Location $dir
         Pop-Location # bin directory
 
         # create shortcut to top level
-        Create-Shortcut ".\bin\$executable" ".\$shortcut"
+        Create-Shortcut                             `
+            "%windir%\explorer.exe"                 `
+            ".\bin\$executable"                     `
+            "$(Resolve-Path -Path ".")\logicrs.lnk"
     Pop-Location # dist directory
 
     # create the distributable zip archive
@@ -75,6 +83,7 @@ Push-Location $dir
 
     if (!(Test-Path $zip_name)) {
         Write-Error "Error: $zip_name not created."
+        Pop-Location
         exit 1
     }
     else {
