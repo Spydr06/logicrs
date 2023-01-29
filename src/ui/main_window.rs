@@ -28,6 +28,14 @@ impl MainWindow {
         module_list.add_module_to_ui(app, module);
     }
 
+    pub fn remove_module_from_ui(&self, module_name: &String) {
+        let module_list = &self.imp().module_list;
+        module_list.remove_module_from_ui(module_name);
+
+        let panel = self.imp().circuit_panel.imp();
+        panel.remove_tab(module_name);
+    }
+
     pub fn rerender_circuit(&self) {
         if let Some(a) = self.imp().circuit_panel.imp().view.selected_page() &&
         let Ok(view ) = a.child().downcast::<CircuitView>() {

@@ -9,16 +9,12 @@ glib::wrapper! {
 }
 
 impl ModuleList {
-    pub fn new(app: &Application) -> Self {
-        glib::Object::new::<Self>(&[("application", app)])
-    }
-
     pub fn add_module_to_ui(&self, app: &Application, module: &Module) {
         self.imp().add_module_to_ui(app, module);
     }
 
-    pub fn remove_module(&self, module: &Module) {
-        self.imp().remove_module(module);
+    pub fn remove_module_from_ui(&self, module_name: &String) {
+        self.imp().remove_module_from_ui(module_name);
     }
 }
 
@@ -45,9 +41,7 @@ impl ModuleListTemplate {
             .orientation(gtk::Orientation::Horizontal)
             .build();
 
-//        let icon_theme = gtk::IconTheme::for_display(&gdk::Display::default().unwrap());
         b.append(&gtk::Image::builder().icon_name("module-symbolic").margin_end(12).build());
-
         b.append(&gtk::Label::builder()
             .label(&module.name())
             .xalign(0.0)
@@ -62,7 +56,7 @@ impl ModuleListTemplate {
             .child(&self.module_item_content(module))
             .css_classes(vec![String::from("module_list_item")])
             .build();
-
+        
         module.builtin()
             .then_some(&self.builtin_list_box)
             .unwrap_or(&self.custom_list_box)
@@ -92,27 +86,21 @@ impl ModuleListTemplate {
 
         let name = module.name().to_owned();
         let is_builtin = module.builtin();
-        right_click_gesture.connect_pressed(glib::clone!(@weak self as widget => move |_, _, x, y| {
+        right_click_gesture.connect_pressed(glib::clone!(@weak self as widget => move |_, _, _, _| {
             if !is_builtin {
-                widget.custom_module_context(&item, &name, x as i32, y as i32);
+                widget.custom_module_context(&item, &name);
             }
         }));
     }
 
-    fn remove_module(&self, module: &Module) {
-        let list = if module.builtin() { &self.builtin_list_box } else { &self.custom_list_box };
+    fn remove_module_from_ui(&self, module_name: &String) {
         let mut i = 0;
-        while let Some(row) = list.row_at_index(i) {
-            if let Some(label) = row.child() {
-                if label.downcast::<gtk::Label>().unwrap_or_default().label().to_string().eq(module.name()) {
-                    list.remove(&row);
-                    break;
-                }
+        while let Some(row) = self.custom_list_box.row_at_index(i) {
+            if row.child().and_downcast::<gtk::Box>().unwrap().last_child().and_downcast::<gtk::Label>().unwrap().label().eq(module_name) {
+                self.custom_list_box.remove(&row);
             }
-
             i += 1;
         }
-
     }
 
     pub fn clear_list(&self) {
@@ -123,12 +111,19 @@ impl ModuleListTemplate {
         );
     }
 
-    fn custom_module_context(&self, item: &gtk::ListBoxRow, _name: &String, x: i32, y: i32) {
-        let model = gio::MenuModel::NONE; // TODO
+    fn custom_module_context(&self, item: &gtk::ListBoxRow, name: &String) {
+        let delete_item = gio::MenuItem::new(Some("_Delete"), Some("app.delete-module"));
+        delete_item.set_attribute_value("target", Some(&name.to_variant()));
 
-        let popover = gtk::PopoverMenu::from_model(model);
+        let export_item = gio::MenuItem::new(Some("_Export"), Some("app.export-module"));
+        export_item.set_attribute_value("target", Some(&name.to_variant()));
+
+        let model = gio::Menu::new();
+        model.append_item(&delete_item);
+        model.append_item(&export_item);
+
+        let popover = gtk::PopoverMenu::from_model(Some(&model));
         popover.set_parent(item);
-        popover.set_pointing_to(Some(&gdk::Rectangle::new(x, y, 1, 1)));
         popover.popup();
     }   
 }

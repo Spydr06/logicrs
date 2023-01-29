@@ -65,13 +65,6 @@ impl ApplicationTemplate {
         Ok(())
     }
 
-    pub fn add_module(&self, module: Module) {
-        if let Some(window) = self.window.borrow().as_ref() {
-            window.add_module_to_ui(&self.instance(), &module);
-        }
-        self.project.lock().unwrap().add_module(module);
-    }
-
     pub fn set_project(&self, project: Project, file: Option<gio::File>) {
         let mut old = self.project.lock().unwrap();
         *old = project;
@@ -83,6 +76,10 @@ impl ApplicationTemplate {
         if let Some(window) = self.window.borrow().as_ref() {
             window.reset_ui(&self.instance());
         }
+    }
+
+    pub fn window(&self) -> &RefCell<Option<MainWindow>> {
+        &self.window
     }
 
     pub fn project(&self) -> &ProjectRef {
@@ -155,6 +152,18 @@ impl ApplicationTemplate {
         }
         else {
             Clipboard::Empty
+        }
+    }
+
+    pub fn delete_module(&self, module_name: &String) {
+        // TODO: check for dependency issues
+
+        let locked = self.project.lock().unwrap();
+        if let Some(module) = locked.module(module_name) {
+            let owned = module.to_owned();
+            drop(module);
+            drop(locked);
+            self.instance().new_action(Action::DeleteModule(self.project.clone(), owned));
         }
     }
 }

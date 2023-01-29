@@ -191,5 +191,25 @@ impl Application {
             app.imp().rerender_editor();
         }));
         self.add_action(&select_all_action);
+
+        let delete_module_action = gio::SimpleAction::new("delete-module", Some(&String::static_variant_type()));
+        delete_module_action.connect_activate(glib::clone!(@weak self as app => move |_, data| {
+            let module_name = data
+                .expect("Could not get module name target.")
+                .get::<String>().unwrap();
+
+            app.imp().delete_module(&module_name);
+        }));
+        self.add_action(&delete_module_action);
+
+        /*let export_module_action = gio::SimpleAction::new("export-module", Some(&String::static_variant_type()));
+        export_module_action.connect_activate(glib::clone!(@weak self as app => move |_, data| {
+            let module_name = data
+                .expect("Could not get module name target.")
+                .get::<String>().unwrap();
+
+            println!("export module {module_name}");
+        }));
+        self.add_action(&export_module_action);*/
     }
 }

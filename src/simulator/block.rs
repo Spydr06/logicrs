@@ -163,7 +163,7 @@ impl Block {
         if is_input {
             for i in 0..self.num_inputs {
                 let connector_pos = (self.position.0, self.position.1 + 25 * i as i32 + 50);
-                if (position.0 - connector_pos.0).abs() < 6 && (position.1 - connector_pos.1).abs() < 6 {
+                if (position.0 - connector_pos.0).abs() < Connection::HITBOX_SIZE && (position.1 - connector_pos.1).abs() < Connection::HITBOX_SIZE {
                     return Some(i);
                 }
             }
@@ -171,7 +171,7 @@ impl Block {
         else {
             for i in 0..self.num_outputs {
                 let connector_pos = (self.position.0 + self.size.0, self.position.1 + 25 * i as i32 + 50);
-                if (position.0 - connector_pos.0).abs() < 6 && (position.1 - connector_pos.1).abs() < 6 {
+                if (position.0 - connector_pos.0).abs() < Connection::HITBOX_SIZE && (position.1 - connector_pos.1).abs() < Connection::HITBOX_SIZE {
                     return Some(i);
                 }
             }

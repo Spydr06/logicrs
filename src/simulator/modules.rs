@@ -2,7 +2,7 @@ use crate::simulator::*;
 
 use serde::{Serialize, Deserialize};
 
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub struct Module {
     name: String,
     builtin: bool,
@@ -88,23 +88,5 @@ impl PartialEq for Module {
 impl PartialOrd for Module {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.name.cmp(other.name()))
-    }
-}
-
-impl Clone for Module {
-    fn clone(&self) -> Self {
-        if self.plot.is_some() {
-            panic!("Tried to call `.clone()` on Module with Some(Plot)");
-        }
-
-        Self { 
-            name: self.name.clone(),
-            builtin: self.builtin,
-            plot: None,
-            hidden: self.hidden,
-            num_inputs: self.num_inputs,
-            num_outputs: self.num_outputs,
-            decoration: self.decoration.clone()
-        }
     }
 }

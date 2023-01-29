@@ -16,6 +16,8 @@ pub struct Connection {
 }
 
 impl Connection {
+    pub const HITBOX_SIZE: i32 = 8;
+
     pub fn new(from: Linkage, to: Linkage) -> Self {
         Self {
             from,

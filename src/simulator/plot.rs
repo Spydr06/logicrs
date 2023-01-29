@@ -44,7 +44,7 @@ impl PlotProvider {
     }
 }
 
-#[derive(Serialize, Debug, Default, Deserialize)]
+#[derive(Serialize, Debug, Default, Deserialize, Clone)]
 pub struct Plot {
     blocks: HashMap<BlockID, Block>,
     id_counter: BlockID,

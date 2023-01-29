@@ -6,7 +6,7 @@ use gtk::{
 };
 
 use std::future::Future;
-use crate::{simulator::Module, application::Application};
+use crate::{simulator::Module, application::{Application, action::Action}};
 
 fn create_new_module(app: Application, name: String, num_inputs: u8, num_outputs: u8) -> Result<(), String> {
     if name.is_empty() {
@@ -20,7 +20,7 @@ fn create_new_module(app: Application, name: String, num_inputs: u8, num_outputs
     }
 
     info!("Create new Module \"{}\"\nwith: {} inputs\n      {} outputs", name, num_inputs, num_outputs);
-    app.imp().add_module(Module::new(name, num_inputs, num_outputs));
+    app.new_action(Action::CreateModule(app.imp().project().clone(), Module::new(name, num_inputs, num_outputs)));
 
     Ok(())
 }

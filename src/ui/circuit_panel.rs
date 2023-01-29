@@ -2,7 +2,7 @@ use crate::{application::Application, simulator::PlotProvider};
 use super::circuit_view::CircuitView;
 use gtk::{prelude::*, subclass::prelude::*, gio, glib};
 
-use std::cell::RefCell;
+use std::{cell::RefCell, collections::HashMap};
 
 glib::wrapper! {
     pub struct CircuitPanel(ObjectSubclass<CircuitPanelTemplate>)
@@ -59,7 +59,8 @@ pub struct CircuitPanelTemplate {
     #[template_child]
     redo_button: TemplateChild<gtk::Button>,
 
-    application: RefCell<Application>
+    application: RefCell<Application>,
+    pages: RefCell<HashMap<String, adw::TabPage>>
 }
 
 impl CircuitPanelTemplate {
@@ -74,12 +75,17 @@ impl CircuitPanelTemplate {
         self.application.replace(app);
     }
 
-    pub fn new_tab<'a>(&self, title: &'a str, plot_provider: PlotProvider) -> adw::TabPage {
+    pub fn new_tab<'a>(&self, title: &'a str, plot_provider: PlotProvider) {
         let content = CircuitView::new(self.application.borrow().clone(), plot_provider);
         let page = self.add_page(&content, title);
         self.view.set_selected_page(&page);
+        self.pages.borrow_mut().insert(title.to_owned(), page);
+    }
 
-        page
+    pub fn remove_tab(&self, module_name: &String) {
+        if let Some(page) = self.pages.borrow().get(module_name) {
+            self.view.close_page(page);
+        }
     }
 
     pub fn set_title<'a>(&self, title: &'a str) {

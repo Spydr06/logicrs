@@ -77,6 +77,10 @@ impl Project {
         self.modules.insert(module.name().clone(), module);
     }
 
+    pub fn remove_module(&mut self, module_name: &String) {
+        self.modules.remove(module_name);
+    }
+
     pub fn main_plot(&self) -> &Plot {
         &self.main_plot
     }

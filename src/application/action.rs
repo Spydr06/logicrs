@@ -1,4 +1,4 @@
-use crate::{simulator::*, config};
+use crate::{simulator::*, config, project::ProjectRef};
 
 use super::*;
 
@@ -77,6 +77,8 @@ pub enum Action {
     MoveBlock(PlotProvider, BlockID, (i32, i32), (i32, i32)),
     NewConnection(PlotProvider, BlockID, Connection),
     DeleteSelection(PlotProvider, Vec<Block>, Vec<Connection>),
+    CreateModule(ProjectRef, Module),
+    DeleteModule(ProjectRef, Module),
 }
 
 impl Action {
@@ -118,6 +120,18 @@ impl Action {
                 *incoming_connections = connections;
                 app.imp().rerender_editor();
             }
+            Self::CreateModule(project, module) => {
+                if let Some(window) = app.imp().window().borrow().as_ref() {
+                    window.add_module_to_ui(app, &module);
+                }
+                project.lock().unwrap().add_module(module.clone());
+            }
+            Self::DeleteModule(project, module) => {
+                if let Some(window) = app.imp().window().borrow().as_ref() {
+                    window.remove_module_from_ui(module.name());
+                }
+                project.lock().unwrap().remove_module(module.name());
+            }
         }
     }
 
@@ -157,6 +171,18 @@ impl Action {
                     );
                 });
                 app.imp().rerender_editor();
+            }
+            Self::CreateModule(project, module) => {
+                if let Some(window) = app.imp().window().borrow().as_ref() {
+                    window.remove_module_from_ui(module.name());
+                }
+                project.lock().unwrap().remove_module(module.name());
+            }
+            Self::DeleteModule(project, module) => {
+                if let Some(window) = app.imp().window().borrow().as_ref() {
+                    window.add_module_to_ui(app, &module);
+                }
+                project.lock().unwrap().add_module(module.clone());
             }
         }
     }
