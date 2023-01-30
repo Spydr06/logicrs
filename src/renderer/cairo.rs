@@ -54,7 +54,7 @@ impl Renderer for CairoRenderer {
     type Context = cairo::Context;
     type Error = cairo::Error;
 
-    fn callback(&mut self, plot: &Plot, _area: &DrawingArea, context: &Self::Context, width: i32, height: i32) -> Result<&mut Self, Self::Error> {
+    fn callback(&mut self, plot: &Plot, mode: EditorMode, _area: &DrawingArea, context: &Self::Context, width: i32, height: i32) -> Result<&mut Self, Self::Error> {
         self.set_size((width, height)).set_context(Some(context.clone()));     
         if width == 0 || height == 0 {
             return Ok(self);
@@ -73,6 +73,7 @@ impl Renderer for CairoRenderer {
         context.set_font_face(&self.font);
         context.set_font_size(DEFAULT_FONT_SIZE);
 
+        mode.render(self, plot)?;
         plot.render(self, plot)?;
 
         // render selection

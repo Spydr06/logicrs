@@ -2,6 +2,7 @@ pub mod template;
 pub mod actions;
 pub mod action;
 pub mod clipboard;
+pub mod editor;
 
 use action::*;
 use std::cell::RefCell;

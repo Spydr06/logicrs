@@ -57,6 +57,12 @@
                 <property name="tooltip-text" translatable="yes">More options</property>
               </object>
             </child>
+            <child type="end">
+              <object class="GtkToggleButton" id="toggle_grid_button">
+                <property name="icon_name">grid-symbolic</property>
+                <property name="tooltip-text" translatable="yes">Toggle editor grid</property>
+              </object>
+            </child>
           </object>
         </child>
         <child>

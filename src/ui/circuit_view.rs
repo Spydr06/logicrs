@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 use gtk::{prelude::*, subclass::prelude::*, gio, glib, gdk};
-use crate::{selection::*, renderer::*, simulator::*, fatal::FatalResult, application::{Application, action::Action}};
+use crate::{selection::*, renderer::*, simulator::*, fatal::FatalResult, application::{Application, action::Action, editor::{EditorMode, GRID_SIZE}}};
 
 glib::wrapper! {
     pub struct CircuitView(ObjectSubclass<CircuitViewTemplate>)
@@ -20,6 +20,11 @@ impl CircuitView {
 
     pub fn focused(&self) -> bool {
         self.imp().drawing_area.has_focus()
+    }
+
+    pub fn set_editor_mode(&self, editor_mode: EditorMode) {
+        self.imp().editor_mode.replace(editor_mode);
+        self.imp().drawing_area.queue_draw();
     }
 }
 
@@ -53,7 +58,8 @@ pub struct CircuitViewTemplate {
     renderer: RefCell<CairoRenderer>,
     plot_provider: RefCell<PlotProvider>,
     ctrl_down: RefCell<bool>,
-    application: RefCell<Application>
+    application: RefCell<Application>,
+    editor_mode: RefCell<EditorMode>,
 }
 
 impl CircuitViewTemplate {
@@ -189,7 +195,7 @@ impl CircuitViewTemplate {
         self.drawing_area.set_draw_func(glib::clone!(@weak self as widget => move |area, context, width, height|
             widget.plot_provider.borrow().with_mut(|plot| 
                 widget.renderer.borrow_mut()
-                    .callback(plot, area, context, width, height)
+                    .callback(plot, *widget.editor_mode.borrow(), area, context, width, height)
                     .map(|_| ())
                     .unwrap_or_die()
             );
@@ -281,9 +287,17 @@ impl CircuitViewTemplate {
         self.plot_provider.borrow().with_mut(|plot|
             match plot.selection().clone() {
                 Selection::Single(index) => {
+                    let editor_mode = self.editor_mode.borrow();
+
                     let block = plot.get_block_mut(index).unwrap();
                     let (start_x, start_y) = block.start_pos();
-                    block.set_position((start_x + offset.0, start_y + offset.1));
+                    let new_position = if matches!(*editor_mode, EditorMode::Grid) {
+                        ((start_x + offset.0) / GRID_SIZE * GRID_SIZE, (start_y + offset.1) / GRID_SIZE * GRID_SIZE)
+                    } else {
+                        (start_x + offset.0, start_y + offset.1)
+                    };
+
+                    block.set_position(new_position);
                     self.drawing_area.queue_draw();
                 }
                 Selection::Connection { block_id, output, start, position: _ } => {
@@ -308,10 +322,18 @@ impl CircuitViewTemplate {
                     return;
                 }
 
+                let editor_mode = self.editor_mode.borrow();
+
                 let action = plot_provider.with(|plot| {
                     let block = plot.get_block(index).unwrap();
                     let (start_x, start_y) = block.start_pos();
-                    Action::MoveBlock(plot_provider.clone(), block.id(), block.start_pos(), (start_x + offset.0, start_y + offset.1))
+                    let new_position = if matches!(*editor_mode, EditorMode::Grid) {
+                        ((start_x + offset.0) / GRID_SIZE * GRID_SIZE, (start_y + offset.1) / GRID_SIZE * GRID_SIZE)
+                    } else {
+                        (start_x + offset.0, start_y + offset.1)
+                    };
+
+                    Action::MoveBlock(plot_provider.clone(), block.id(), block.start_pos(), new_position)
                 });
 
                 if let Some(action) = action {

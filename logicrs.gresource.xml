@@ -21,5 +21,6 @@
     <file compressed="true" preprocess="xml-stripblanks" alias="right-large-symbolic.svg">style/icons/right-large-symbolic.svg</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="left-large-symbolic.svg">style/icons/left-large-symbolic.svg</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="module-symbolic.svg">style/icons/module-symbolic.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="grid-symbolic.svg">style/icons/grid-symbolic.svg</file>
   </gresource>
 </gresources>

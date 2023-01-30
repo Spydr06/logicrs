@@ -1,4 +1,4 @@
-use crate::{application::Application, simulator::PlotProvider};
+use crate::{application::{Application, editor::EditorMode}, simulator::PlotProvider};
 use super::circuit_view::CircuitView;
 use gtk::{prelude::*, subclass::prelude::*, gio, glib};
 
@@ -65,6 +65,9 @@ pub struct CircuitPanelTemplate {
     #[template_child]
     redo_button: TemplateChild<gtk::Button>,
 
+    #[template_child]
+    toggle_grid_button: TemplateChild<gtk::ToggleButton>,
+
     application: RefCell<Application>,
     pages: RefCell<HashMap<String, adw::TabPage>>
 }
@@ -124,8 +127,11 @@ impl ObjectSubclass for CircuitPanelTemplate {
 impl ObjectImpl for CircuitPanelTemplate {
     fn constructed(&self) {
         self.parent_constructed();
-       // self.new_tab("Main");
-       // self.new_tab("Second");
+        self.toggle_grid_button.connect_toggled(glib::clone!(@weak self as widget => move |btn| {
+            if let Some(circuit_view) = widget.view.selected_page().and_then(|page| page.child().downcast::<CircuitView>().ok()) {
+                circuit_view.set_editor_mode(EditorMode::from(btn.is_active()));
+            }
+        }));
     }
 }
 

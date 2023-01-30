@@ -4,7 +4,7 @@ pub mod cairo;
 pub mod color;
 
 pub use {cairo::*, color::*};
-use crate::simulator::Plot;
+use crate::{simulator::Plot, application::editor::EditorMode};
 
 pub const DEFAULT_SCALE: f64 = 1.;
 pub const MINIMUM_SCALE: f64 = 0.1;
@@ -21,7 +21,7 @@ pub trait Renderer: Default {
     type Error;
 
     // render callback
-    fn callback(&mut self, data: &Plot, _area: &DrawingArea, context: &Self::Context, width: i32, height: i32) -> Result<&mut Self, Self::Error>;
+    fn callback(&mut self, data: &Plot, mode: EditorMode, area: &DrawingArea, context: &Self::Context, width: i32, height: i32) -> Result<&mut Self, Self::Error>;
 
     // getter/setter
     fn translate(&mut self, translation: (f64, f64)) -> &mut Self;
