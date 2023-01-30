@@ -56,8 +56,8 @@ impl MainWindow {
     }
 
     pub fn reset_ui(&self, app: &Application) {
-        let panel = self.imp().circuit_panel.imp();
-        panel.close_tabs();
+        let panel = &self.imp().circuit_panel;
+        panel.reset_ui();
 
         let module_list = self.imp().module_list.imp();
         module_list.clear_list();

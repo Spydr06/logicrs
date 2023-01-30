@@ -369,8 +369,6 @@ impl WidgetImpl for CircuitViewTemplate {
     }
 
     fn unrealize(&self) {
-        WidgetExt::unrealize(&*self.context_menu);
-        WidgetExt::unrealize(&*self.area_context_menu);
         self.parent_unrealize();
     }
 }

@@ -156,14 +156,31 @@ impl ApplicationTemplate {
     }
 
     pub fn delete_module(&self, module_name: &String) {
-        // TODO: check for dependency issues
-
-        let locked = self.project.lock().unwrap();
+        let mut locked = self.project.lock().unwrap();
         if let Some(module) = locked.module(module_name) {
-            let owned = module.to_owned();
+            let owned_module = module.to_owned();
             drop(module);
+
+            let remove_dependencies = |plot: &mut Plot| {
+                let delete = plot
+                    .blocks_mut()
+                    .iter()
+                    .filter(|(_, block)| block.module_id() == owned_module.name())
+                    .map(|(id, _)| *id)
+                    .collect::<Vec<u32>>();
+
+                delete.iter().for_each(|id| { plot.delete_block(*id); });
+            };
+
+            remove_dependencies(locked.main_plot_mut());
+            locked.modules_mut().iter_mut().for_each(|(_, module)|
+                if let Some(plot) = module.plot_mut() {
+                    remove_dependencies(plot);
+                }
+            );
+        
             drop(locked);
-            self.instance().new_action(Action::DeleteModule(self.project.clone(), owned));
+            self.instance().new_action(Action::DeleteModule(self.project.clone(), owned_module));
         }
     }
 }

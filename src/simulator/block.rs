@@ -84,6 +84,10 @@ impl Block {
         self
     }
 
+    pub fn module_id(&self) -> &String {
+        &self.name
+    }
+
     pub fn is_in_area(&self, area: (i32, i32, i32, i32)) -> bool {
         !(
             self.position.0 > area.2 || 

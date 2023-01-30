@@ -123,6 +123,24 @@ pub async fn basic_error(_app: Application, window: gtk::Window, message: String
     dialog.close();
 }
 
+pub async fn confirm_delete_module(app: Application, window: gtk::Window, module_name: String) {
+    let dialog = MessageDialog::builder()
+        .transient_for(&window)
+        .modal(true)
+        .buttons(ButtonsType::YesNo)
+        .resizable(false)
+        .text(&format!("Do you really want to delete the module \"{module_name}\"?\nThis action is not reversable!"))
+        .title(&format!("Delete Module \"{module_name}\"?"))
+        .build();
+    
+    let answer = dialog.run_future().await;
+    dialog.close();
+
+    if ResponseType::Yes == answer {
+        app.imp().delete_module(&module_name);
+    }
+}
+
 pub fn run <F, T>(application: Application, window: gtk::Window, data: T, dialog: fn(Application, gtk::Window, T) -> F) 
 where
     F: Future<Output = ()> + 'static,

@@ -59,6 +59,10 @@ impl Project {
         &self.modules
     }
 
+    pub fn modules_mut(&mut self) -> &mut HashMap<String, Module> {
+        &mut self.modules
+    }
+
     pub fn add_module(&mut self, mut module: Module) {
         let num_inputs = module.get_num_inputs();
         let num_outputs = module.get_num_outputs();

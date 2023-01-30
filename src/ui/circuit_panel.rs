@@ -19,6 +19,12 @@ impl CircuitPanel {
         panel
     }
 
+    pub fn reset_ui(&self) {
+        self.imp().close_tabs();
+        self.undo_button().set_sensitive(false);
+        self.redo_button().set_sensitive(false);
+    }
+
     #[template_callback]
     pub fn undo_latest(&self, _btn: &gtk::Button) {
         self.imp().application.borrow().undo_action();

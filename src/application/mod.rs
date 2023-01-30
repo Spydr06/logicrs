@@ -198,7 +198,9 @@ impl Application {
                 .expect("Could not get module name target.")
                 .get::<String>().unwrap();
 
-            app.imp().delete_module(&module_name);
+            if let Some(window) = app.active_window() {
+                dialogs::run(app, window, module_name, dialogs::confirm_delete_module);
+            }
         }));
         self.add_action(&delete_module_action);
 
