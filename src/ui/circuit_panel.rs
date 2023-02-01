@@ -42,6 +42,27 @@ impl CircuitPanel {
     pub fn redo_button(&self) -> &gtk::Button {
         &self.imp().redo_button        
     }
+
+    pub fn open_tab(&self, plot_provider: PlotProvider) {
+        match &plot_provider {
+            PlotProvider::Module(_, module_name) => {
+                let mut i = 0;
+                let view = &self.imp().view;
+                while i < view.n_pages() {
+                    let page = view.nth_page(i);
+                    if page.title().eq(module_name) {
+                        self.imp().view.set_selected_page(&page);
+                        return;
+                    }
+                    i += 1;
+                }
+
+                // page not found, create new
+                self.imp().new_tab(&module_name, plot_provider.clone());
+            }
+            _ => {}
+        }
+    }
 }
 
 #[derive(gtk::CompositeTemplate, Default)]
@@ -86,6 +107,10 @@ impl CircuitPanelTemplate {
 
     pub fn new_tab<'a>(&self, title: &'a str, plot_provider: PlotProvider) {
         let content = CircuitView::new(self.application.borrow().clone(), plot_provider);
+        if self.toggle_grid_button.is_active() {
+            content.set_editor_mode(EditorMode::Grid);
+        }
+
         let page = self.add_page(&content, title);
         self.view.set_selected_page(&page);
         self.pages.borrow_mut().insert(title.to_owned(), page);
@@ -128,8 +153,13 @@ impl ObjectImpl for CircuitPanelTemplate {
     fn constructed(&self) {
         self.parent_constructed();
         self.toggle_grid_button.connect_toggled(glib::clone!(@weak self as widget => move |btn| {
-            if let Some(circuit_view) = widget.view.selected_page().and_then(|page| page.child().downcast::<CircuitView>().ok()) {
+            let mut i = 0;
+            while i < widget.view.n_pages() && let Ok(circuit_view) = widget.view.nth_page(i).child().downcast::<CircuitView>() {
                 circuit_view.set_editor_mode(EditorMode::from(btn.is_active()));
+                if widget.view.nth_page(i).is_selected() {
+                    circuit_view.rerender();
+                }
+                i += 1;
             }
         }));
     }

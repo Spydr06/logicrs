@@ -2,6 +2,14 @@ use gtk::{prelude::*, subclass::prelude::*, glib, gdk, gio};
 
 use crate::{application::{Application, action::Action}, simulator::*};
 
+macro_rules! add_menu_item {
+    ($model: expr, $name: expr, $action: expr, $value: expr) => {
+        let __item__ = gtk::gio::MenuItem::new(Some($name), Some($action));
+        __item__.set_attribute_value("target", Some($value));
+        $model.append_item(&__item__);
+    };
+}
+
 glib::wrapper! {
     pub struct ModuleList(ObjectSubclass<ModuleListTemplate>)
         @extends gtk::Widget, gtk::Box,
@@ -112,15 +120,10 @@ impl ModuleListTemplate {
     }
 
     fn custom_module_context(&self, item: &gtk::ListBoxRow, name: &String) {
-        let delete_item = gio::MenuItem::new(Some("_Delete"), Some("app.delete-module"));
-        delete_item.set_attribute_value("target", Some(&name.to_variant()));
-
-        let export_item = gio::MenuItem::new(Some("_Export"), Some("app.export-module"));
-        export_item.set_attribute_value("target", Some(&name.to_variant()));
-
         let model = gio::Menu::new();
-        model.append_item(&delete_item);
-        model.append_item(&export_item);
+        add_menu_item!(model, "_Edit Contents", "app.edit-module",   &name.to_variant());
+        add_menu_item!(model, "_Delete",        "app.delete-module", &name.to_variant());
+        add_menu_item!(model, "E_xport",        "app.export-module", &name.to_variant());
 
         let popover = gtk::PopoverMenu::from_model(Some(&model));
         popover.set_parent(item);

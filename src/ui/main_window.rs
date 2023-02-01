@@ -38,7 +38,7 @@ impl MainWindow {
 
     pub fn rerender_circuit(&self) {
         if let Some(a) = self.imp().circuit_panel.imp().view.selected_page() &&
-        let Ok(view ) = a.child().downcast::<CircuitView>() {
+            let Ok(view ) = a.child().downcast::<CircuitView>() {
                 view.imp().rerender();
         }
     }
@@ -112,8 +112,6 @@ impl ObjectSubclass for MainWindowTemplate {
 impl ObjectImpl for MainWindowTemplate {
     fn constructed(&self) {
         self.parent_constructed();
-
-    //    obj.set_title(Some("LogicRs"));
 
         let module_list = self.module_list.get();
         let module_list_template = ModuleListTemplate::from_instance(&module_list);

@@ -183,6 +183,17 @@ impl ApplicationTemplate {
             self.instance().new_action(Action::DeleteModule(self.project.clone(), owned_module));
         }
     }
+
+    pub fn edit_module(&self, module_name: String) {
+        let project = self.project.lock().unwrap();
+        if let Some(module) = project.module(&module_name) {
+            let module_name = module.name().clone();
+            let provider = PlotProvider::Module(self.project.clone(), module_name);
+            drop(module);
+            drop(project);
+            self.window.borrow().as_ref().unwrap().panel().open_tab(provider);
+        }
+    }
 }
 
 #[glib::object_subclass]

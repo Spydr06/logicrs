@@ -205,6 +205,16 @@ impl Application {
         }));
         self.add_action(&delete_module_action);
 
+        let edit_module_action = gio::SimpleAction::new("edit-module", Some(&String::static_variant_type()));
+        edit_module_action.connect_activate(glib::clone!(@weak self as app => move |_, data| {
+            let module_name = data
+                .expect("Could not get module name target.")
+                .get::<String>().unwrap();
+
+            app.imp().edit_module(module_name);
+        }));
+        self.add_action(&edit_module_action);
+
         /*let export_module_action = gio::SimpleAction::new("export-module", Some(&String::static_variant_type()));
         export_module_action.connect_activate(glib::clone!(@weak self as app => move |_, data| {
             let module_name = data

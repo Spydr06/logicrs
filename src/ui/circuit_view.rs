@@ -24,6 +24,9 @@ impl CircuitView {
 
     pub fn set_editor_mode(&self, editor_mode: EditorMode) {
         self.imp().editor_mode.replace(editor_mode);
+    }
+
+    pub fn rerender(&self) {
         self.imp().drawing_area.queue_draw();
     }
 }
