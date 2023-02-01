@@ -15,7 +15,7 @@ impl CircuitPanel {
     pub fn new(app: Application) -> Self {
         let panel: Self = glib::Object::new::<Self>(&[]);
         panel.imp().set_title(app.imp().file_name().as_str());
-        panel.imp().set_application(app);
+        panel.set_application(app);
         panel
     }
 
@@ -63,6 +63,22 @@ impl CircuitPanel {
             _ => {}
         }
     }
+
+    pub fn set_application(&self, app: Application) {
+        self.imp().application.replace(app);
+    }
+
+    pub fn new_tab<'a>(&self, title: &'a str, plot_provider: PlotProvider) {
+        self.imp().new_tab(title, plot_provider)
+    }
+
+    pub fn set_title<'a>(&self, title: &'a str) {
+        self.imp().set_title(title)
+    }
+
+    pub fn remove_tab(&self, module_name: &String) {
+        self.imp().remove_tab(module_name)
+    }
 }
 
 #[derive(gtk::CompositeTemplate, Default)]
@@ -101,11 +117,7 @@ impl CircuitPanelTemplate {
         page
     }
 
-    pub fn set_application(&self, app: Application) {
-        self.application.replace(app);
-    }
-
-    pub fn new_tab<'a>(&self, title: &'a str, plot_provider: PlotProvider) {
+    fn new_tab<'a>(&self, title: &'a str, plot_provider: PlotProvider) {
         let content = CircuitView::new(self.application.borrow().clone(), plot_provider);
         if self.toggle_grid_button.is_active() {
             content.set_editor_mode(EditorMode::Grid);
@@ -116,17 +128,17 @@ impl CircuitPanelTemplate {
         self.pages.borrow_mut().insert(title.to_owned(), page);
     }
 
-    pub fn remove_tab(&self, module_name: &String) {
+    fn remove_tab(&self, module_name: &String) {
         if let Some(page) = self.pages.borrow().get(module_name) {
             self.view.close_page(page);
         }
     }
 
-    pub fn set_title<'a>(&self, title: &'a str) {
+    fn set_title<'a>(&self, title: &'a str) {
         (self.header_bar.title_widget().unwrap().downcast_ref().unwrap() as &adw::WindowTitle).set_subtitle(title);
     }
 
-    pub fn close_tabs(&self) {
+    fn close_tabs(&self) {
         for i in (0..self.view.n_pages()).rev() {
             self.view.close_page(&self.view.nth_page(i));
         }

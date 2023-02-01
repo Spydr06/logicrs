@@ -105,7 +105,7 @@ impl ApplicationTemplate {
     }
 
     pub fn current_plot(&self) -> Option<PlotProvider> {
-        self.current_circuit_view().map(|view| view.imp().plot_provider())
+        self.current_circuit_view().map(|view| view.plot_provider())
     }
 
     pub fn current_circuit_view(&self) -> Option<CircuitView> {
@@ -116,17 +116,17 @@ impl ApplicationTemplate {
 
     pub fn with_current_plot<T>(&self, func: impl Fn(&Plot) -> T) -> Option<T> {
         self.current_circuit_view()
-            .and_then(|view| view.imp().plot_provider().with(func))
+            .and_then(|view| view.plot_provider().with(func))
     }
 
     pub fn with_current_plot_mut<T>(&self, func: impl Fn(&mut Plot) -> T) -> Option<T> {
         self.current_circuit_view()
-            .and_then(|view| view.imp().plot_provider().with_mut(func))
+            .and_then(|view| view.plot_provider().with_mut(func))
     }
 
     pub fn rerender_editor(&self) {
         if let Some(view) = self.current_circuit_view() {
-            view.imp().rerender();
+            view.rerender();
         }
     }
 

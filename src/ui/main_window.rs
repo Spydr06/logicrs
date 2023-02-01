@@ -20,7 +20,7 @@ impl MainWindow {
     }
 
     pub fn add_module_to_ui(&self, app: &Application, module: &Module) {
-        let panel = self.imp().circuit_panel.imp();
+        let panel = &self.imp().circuit_panel;
         let module_list = &self.imp().module_list;
         if !module.builtin() {
             panel.new_tab(module.name(), PlotProvider::Module(app.imp().project().clone(), module.name().clone()));
@@ -32,14 +32,14 @@ impl MainWindow {
         let module_list = &self.imp().module_list;
         module_list.remove_module_from_ui(module_name);
 
-        let panel = self.imp().circuit_panel.imp();
+        let panel = &self.imp().circuit_panel;
         panel.remove_tab(module_name);
     }
 
     pub fn rerender_circuit(&self) {
         if let Some(a) = self.imp().circuit_panel.imp().view.selected_page() &&
             let Ok(view ) = a.child().downcast::<CircuitView>() {
-                view.imp().rerender();
+                view.rerender();
         }
     }
 
@@ -47,7 +47,7 @@ impl MainWindow {
         self.imp().set_application(app.clone());
         self.set_subtitle(&app.imp().file_name());
         
-        let panel = self.imp().circuit_panel.imp();
+        let panel = &self.imp().circuit_panel;
         panel.new_tab("Main Circuit", PlotProvider::Main(app.imp().project().clone()));
 
         let project = app.imp().project();
@@ -59,14 +59,14 @@ impl MainWindow {
         let panel = &self.imp().circuit_panel;
         panel.reset_ui();
 
-        let module_list = self.imp().module_list.imp();
+        let module_list = &self.imp().module_list;
         module_list.clear_list();
 
         self.initialize(app);
     }
 
     pub fn set_subtitle(&self, text: &String) {
-        let panel = self.imp().circuit_panel.imp();
+        let panel = &self.imp().circuit_panel;
         panel.set_title(text);
     }
 
@@ -89,8 +89,8 @@ pub struct MainWindowTemplate {
 }
 
 impl MainWindowTemplate {
-    pub fn set_application(&self, app: Application) {
-        self.circuit_panel.get().imp().set_application(app);
+    fn set_application(&self, app: Application) {
+        self.circuit_panel.set_application(app);
     }
 }
 

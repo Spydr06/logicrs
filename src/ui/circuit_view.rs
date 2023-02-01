@@ -27,7 +27,12 @@ impl CircuitView {
     }
 
     pub fn rerender(&self) {
-        self.imp().drawing_area.queue_draw();
+        self.imp().rerender();
+    }
+
+
+    pub fn plot_provider(&self) -> PlotProvider {
+        self.imp().plot_provider()
     }
 }
 
@@ -66,11 +71,11 @@ pub struct CircuitViewTemplate {
 }
 
 impl CircuitViewTemplate {
-    pub fn rerender(&self) {
+    fn rerender(&self) {
         self.drawing_area.queue_draw();
     }
 
-    pub fn plot_provider(&self) -> PlotProvider {
+    fn plot_provider(&self) -> PlotProvider {
         self.plot_provider.borrow().clone()
     }
 

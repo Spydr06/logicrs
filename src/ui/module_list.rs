@@ -24,6 +24,10 @@ impl ModuleList {
     pub fn remove_module_from_ui(&self, module_name: &String) {
         self.imp().remove_module_from_ui(module_name);
     }
+
+    pub fn clear_list(&self) {
+        self.imp().clear_list();
+    }
 }
 
 #[derive(gtk::CompositeTemplate, Default)]
@@ -40,10 +44,6 @@ pub struct ModuleListTemplate {
 }
 
 impl ModuleListTemplate {
-    pub fn get_from(parent: &ModuleList) -> &Self {
-        Self::from_instance(parent)
-    }
-
     fn module_item_content(&self, module: &Module) -> gtk::Box {        
         let b = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
@@ -111,7 +111,7 @@ impl ModuleListTemplate {
         }
     }
 
-    pub fn clear_list(&self) {
+    fn clear_list(&self) {
         [&self.builtin_list_box, &self.custom_list_box].iter().for_each(|list| 
             while let Some(row) = list.row_at_index(0) {
                 list.remove(&row);
