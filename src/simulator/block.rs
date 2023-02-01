@@ -88,12 +88,12 @@ impl Block {
         &self.name
     }
 
-    pub fn is_in_area(&self, area: (i32, i32, i32, i32)) -> bool {
+    pub fn is_in_area(&self, area: ((i32, i32), (i32, i32))) -> bool {
         !(
-            self.position.0 > area.2 || 
-            self.position.1 > area.3 ||
-            self.position.0 + self.size.0 < area.0 || 
-            self.position.1 + self.size.1 < area.1
+            self.position.0 > area.1.0 || 
+            self.position.1 > area.1.1 ||
+            self.position.0 + self.size.0 < area.0.0 || 
+            self.position.1 + self.size.1 < area.0.1
         )
     }
 

@@ -45,12 +45,11 @@ pub trait Renderer: Default {
     }
 
     #[inline]
-    fn screen_space(&self) -> (i32, i32, i32, i32) {
-        let ((a, b), (c, d)) = (
+    fn screen_space(&self) -> ((i32, i32), (i32, i32)) {
+        (
             self.world_coords(0., 0.),
             self.world_coords(self.size().0 as f64, self.size().1 as f64)
-        );
-        (a, b, c, d)
+        )
     }
 
     // shape functions

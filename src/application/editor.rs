@@ -24,27 +24,20 @@ impl Renderable for EditorMode {
         where R: crate::renderer::Renderer {
         match self {
             EditorMode::Grid => {
-                let start = (
-                    -(renderer.translation().0 + renderer.size().0 as f64 * 0.5 / renderer.scale()) as i32,
-                    -(renderer.translation().1 + renderer.size().1 as f64 * 0.5 / renderer.scale()) as i32
-                );
-                let end = (
-                    start.0 + ((renderer.size().0) as f64 * 1.5 / renderer.scale()) as i32,
-                    start.1 + ((renderer.size().1) as f64 * 1.5 / renderer.scale()) as i32
+                let (start, end) = renderer.screen_space();
+                let offset = (
+                    start.0 / GRID_SIZE * GRID_SIZE,
+                    start.1 / GRID_SIZE * GRID_SIZE
                 );
 
-                renderer.set_color(&DEFAULT_THEME.grid_color)
-                    .set_line_width(1.);
+                renderer.set_color(&DEFAULT_THEME.grid_color);
+                for i in (offset.0..end.0).step_by(GRID_SIZE as usize) {
+                    for j in (offset.1..end.1).step_by(GRID_SIZE as usize) {
+                        renderer.rectangle((i - 1, j - 1), (2, 2)).fill()?;
+                    }
+                }
 
-                (start.0 as i32 / GRID_SIZE * GRID_SIZE .. end.0).step_by(GRID_SIZE as usize).for_each(|i| {
-                    renderer.move_to((i, start.1 as i32)).line_to((i, end.1));
-                });
-
-                (start.1 as i32 / GRID_SIZE * GRID_SIZE .. end.1).step_by(GRID_SIZE as usize).for_each(|i| {
-                    renderer.move_to((start.0 as i32, i)).line_to((end.0, i));
-                });
-                
-                renderer.stroke().map(|_| ())
+                Ok(())
             }
             _ => Ok(())
         }

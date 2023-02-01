@@ -193,7 +193,7 @@ impl SelectionField for Plot {
             let y2 = cmp::max(selection_start.1, selection_end.1);
             
             for (_, block) in self.blocks_mut().iter_mut() {
-                if block.is_in_area((x1, y1, x2, y2)) {
+                if block.is_in_area(((x1, y1), (x2, y2))) {
                     block.set_highlighted(true);
                     selected.push(block.id());
                 }
