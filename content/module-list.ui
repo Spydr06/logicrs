@@ -24,52 +24,86 @@
               <object class="GtkToggleButton" id="search_button">
                 <property name="icon-name">system-search-symbolic</property>
                 <property name="tooltip-text" translatable="yes">Search</property>
+                <!--<property name="action-name">list.search</property>-->
               </object>
             </child>
           </object>
         </child>
         <child>
-          <object class="GtkScrolledWindow">
-            <property name="vexpand">True</property>
+          <object class="GtkSearchBar" id="search_bar">
             <child>
-              <object class="GtkBox">
-                <property name="orientation">vertical</property>
-                <child>
-                  <object class="GtkLabel">
-                    <property name="label">Builtin Modules</property>
-                    <property name="xalign">0.0</property>
-                    <style>
-                      <class name="module_list_label"/>
-                    </style>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkListBox"  id="builtin_list_box">
-                    <property name="selection-mode">browse</property>
-                    <style>
-                      <class name="module_list_box"/>
-                    </style>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkLabel">
-                    <property name="label">Custom Modules</property>
-                    <property name="xalign">0.0</property>
-                    <style>
-                      <class name="module_list_label"/>
-                    </style>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkListBox"  id="custom_list_box">
-                    <property name="selection-mode">browse</property>
-                    <style>
-                      <class name="module_list_box"/>
-                    </style>
-                  </object>
-                </child>
+              <object class="GtkSearchEntry">
+                <signal name="search-started" handler="search_entry_started" swapped="true" />
+                <signal name="search-changed" handler="search_entry_changed" swapped="true" />
+                <signal name="stop-search" handler="search_entry_stopped" swapped="true" />
+                <property name="placeholder_text" translatable="yes">Search for modules</property>
               </object>
-            </child>     
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStack" id="stack">
+            <child>
+              <object class="GtkStackPage">
+                <property name="name">modules</property>
+                <property name="child">
+                  <object class="GtkScrolledWindow">
+                    <property name="vexpand">True</property>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label">Builtin Modules</property>
+                            <property name="xalign">0.0</property>
+                            <style>
+                              <class name="module_list_label"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkListBox"  id="builtin_list_box">
+                            <property name="selection-mode">browse</property>
+                            <style>
+                              <class name="module_list_box"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label">Custom Modules</property>
+                            <property name="xalign">0.0</property>
+                            <style>
+                              <class name="module_list_label"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkListBox"  id="custom_list_box">
+                            <property name="selection-mode">browse</property>
+                            <style>
+                              <class name="module_list_box"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </child>     
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkStackPage">
+                <property name="name">empty</property>
+                <property name="child">
+                  <object class="AdwStatusPage">
+                    <property name="icon-name">system-search-symbolic</property>
+                    <property name="title" translatable="yes">No Results found</property>
+                    <property name="description" translatable="yes">Try a different search</property>
+                  </object>
+                </property>
+              </object>
+            </child>
           </object>
         </child>
       </object>

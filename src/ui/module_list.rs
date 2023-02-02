@@ -10,6 +10,36 @@ macro_rules! add_menu_item {
     };
 }
 
+trait ModuleListItem {
+    fn label(&self) -> Option<glib::GString>;
+}
+
+impl ModuleListItem for gtk::ListBoxRow {
+    fn label(&self) -> Option<glib::GString> {
+        self.first_child()
+            .and_then(|w| w.downcast::<gtk::Box>().ok())
+            .and_then(|w| w.last_child())
+            .and_then(|w| w.downcast::<gtk::Label>().ok())
+            .map(|w| w.label())
+    }
+}
+
+trait ModuleListBox {
+    fn n_visible(&self) -> u32;
+}
+
+impl ModuleListBox for gtk::ListBox {
+    fn n_visible(&self) -> u32 {
+        let mut index = 0;
+        let mut counter = 0;
+        while let Some(child) = self.row_at_index(index) {
+            index += 1;
+            counter += child.is_child_visible() as u32;
+        }
+        counter
+    }
+}
+
 glib::wrapper! {
     pub struct ModuleList(ObjectSubclass<ModuleListTemplate>)
         @extends gtk::Widget, gtk::Box,
@@ -17,6 +47,10 @@ glib::wrapper! {
 }
 
 impl ModuleList {
+    pub fn init_accels(&self, app: &Application) {
+        app.set_accels_for_action("list.search", &["<primary>F"]);
+    }
+
     pub fn add_module_to_ui(&self, app: &Application, module: &Module) {
         self.imp().add_module_to_ui(app, module);
     }
@@ -28,6 +62,29 @@ impl ModuleList {
     pub fn clear_list(&self) {
         self.imp().clear_list();
     }
+
+    pub fn show_search(&self) {
+        self.imp().search_bar.set_search_mode(true);
+    }
+}
+
+#[gtk::template_callbacks]
+impl ModuleList {
+    #[template_callback]
+    fn search_entry_started(&self, entry: &gtk::SearchEntry) {
+        entry.grab_focus();
+    }
+
+    #[template_callback]
+    fn search_entry_changed(&self, entry: &gtk::SearchEntry) {
+        let search_text = entry.text().to_ascii_lowercase();
+        self.imp().filter((!search_text.is_empty()).then_some(search_text));
+    }
+
+    #[template_callback]
+    fn search_entry_stopped(&self, entry: &gtk::SearchEntry) {
+        entry.set_text("");
+    }
 }
 
 #[derive(gtk::CompositeTemplate, Default)]
@@ -37,10 +94,19 @@ pub struct ModuleListTemplate {
     pub header_bar: TemplateChild<adw::HeaderBar>,
 
     #[template_child]
+    stack: TemplateChild<gtk::Stack>,
+
+    #[template_child]
     builtin_list_box: TemplateChild<gtk::ListBox>,
 
     #[template_child]
     custom_list_box: TemplateChild<gtk::ListBox>,
+
+    #[template_child]
+    search_bar: TemplateChild<gtk::SearchBar>,
+
+    #[template_child]
+    search_button: TemplateChild<gtk::ToggleButton>
 }
 
 impl ModuleListTemplate {
@@ -128,7 +194,30 @@ impl ModuleListTemplate {
         let popover = gtk::PopoverMenu::from_model(Some(&model));
         popover.set_parent(item);
         popover.popup();
-    }   
+    }
+
+    fn n_visible(&self) -> u32 {
+        self.builtin_list_box.n_visible() + self.custom_list_box.n_visible()
+    }
+
+    fn filter(&self, search_text: Option<String>) {
+        if let Some(search_text) = search_text {
+            let search_text_copy = search_text.clone();
+            self.custom_list_box.set_filter_func(move |item| Self::filter_func(item, &search_text_copy));
+            self.builtin_list_box.set_filter_func(move |item| Self::filter_func(item, &search_text));
+        }
+        else {
+            self.custom_list_box.unset_filter_func();
+            self.builtin_list_box.unset_filter_func();
+        }
+
+        self.stack.set_visible_child_name(if self.n_visible() == 0 { "empty" } else { "modules" });
+    }
+
+    fn filter_func(item: &gtk::ListBoxRow, search_text: &String) -> bool {
+        let label = item.label().expect("could not get label from ModuleListItem");
+        label.to_ascii_lowercase().contains(search_text)
+    }
 }
 
 #[glib::object_subclass]
@@ -137,8 +226,9 @@ impl ObjectSubclass for ModuleListTemplate {
     type Type = ModuleList;
     type ParentType = gtk::Box;
 
-    fn class_init(my_class: &mut Self::Class) {
-        Self::bind_template(my_class);
+    fn class_init(class: &mut Self::Class) {
+        class.bind_template();
+        class.bind_template_instance_callbacks();
     }
 
     fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {
@@ -150,9 +240,17 @@ impl ObjectImpl for ModuleListTemplate {
     fn constructed(&self) {
         self.parent_constructed();
 
+        self.search_bar.connect_search_mode_enabled_notify(glib::clone!(@weak self as widget => move |search_bar|
+            widget.search_button.set_active(search_bar.is_search_mode());
+        ));
+
+        self.search_button.connect_toggled(glib::clone!(@weak self as widget => move |button|
+            widget.search_bar.set_search_mode(button.is_active());
+        ));
+
         let order_alphabetically = |a: &gtk::ListBoxRow, b: &gtk::ListBoxRow| gtk::Ordering::from(
-            ((a.first_child().unwrap().downcast_ref().unwrap() as &gtk::Box).last_child().unwrap().downcast_ref().unwrap() as &gtk::Label).label()
-            .cmp(&((b.first_child().unwrap().downcast_ref().unwrap() as &gtk::Box).last_child().unwrap().downcast_ref().unwrap() as &gtk::Label).label())
+            a.label().expect("could not get label from ModuleListItem")
+            .cmp(&b.label().expect("could not get label from ModuleListItem"))
         );
         self.builtin_list_box.set_sort_func(order_alphabetically);
         self.custom_list_box.set_sort_func(order_alphabetically);

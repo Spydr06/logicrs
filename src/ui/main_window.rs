@@ -45,6 +45,7 @@ impl MainWindow {
 
     pub fn initialize(&self, app: &Application) {
         self.imp().set_application(app.clone());
+        self.imp().module_list.init_accels(app);
         self.set_subtitle(&app.imp().file_name());
         
         let panel = &self.imp().circuit_panel;
@@ -72,6 +73,10 @@ impl MainWindow {
 
     pub fn panel(&self) -> &CircuitPanel {
         &self.imp().circuit_panel
+    }
+
+    pub fn module_list(&self) -> &ModuleList {
+        &self.imp().module_list
     }
 }
 

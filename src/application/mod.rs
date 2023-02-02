@@ -224,5 +224,13 @@ impl Application {
             println!("export module {module_name}");
         }));
         self.add_action(&export_module_action);*/
+
+        let search_module_action = gio::SimpleAction::new("search-module", None);
+        search_module_action.connect_activate(glib::clone!(@weak self as app => move |_, _| {
+            app.imp().window()
+                .borrow().as_ref().unwrap()
+                .module_list().show_search();
+        }));
+        self.add_action(&search_module_action);
     }
 }

@@ -222,6 +222,7 @@ impl ObjectImpl for ApplicationTemplate {
         obj.set_accels_for_action("app.cut", &["<primary>X"]);
         obj.set_accels_for_action("app.paste", &["<primary>V"]);
         obj.set_accels_for_action("app.select-all", &["<primary>A"]);
+        obj.set_accels_for_action("app.search-module", &["<primary>F"]);
     }
 }
 impl ApplicationImpl for ApplicationTemplate {
