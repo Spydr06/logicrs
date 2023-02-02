@@ -124,6 +124,8 @@ impl ObjectImpl for MainWindowTemplate {
         let circuit_panel = self.circuit_panel.get();
         let circuit_panel_template = CircuitPanelTemplate::from_instance(&circuit_panel);
 
+        self.leaflet.set_fold_threshold_policy(adw::FoldThresholdPolicy::Minimum);
+        
         self.leaflet.property_expression("folded").bind(
             &module_list_template.header_bar.get(),
             "show-end-title-buttons",
