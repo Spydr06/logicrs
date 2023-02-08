@@ -221,8 +221,7 @@ impl CircuitViewTemplate {
     }
 
     fn context_menu(&self, x: f64, y: f64) {        
-        let scale = self.renderer.borrow().scale();
-        let position = ((x / scale) as i32, (y / scale) as i32);
+        let position = self.renderer.borrow().world_coords(x, y);
 
         self.plot_provider.borrow_mut().with_mut(|plot| {
             match plot.get_block_at(position) {
@@ -238,12 +237,12 @@ impl CircuitViewTemplate {
 
                         drop(plot);
 
-                        self.context_menu.set_pointing_to(Some(&gdk::Rectangle::new(position.0, position.1, 1, 1)));
+                        self.context_menu.set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
                         self.context_menu.popup();
                     }
                 }
                 None => {
-                    self.area_context_menu.set_pointing_to(Some(&gdk::Rectangle::new(position.0, position.1, 1, 1)));
+                    self.area_context_menu.set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
                     self.area_context_menu.popup();
                 }
             }
