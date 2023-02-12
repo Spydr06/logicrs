@@ -188,8 +188,8 @@ impl ModuleListTemplate {
     fn custom_module_context(&self, item: &gtk::ListBoxRow, name: &String) {
         let model = gio::Menu::new();
         add_menu_item!(model, "_Edit Contents", "app.edit-module",   &name.to_variant());
-        add_menu_item!(model, "_Delete",        "app.delete-module", &name.to_variant());
         add_menu_item!(model, "E_xport",        "app.export-module", &name.to_variant());
+        add_menu_item!(model, "_Delete",        "app.delete-module", &name.to_variant());
 
         let popover = gtk::PopoverMenu::from_model(Some(&model));
         popover.set_parent(item);

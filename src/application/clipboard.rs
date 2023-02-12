@@ -42,19 +42,19 @@ impl From<&Plot> for Clipboard {
     fn from(plot: &Plot) -> Self {
         match plot.selection() {
             Selection::Single(block_id) => {
-                match plot.get_block(*block_id) {
-                    Some(block) => {
-                        let mut block = block.clone();
-                        block.prepare_copying(());
-                        Self::Blocks(vec![block])
-                    },
-                    _ => Self::Empty
+                if let Some(block) = plot.get_block(*block_id) && !block.unique() {
+                    let mut block = block.clone();
+                    block.prepare_copying(());
+                    Self::Blocks(vec![block])
+                }
+                else {
+                    Self::Empty
                 }
             },
             Selection::Many(blocks) => {
                 let mut blocks = blocks
                     .iter()
-                    .filter_map(|block_id| plot.get_block(*block_id))
+                    .filter_map(|block_id| plot.get_block(*block_id).filter(|block| !block.unique()))
                     .map(|block| block.clone())
                     .collect::<Vec<Block>>();
                 blocks.prepare_copying(());
@@ -71,7 +71,9 @@ trait Copyable<T> {
 
 impl Copyable<()> for Vec<Block> {
     fn prepare_copying(&mut self, _data: ()) -> &mut Self {        
-        let ids = self.iter().map(|block| block.id()).collect::<Vec<u32>>();
+        let ids = self.iter()
+            .map(|block| block.id())
+            .collect::<Vec<u32>>();
         self.iter_mut().for_each(|block| {
             block.connections_mut()
                 .iter_mut()

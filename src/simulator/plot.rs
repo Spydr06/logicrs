@@ -102,7 +102,7 @@ impl Plot {
     }
 
     pub fn delete_block(&mut self, id: BlockID) -> Vec<Connection> {
-        if let Some(block) = self.blocks.get(&id) && !block.deleteable() {
+        if let Some(block) = self.blocks.get(&id) && block.unique() {
             return vec![];
         }
 

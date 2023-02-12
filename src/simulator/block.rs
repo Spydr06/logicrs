@@ -26,7 +26,7 @@ pub struct Block {
     #[serde(skip)]
     highlighted: bool,
 
-    deleteable: bool,
+    unique: bool,
 
     num_inputs: u8,
     num_outputs: u8,
@@ -36,7 +36,7 @@ pub struct Block {
 }
 
 impl Block {
-    pub fn new_sized(module: &&Module, position: (i32, i32), id: BlockID, deleteable: bool, num_inputs: u8, num_outputs: u8) -> Self {
+    pub fn new_sized(module: &&Module, position: (i32, i32), id: BlockID, unique: bool, num_inputs: u8, num_outputs: u8) -> Self {
         let mut connections = Vec::with_capacity(num_outputs as usize);
         (0..num_outputs).for_each(|_| connections.push(None));
 
@@ -51,7 +51,7 @@ impl Block {
                 cmp::max(num_inputs, num_outputs) as i32 * 25 + 50
             ),
             highlighted: false,
-            deleteable,
+            unique,
             num_inputs,
             num_outputs,
             name,
@@ -61,11 +61,11 @@ impl Block {
     }
 
     pub fn new(module: &&Module, position: (i32, i32), id: BlockID) -> Self {
-        Self::new_sized(module, position, id, true, module.get_num_inputs(), module.get_num_outputs())
+        Self::new_sized(module, position, id, false, module.get_num_inputs(), module.get_num_outputs())
     }
 
-    pub fn deleteable(&self) -> bool {
-        self.deleteable
+    pub fn unique(&self) -> bool {
+        self.unique
     }
 
     pub fn id(&self) -> BlockID {
