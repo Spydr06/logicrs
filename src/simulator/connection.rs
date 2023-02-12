@@ -61,10 +61,10 @@ impl Renderable for Connection {
             return Ok(())
         }
         if self.active {
-            renderer.set_color(&DEFAULT_THEME.enabled_bg_color);
+            renderer.set_color(unsafe { &COLOR_THEME.enabled_bg_color });
         }
         else {
-            renderer.set_color(&DEFAULT_THEME.disabled_bg_color);
+            renderer.set_color(unsafe { &COLOR_THEME.disabled_bg_color });
         }
         let start = from.unwrap().get_connector_pos(Connector::Output(self.from.port));
         let end = to.unwrap().get_connector_pos(Connector::Input(self.to.port));

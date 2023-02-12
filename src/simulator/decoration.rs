@@ -26,7 +26,7 @@ impl Decoration {
                 renderer
                     .set_font_size(26.0)    
                     .move_to((block.position().0 + (block.size().0 / 2 - 7 * label.chars().count() as i32), block.position().1 + (block.size().1 / 2 + 20)))
-                    .set_color(&DEFAULT_THEME.decoration_fg_color)
+                    .set_color(unsafe { &COLOR_THEME.decoration_fg_color })
                     .show_text(label)?
                     .set_font_size(DEFAULT_FONT_SIZE);
                 Ok(())
@@ -43,7 +43,7 @@ impl Decoration {
                 renderer
                     .set_font_size(26.0)    
                     .move_to(position)
-                    .set_color(&DEFAULT_THEME.decoration_fg_color)
+                    .set_color(unsafe { &COLOR_THEME.decoration_fg_color })
                     .show_text(label)?
                     .set_font_size(DEFAULT_FONT_SIZE)
                     .move_to((position.0, offset.1))

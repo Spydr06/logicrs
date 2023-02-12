@@ -1,4 +1,4 @@
-use crate::renderer::{Renderable, DEFAULT_THEME};
+use crate::renderer::{Renderable, COLOR_THEME};
 
 #[derive(Default, Copy, Clone)]
 pub enum EditorMode {
@@ -30,7 +30,7 @@ impl Renderable for EditorMode {
                     start.1 / GRID_SIZE * GRID_SIZE
                 );
 
-                renderer.set_color(&DEFAULT_THEME.grid_color);
+                renderer.set_color(unsafe { &COLOR_THEME.grid_color });
                 for i in (offset.0..end.0).step_by(GRID_SIZE as usize) {
                     for j in (offset.1..end.1).step_by(GRID_SIZE as usize) {
                         renderer.rectangle((i - 1, j - 1), (2, 2)).fill()?;

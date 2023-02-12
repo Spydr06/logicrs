@@ -188,9 +188,9 @@ impl Block {
     {
         renderer
             .arc(position, 6., 0., f64::consts::TAU)
-            .set_color(if highlighted { &DEFAULT_THEME.suggestion_fg_color } else { &DEFAULT_THEME.disabled_fg_color })
+            .set_color(unsafe {if highlighted { &COLOR_THEME.suggestion_fg_color } else { &COLOR_THEME.disabled_fg_color }})
             .fill_preserve()?
-            .set_color(if self.highlighted { &DEFAULT_THEME.accent_fg_color } else { &DEFAULT_THEME.border_color })
+            .set_color(unsafe {if self.highlighted { &COLOR_THEME.accent_fg_color } else { &COLOR_THEME.border_color }})
             .stroke()
             .map(|_| ())
     }
@@ -203,20 +203,20 @@ impl Renderable for Block {
     {
         renderer.set_line_width(2.);
         renderer.rounded_rect(self.position, self.size, 5)
-            .set_color(&DEFAULT_THEME.block_bg_color).fill()?;
+            .set_color(unsafe { &COLOR_THEME.block_bg_color }).fill()?;
 
         renderer.top_rounded_rect(self.position, (self.size.0, 25), 5)
-            .set_color(&DEFAULT_THEME.border_color)
+            .set_color(unsafe { &COLOR_THEME.border_color })
             .fill()?;
 
         renderer.move_to((self.position.0 + 5, self.position.1 + 18))
-            .set_color(&DEFAULT_THEME.block_fg_color)
+            .set_color(unsafe { &COLOR_THEME.block_fg_color })
             .show_text(self.name.as_str())?;
 
         renderer.rounded_rect(self.position, self.size, 5);
         match self.highlighted {
-            true => renderer.set_color(&DEFAULT_THEME.accent_fg_color),
-            false => renderer.set_color(&DEFAULT_THEME.border_color)    
+            true => renderer.set_color(unsafe { &COLOR_THEME.accent_fg_color }),
+            false => renderer.set_color(unsafe { &COLOR_THEME.border_color })    
         };
         renderer.stroke()?;
 

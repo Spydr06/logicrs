@@ -10,8 +10,12 @@ pub const fn hex_to_color(hex: Hex) -> (f64, f64, f64, f64) {
     )
 }
 
+pub static mut COLOR_THEME: Theme = Theme::DARK;
+
+#[derive(Copy, Clone)]
 pub struct Theme {
     // base colors
+    pub bg_color: Color,
     pub border_color: Color,
     pub block_bg_color: Color,
     pub block_fg_color: Color,
@@ -33,21 +37,58 @@ pub struct Theme {
     pub decoration_fg_color: Color,
 }
 
-pub const DEFAULT_THEME: Theme = Theme {
-    border_color: (0.23, 0.23, 0.23, 1.),
-    block_bg_color: (0.13, 0.13, 0.13, 1.),
-    block_fg_color: hex_to_color(0xffffffff),
+impl From<&adw::StyleManager> for Theme {
+    fn from(style_manager: &adw::StyleManager) -> Self {
+        if style_manager.is_dark() { Self::DARK } else { Self::LIGHT }
+    }
+}
 
-    grid_color: (0.23, 0.23, 0.23, 1.),
+impl Theme {
+    pub fn init() {
+        let style_manager = adw::StyleManager::default();
+        style_manager.connect_dark_notify(|style_manager| unsafe { 
+            COLOR_THEME = Self::from(style_manager)
+        });
+        unsafe { COLOR_THEME = Self::from(&style_manager) } 
+    }
 
-    accent_bg_color: hex_to_color(0x403584e4),
-    accent_fg_color: hex_to_color(0xff3584e4),
+    const DARK: Self = Self {
+        bg_color: (0.1, 0.1, 0.1, 1.),
+        border_color: (0.23, 0.23, 0.23, 1.),
+        block_bg_color: (0.13, 0.13, 0.13, 1.),
+        block_fg_color: hex_to_color(0xffffffff),
 
-    disabled_bg_color: hex_to_color(0x809141ac),
-    disabled_fg_color: hex_to_color(0xff9141ac),
-    enabled_bg_color: hex_to_color(0xff26a269),
-    enabled_fg_color: hex_to_color(0xff33d17a),
-    suggestion_fg_color: hex_to_color(0xfff9f06b),
+        grid_color: (0.23, 0.23, 0.23, 1.),
 
-    decoration_fg_color: (0.8, 0.8, 0.8, 1.0),
-};
+        accent_bg_color: hex_to_color(0x403584e4),
+        accent_fg_color: hex_to_color(0xff3584e4),
+
+        disabled_bg_color: hex_to_color(0x809141ac),
+        disabled_fg_color: hex_to_color(0xff9141ac),
+        enabled_bg_color: hex_to_color(0xff26a269),
+        enabled_fg_color: hex_to_color(0xff33d17a),
+        suggestion_fg_color: hex_to_color(0xfff9f06b),
+
+        decoration_fg_color: (0.8, 0.8, 0.8, 1.0),
+    };
+
+    const LIGHT: Self = Self {
+        bg_color: hex_to_color(0xfffafafa),
+        border_color: (0.65, 0.65, 0.65, 1.),
+        block_bg_color: hex_to_color(0xfffafafa),
+        block_fg_color: hex_to_color(0xff000000),
+
+        grid_color: (0.23, 0.23, 0.23, 1.),
+
+        accent_bg_color: hex_to_color(0x401c71d8),
+        accent_fg_color: hex_to_color(0xff1c71d8),
+
+        disabled_bg_color: hex_to_color(0x809141ac),
+        disabled_fg_color: hex_to_color(0xff9141ac),
+        enabled_bg_color: hex_to_color(0xff26a269),
+        enabled_fg_color: hex_to_color(0xff33d17a),
+        suggestion_fg_color: hex_to_color(0xfff9f06b),
+
+        decoration_fg_color: (0.0, 0.0, 0.0, 1.0),
+    };
+}

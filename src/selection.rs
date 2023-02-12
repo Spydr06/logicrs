@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-use crate::{renderer::{Renderable, DEFAULT_THEME}, simulator::Plot};
+use crate::{renderer::{Renderable, COLOR_THEME}, simulator::Plot};
 use std::cmp;
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -39,9 +39,9 @@ impl Renderable for Selection {
                 let size = (cmp::max(start.0, end.0) - position.0, cmp::max(start.1, end.1) - position.1);
                 renderer.rectangle(position, size)
                     .set_line_width(1.)
-                    .set_color(&DEFAULT_THEME.accent_bg_color)
+                    .set_color(unsafe { &COLOR_THEME.accent_bg_color })
                     .fill_preserve()?
-                    .set_color(&DEFAULT_THEME.accent_fg_color)
+                    .set_color(unsafe { &COLOR_THEME.accent_fg_color })
                     .stroke().map(|_| ())
             }
             Self::Connection {start, position: end , ..} => {
@@ -51,7 +51,7 @@ impl Renderable for Selection {
                 );
 
                 renderer.set_line_width(4.)
-                    .set_color(&DEFAULT_THEME.disabled_bg_color)    
+                    .set_color(unsafe { &COLOR_THEME.disabled_bg_color })    
                     .move_to(*start)
                     .curve_to(offset.0, offset.1, *end)
                     .stroke().map(|_| ())

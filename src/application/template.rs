@@ -3,7 +3,7 @@ use adw::subclass::prelude::*;
 use std::cell::RefCell;
 use crate::{
     ui::{main_window::MainWindow, circuit_view::CircuitView, dialogs},
-    fatal::*, project::*, simulator::*, selection::{SelectionField, Selection},
+    fatal::*, project::*, simulator::*, selection::{SelectionField, Selection}, renderer::Theme,
 };
 
 use super::{action::*, clipboard::Clipboard};
@@ -31,7 +31,7 @@ impl ApplicationTemplate {
     }
 
     fn create_window(&self, application: &super::Application) {
-        adw::StyleManager::default().set_color_scheme(adw::ColorScheme::ForceDark);
+        Theme::init();
 
         let provider = gtk::CssProvider::new();
         provider.load_from_resource(Self::CSS_RESOURCE);

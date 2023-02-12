@@ -1,6 +1,7 @@
 #![feature(const_fn_floating_point_arithmetic)]
 #![feature(let_chains)]
 #![feature(result_flattening)]
+#![feature(atomic_mut_ptr)]
 
 mod application;
 mod ui;

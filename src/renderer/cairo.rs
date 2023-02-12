@@ -67,7 +67,8 @@ impl Renderer for CairoRenderer {
         context.translate(self.translation.0 - screen_center.0, self.translation.1 - screen_center.1);
 
         context.set_antialias(Antialias::Default);
-        context.set_source_rgb(0.1, 0.1, 0.1);
+        let (bg_color_r, bg_color_g, bg_color_b, _) = unsafe { COLOR_THEME.bg_color };
+        context.set_source_rgb(bg_color_r, bg_color_g, bg_color_b);
         context.paint()?;
 
         context.set_font_face(&self.font);
