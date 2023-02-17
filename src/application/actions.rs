@@ -96,10 +96,6 @@ impl Application {
 
             let window = app.active_window().unwrap();
 
-            let json_filter = gtk::FileFilter::new();
-            json_filter.set_name(Some("JSON files"));
-            json_filter.add_mime_type("application/json");
-
             let open_dialog = gtk::FileChooserNative::builder()
                 .transient_for(&window)
                 .modal(true)
@@ -107,7 +103,7 @@ impl Application {
                 .action(gtk::FileChooserAction::Open)
                 .accept_label("Open")
                 .cancel_label("Cancel")
-                .filter(&json_filter)
+                .filter(&Project::file_filter())
                 .build();
             
             open_dialog.connect_response({
@@ -140,17 +136,13 @@ impl Application {
     pub(super) fn save_as(&self) {
         let window = self.active_window().unwrap();
 
-        let json_filter = gtk::FileFilter::new();
-        json_filter.set_name(Some("JSON files"));
-        json_filter.add_mime_type("application/json");
-
         let save_dialog = gtk::FileChooserNative::builder()
             .transient_for(&window)
             .modal(true)
-            .title("Open File")
+            .title("Save As")
             .action(gtk::FileChooserAction::Save)
             .accept_label("Save")
-            .filter(&json_filter)
+            .filter(&Project::file_filter())
             .cancel_label("Cancel")
             .build();
 

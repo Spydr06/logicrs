@@ -17,7 +17,19 @@ impl Default for Project {
     }
 }
 
+
 impl Project {
+    pub const FILE_EXTENSION: &'static str = "lrsproj";
+    pub const FILE_PATTERN: &'static str = "*.lrsproj";
+
+    pub fn file_filter() -> gtk::FileFilter {
+        let filter = gtk::FileFilter::new();
+        filter.set_name(Some("LogicRs project files"));
+        filter.add_pattern(Self::FILE_PATTERN);
+        filter.add_pattern(&Self::FILE_PATTERN.to_uppercase());
+        filter
+    }
+
     pub fn new(modules: &Vec<Module>) -> Self {
         Self {
             modules: modules.iter().map(|module| (module.name().to_owned(), module.to_owned())).collect(),
