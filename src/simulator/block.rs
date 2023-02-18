@@ -3,14 +3,14 @@ use std::{f64, cmp};
 use crate::{renderer::*, selection::SelectionField};
 use serde::{Serialize, Deserialize};
 
-use super::{Connection, Linkage, Plot, Decoration, Module};
+use super::{Connection, Plot, Decoration, Module, ConnectionID, Port};
 
 pub enum Connector {
     Input(u8),
     Output(u8)
 }
 
-pub type BlockID = u32;
+pub type BlockID = uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Block {
@@ -22,28 +22,22 @@ pub struct Block {
 
     #[serde(skip)]
     start_pos: (i32, i32), // starting position of drag movements
-
     #[serde(skip)]
     highlighted: bool,
 
     unique: bool,
 
-    num_inputs: u8,
-    num_outputs: u8,
-    connections: Vec<Option<Connection>>,
+    inputs: Vec<Option<ConnectionID>>,
+    outputs: Vec<Option<ConnectionID>>,
 
     decoration: Decoration,
 }
 
 impl Block {
-    pub fn new_sized(module: &&Module, position: (i32, i32), id: BlockID, unique: bool, num_inputs: u8, num_outputs: u8) -> Self {
-        let mut connections = Vec::with_capacity(num_outputs as usize);
-        (0..num_outputs).for_each(|_| connections.push(None));
-
+    pub fn new_sized(module: &&Module, position: (i32, i32), unique: bool, num_inputs: u8, num_outputs: u8) -> Self {
         let name = module.name().clone();
-
         Self {
-            id,
+            id: crate::new_uuid(),
             position,
             start_pos: (0, 0),
             size: (
@@ -52,16 +46,15 @@ impl Block {
             ),
             highlighted: false,
             unique,
-            num_inputs,
-            num_outputs,
+            inputs: vec![None; num_inputs as usize],
+            outputs: vec![None; num_outputs as usize],
             name,
-            connections,
             decoration: module.decoration().clone(),
         }
     }
 
-    pub fn new(module: &&Module, position: (i32, i32), id: BlockID) -> Self {
-        Self::new_sized(module, position, id, false, module.get_num_inputs(), module.get_num_outputs())
+    pub fn new(module: &&Module, position: (i32, i32)) -> Self {
+        Self::new_sized(module, position, false, module.get_num_inputs(), module.get_num_outputs())
     }
 
     pub fn unique(&self) -> bool {
@@ -70,18 +63,6 @@ impl Block {
 
     pub fn id(&self) -> BlockID {
         self.id
-    }
-
-    pub fn refactor_id(&mut self, id: BlockID) -> &mut Self {
-        self.id = id;
-        
-        self.connections.iter_mut().for_each(|c| 
-            if let Some(connection) = c {
-                connection.set_origin_id(id);
-            }
-        );
-
-        self
     }
 
     pub fn module_id(&self) -> &String {
@@ -130,6 +111,10 @@ impl Block {
         self.start_pos
     }
 
+    pub fn connected_to(&self) -> Vec<ConnectionID> {
+        self.inputs.iter().chain(self.outputs.iter()).filter_map(|a| *a).collect()
+    }
+
     pub fn get_connector_pos(&self, connector: Connector) -> (i32, i32) {
         match connector {
             Connector::Input(i) => (self.position.0, self.position.1 + 25 * i as i32 + 50),
@@ -137,46 +122,36 @@ impl Block {
         }
     }
 
-    pub fn add_connection(&mut self, port: u8, connection: Connection) -> &mut Self {
-        self.connections[port as usize] = Some(connection);
+    pub fn set_connection(&mut self, port: Port, connection: Option<ConnectionID>) -> &mut Self {
+        match port {
+            Port::Input(index) => self.inputs[index as usize] = connection,
+            Port::Output(index) => self.outputs[index as usize] = connection
+        }
         self
     }
 
-    pub fn remove_connection(&mut self, port: u8) -> &mut Self {
-        self.connections[port as usize] = None;
-        self
+    pub fn outputs_mut(&mut self) -> &mut Vec<Option<ConnectionID>> {
+        &mut self.outputs
     }
 
-    pub fn connect_to(&mut self, port: u8, to: Linkage) -> &mut Self {
-        self.connections[port as usize] = Some(Connection::new(
-            Linkage {block_id: self.id, port},
-            to
-        ));
-        self
-    }
-
-    pub fn connections(&self) -> &Vec<Option<Connection>> {
-        &self.connections
-    }
-
-    pub fn connections_mut(&mut self) -> &mut Vec<Option<Connection>> {
-        &mut self.connections
+    pub fn inputs_mut(&mut self) -> &mut Vec<Option<ConnectionID>> {
+        &mut self.inputs
     }
 
     pub fn position_on_connection(&self, position: (i32, i32), is_input: bool) -> Option<u8> {
         if is_input {
-            for i in 0..self.num_inputs {
+            for i in 0..self.inputs.len() {
                 let connector_pos = (self.position.0, self.position.1 + 25 * i as i32 + 50);
                 if (position.0 - connector_pos.0).abs() < Connection::HITBOX_SIZE && (position.1 - connector_pos.1).abs() < Connection::HITBOX_SIZE {
-                    return Some(i);
+                    return Some(i as u8);
                 }
             }
         }
         else {
-            for i in 0..self.num_outputs {
+            for i in 0..self.outputs.len() {
                 let connector_pos = (self.position.0 + self.size.0, self.position.1 + 25 * i as i32 + 50);
                 if (position.0 - connector_pos.0).abs() < Connection::HITBOX_SIZE && (position.1 - connector_pos.1).abs() < Connection::HITBOX_SIZE {
-                    return Some(i);
+                    return Some(i as u8);
                 }
             }
         }
@@ -222,11 +197,11 @@ impl Renderable for Block {
 
         renderer.set_line_width(1.);
         let highlight_inputs = plot.selection().connecting();
-        for i in 0..self.num_inputs {
+        for i in 0..self.inputs.len() {
             self.draw_connector(renderer, (self.position.0, self.position.1 + 25 * i as i32 + 50), highlight_inputs)?;
         }
 
-        for i in 0..self.num_outputs {
+        for i in 0..self.outputs.len() {
             self.draw_connector(renderer, (self.position.0 + self.size.0, self.position.1 + 25 * i as i32 + 50), false)?;
         }
 

@@ -2,7 +2,24 @@ use crate::renderer::*;
 use super::{Connector, Plot, BlockID};
 use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Default, Serialize, Deserialize, Clone)]
+pub type ConnectionID = uuid::Uuid;
+
+#[derive(Copy, Clone)]
+pub enum Port {
+    Input(u8),
+    Output(u8)
+}
+
+impl Port {
+    pub fn index(&self) -> u8 {
+        match self {
+            Self::Input(index) => *index,
+            Self::Output(index) => *index,
+        }
+    } 
+}
+
+#[derive(Debug, Default, Serialize, Deserialize, Clone, Copy)]
 pub struct Linkage {
     pub block_id: BlockID,
     pub port: u8,
@@ -10,6 +27,7 @@ pub struct Linkage {
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct Connection {
+    id: ConnectionID,
     from: Linkage,
     to: Linkage,
     active: bool
@@ -20,10 +38,31 @@ impl Connection {
 
     pub fn new(from: Linkage, to: Linkage) -> Self {
         Self {
+            id: crate::new_uuid(),
             from,
             to,
             active: false
         }
+    }
+
+    pub fn id(&self) -> ConnectionID {
+        self.id
+    }
+
+    pub fn to(&self) -> Linkage {
+        self.from
+    }
+
+    pub fn from(&self) -> Linkage {
+        self.to
+    }
+
+    pub fn to_port(&self) -> Port {
+        Port::Input(self.to.port)
+    }
+
+    pub fn from_port(&self) -> Port {
+        Port::Output(self.from.port)
     }
 
     pub fn contains(&self, id: BlockID) -> bool {

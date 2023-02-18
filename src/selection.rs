@@ -1,15 +1,15 @@
 use serde::{Serialize, Deserialize};
 
-use crate::{renderer::{Renderable, COLOR_THEME}, simulator::Plot};
+use crate::{renderer::{Renderable, COLOR_THEME}, simulator::{Plot, BlockID}};
 use std::cmp;
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum Selection {
-    Single(u32),
-    Many(Vec<u32>),
+    Single(BlockID),
+    Many(Vec<BlockID>),
     Area((i32, i32), (i32, i32)),
     Connection {
-        block_id: u32,
+        block_id: BlockID,
         output: u8,
         start: (i32, i32),
         position: (i32, i32),
@@ -67,6 +67,6 @@ pub trait SelectionField {
     fn select_all(&mut self);
 
     fn unhighlight(&mut self);
-    fn selected(&self) -> Vec<u32>;
+    fn selected(&self) -> Vec<uuid::Uuid>;
     fn highlight_area(&mut self);
 }

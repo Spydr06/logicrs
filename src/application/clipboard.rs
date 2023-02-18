@@ -70,55 +70,25 @@ trait Copyable<T> {
 }
 
 impl Copyable<()> for Vec<Block> {
-    fn prepare_copying(&mut self, _data: ()) -> &mut Self {        
-        let ids = self.iter()
-            .map(|block| block.id())
-            .collect::<Vec<u32>>();
-        self.iter_mut().for_each(|block| {
-            block.connections_mut()
-                .iter_mut()
-                .filter(|c| c.is_some() && !ids.contains(&c.as_ref().unwrap().destination_id()))
-                .for_each(|c| *c = None);
-        });
+    fn prepare_copying(&mut self, _data: ()) -> &mut Self {
         self
     }
 }
 
 impl Copyable<()> for Block {
     fn prepare_copying(&mut self, _data: ()) -> &mut Self {
-        self.connections_mut().iter_mut().for_each(|c| *c = None);
+        self.outputs_mut().iter_mut().for_each(|c| *c = None);
+        self.inputs_mut().iter_mut().for_each(|c| *c = None);
         self
     }
 }
 
 trait Pasteable<T> {
-    fn prepare_pasting(&mut self, data: T) -> &mut Self;
+    fn prepare_pasting(&mut self, _data: T) -> &mut Self;
 }
 
 impl Pasteable<&mut Plot> for Vec<Block> {
-    fn prepare_pasting(&mut self, plot: &mut Plot) -> &mut Self {
-        if self.len() > 0 && self.iter().map(|block| block.id()).min().unwrap() <= plot.current_id() {
-            // change ids of the blocks
-
-            for i in 0..self.len() {
-                let block = self.get_mut(i).unwrap();
-                let old_id = block.id();
-                let new_id = plot.next_id();
-                block.refactor_id(new_id);
-                drop(block);
-                
-                self.iter_mut().for_each(|block| block
-                    .connections_mut()
-                    .iter_mut()
-                    .for_each(|c| {
-                        if let Some(connection) = c && connection.destination_id() == old_id {
-                            connection.set_destination_id(new_id);
-                        }
-                    })
-                );
-            }
-        }
-
+    fn prepare_pasting(&mut self, _plot: &mut Plot) -> &mut Self {
         self
     }
 }

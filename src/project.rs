@@ -81,13 +81,11 @@ impl Project {
 
         // generate Input/Output blocks inside the new module
         if let Some(plot) = module.plot_mut() {
-            let id = plot.next_id();
             let input_module = self.modules.get(&*builtin::INPUT_MODULE_NAME).unwrap();
-            plot.add_block(Block::new_sized(&input_module, (50, 50), id, true, 0,  num_inputs));
+            plot.add_block(Block::new_sized(&input_module, (50, 50), true, 0,  num_inputs));
 
-            let id = plot.next_id();
             let output_module = self.modules.get(&*builtin::OUTPUT_MODULE_NAME).unwrap();
-            plot.add_block(Block::new_sized(&output_module, (400, 50), id, true, num_outputs, 0));
+            plot.add_block(Block::new_sized(&output_module, (400, 50), true, num_outputs, 0));
         }
 
         self.modules.insert(module.name().clone(), module);

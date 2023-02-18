@@ -167,7 +167,7 @@ impl ApplicationTemplate {
                     .iter()
                     .filter(|(_, block)| block.module_id() == owned_module.name())
                     .map(|(id, _)| *id)
-                    .collect::<Vec<u32>>();
+                    .collect::<Vec<BlockID>>();
 
                 delete.iter().for_each(|id| { plot.delete_block(*id); });
             };

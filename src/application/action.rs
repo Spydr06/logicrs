@@ -75,7 +75,7 @@ pub enum Action {
     NewBlock(PlotProvider, Block),
     PasteBlocks(PlotProvider, Vec<Block>),
     MoveBlock(PlotProvider, BlockID, (i32, i32), (i32, i32)),
-    NewConnection(PlotProvider, BlockID, Connection),
+    NewConnection(PlotProvider, Connection),
     DeleteSelection(PlotProvider, Vec<Block>, Vec<Connection>),
     CreateModule(ProjectRef, Module),
     DeleteModule(ProjectRef, Module),
@@ -100,9 +100,9 @@ impl Action {
                 });
                 app.imp().rerender_editor();
             }
-            Self::NewConnection(plot_provider, block_id, connection) => {
-                plot_provider.with_mut(|plot| if let Some(block) = plot.get_block_mut(*block_id) {
-                    block.add_connection(connection.origin(), connection.clone());
+            Self::NewConnection(plot_provider, connection) => {
+                plot_provider.with_mut(|plot| {
+                    plot.add_connection(connection.clone());
                 });
                 app.imp().rerender_editor();
             }
@@ -155,20 +155,16 @@ impl Action {
                 });
                 app.imp().rerender_editor();
             }
-            Self::NewConnection(plot_provider, block_id, connection) => {
-                plot_provider.with_mut(|plot| if let Some(block) = plot.get_block_mut(*block_id) {
-                    block.remove_connection(connection.origin());
+            Self::NewConnection(plot_provider, connection) => {
+                plot_provider.with_mut(|plot| {
+                    plot.remove_connection(connection.id());
                 });
                 app.imp().rerender_editor();
             }
             Self::DeleteSelection(plot_provider, blocks, incoming_connections) => {
                 plot_provider.with_mut(|plot| {
                     blocks.iter().for_each(|block| plot.add_block(block.clone()));
-                    incoming_connections.iter().for_each(|connection| 
-                        if let Some(block) = plot.get_block_mut(connection.origin_id()) {
-                            block.add_connection(connection.origin(), connection.to_owned());
-                        }
-                    );
+                    incoming_connections.iter().for_each(|connection| plot.add_connection(connection.clone()));
                 });
                 app.imp().rerender_editor();
             }

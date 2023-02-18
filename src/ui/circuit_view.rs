@@ -356,7 +356,7 @@ impl CircuitViewTemplate {
                 });
 
                 if let Some(connection) = connection.flatten() {
-                    self.application.borrow().new_action(Action::NewConnection(plot_provider.clone(), block_id, connection));
+                    self.application.borrow().new_action(Action::NewConnection(plot_provider.clone(), connection));
                 }
                 self.drawing_area.queue_draw()
             }

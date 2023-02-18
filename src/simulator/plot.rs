@@ -1,4 +1,4 @@
-use super::{Block, BlockID, Connection};
+use super::{Block, BlockID, Connection, ConnectionID, Port};
 use crate::{renderer::*, selection::*, project::ProjectRef};
 use std::{collections::HashMap, cmp};
 use serde::{Serialize, Deserialize};
@@ -47,7 +47,7 @@ impl PlotProvider {
 #[derive(Serialize, Debug, Default, Deserialize, Clone)]
 pub struct Plot {
     blocks: HashMap<BlockID, Block>,
-    id_counter: BlockID,
+    connections: HashMap<ConnectionID, Connection>,
 
     #[serde(skip)]
     selection: Selection,
@@ -57,18 +57,9 @@ impl Plot {
     pub fn new() -> Self {
         Self {
             blocks: HashMap::new(),
+            connections: HashMap::new(),
             selection: Selection::None,
-            id_counter: 0
         }
-    }
-
-    pub fn next_id(&mut self) -> BlockID {
-        self.id_counter += 1;
-        self.id_counter
-    }
-
-    pub fn current_id(&self) -> BlockID {
-        self.id_counter
     }
 
     pub fn blocks(&self) -> &HashMap<BlockID, Block> {
@@ -101,27 +92,48 @@ impl Plot {
         None
     }
 
+    pub fn add_connection(&mut self, connection: Connection) {
+        let origin = self.blocks.get_mut(&connection.from().block_id).expect("faulty origin block");
+        origin.set_connection(connection.to_port(), Some(connection.id()));
+
+        let destination = self.blocks.get_mut(&connection.to().block_id).expect("faulty destination block");
+        destination.set_connection(connection.from_port(), Some(connection.id()));
+
+        self.connections.insert(connection.id(), connection);
+    }
+
+    pub fn remove_connection(&mut self, id: ConnectionID) -> Option<Connection> {
+        if let Some(c) = self.connections.get(&id) {
+            let connection = c.clone();
+            let refactor = |plot: &mut Plot, id: BlockID, port: Port| {
+                if let Some(block) = plot.get_block_mut(id) {
+                    block.set_connection(port, None);
+                }
+            };
+
+            refactor(self, connection.destination_id(), connection.to_port());
+            refactor(self, connection.origin_id(), connection.from_port());
+
+            self.connections.remove(&id);
+            return Some(connection);
+        }
+        None
+    }
+
     pub fn delete_block(&mut self, id: BlockID) -> Vec<Connection> {
         if let Some(block) = self.blocks.get(&id) && block.unique() {
             return vec![];
         }
 
         let mut deleted_connections = vec![];
-        self.blocks.values_mut().for_each(|block| {
-                let connections = block.connections_mut().iter_mut().filter(
-                    |c| c.as_ref().map(|c| c.contains(id)
-                ).unwrap_or(false));
+        if let Some(block) = self.blocks.get(&id) {
+            deleted_connections = block.connected_to()
+                .iter()
+                .filter_map(|id| self.remove_connection(*id))
+                .collect();
+            self.blocks.remove(&id);
+        }
 
-                let mut vec: Vec<Connection> = connections.map(|c| c.as_ref().unwrap().clone()).collect();
-                deleted_connections.append(&mut vec);
-
-                block.connections_mut().iter_mut().filter(
-                    |c| c.as_ref().map(|c| c.contains(id)
-                ).unwrap_or(false)).for_each(|c| *c = None);
-            }
-        );
-
-        self.blocks.remove(&id);
         deleted_connections
     }
 }
@@ -134,14 +146,12 @@ impl Renderable for Plot {
 
         // render grid
         renderer.set_line_width(4.);
-        for (_, block) in self.blocks() {
-            for c in block.connections().iter().filter(|c| c.is_some()) {
-                c.as_ref().unwrap().render(renderer, plot)?;
-            }
+        for (_, connection) in &self.connections {
+            connection.render(renderer, plot)?;
         }
         
         // render all blocks
-        for (_, block) in self.blocks().iter().filter(|(_, block)| block.is_in_area(screen_space)) {
+        for (_, block) in self.blocks.iter().filter(|(_, block)| block.is_in_area(screen_space)) {
             block.render(renderer, plot)?;
         }
 
