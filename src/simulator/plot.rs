@@ -92,6 +92,10 @@ impl Plot {
         None
     }
 
+    pub fn get_connection(&self, id: ConnectionID) -> Option<&Connection> {
+        self.connections.get(&id)
+    }
+
     pub fn add_connection(&mut self, connection: Connection) {
         let origin = self.blocks.get_mut(&connection.from().block_id).expect("faulty origin block");
         origin.set_connection(connection.to_port(), Some(connection.id()));
