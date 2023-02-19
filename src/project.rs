@@ -1,11 +1,11 @@
 use std::{collections::HashMap, sync::*, fs::{OpenOptions, File}, io::{Write, BufReader}};
-use serde::{Serialize, Deserialize};
+use serde::{Serialize, Deserialize, ser::SerializeStruct};
 use gtk::{gio, prelude::FileExt};
-use crate::simulator::*;
+use crate::simulator::{*, builtin::BUILTINS};
 
 pub type ProjectRef = Arc<Mutex<Project>>;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct Project {
     modules: HashMap<String, Module>,
     main_plot: Plot,
@@ -17,6 +17,16 @@ impl Default for Project {
     }
 }
 
+impl Serialize for Project {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer {
+        let mut state = serializer.serialize_struct("Project", 2)?;
+        state.serialize_field("modules", &HashMap::<&String, &Module>::from_iter(self.modules.iter().filter(|(_, module)| !module.builtin())))?;
+        state.serialize_field("main_plot", &self.main_plot)?;
+        state.end()
+    }
+}
 
 impl Project {
     pub const FILE_EXTENSION: &'static str = "lrsproj";
@@ -40,9 +50,12 @@ impl Project {
     pub fn load_from(file: &gio::File) -> Result<Self, String> {
         let f = File::open(file.path().unwrap())
             .map_err(|err| err.to_string())?;
-        let project = serde_json::from_reader(BufReader::new(f))
+        let mut project: Self = serde_json::from_reader(BufReader::new(f))
             .map_err(|err| err.to_string())?;
-        info!("Opened file `{}`", file.path().unwrap().to_str().unwrap());
+
+        BUILTINS.iter().for_each(|module| project.add_module(module.to_owned()));
+
+        info!("Loaded from file `{}`", file.path().unwrap().to_str().unwrap());
         Ok(project)
     }
 
