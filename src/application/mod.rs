@@ -45,7 +45,7 @@ impl Application {
 
     pub fn apply_clipboard(&self, clipboard: Clipboard) {
         match clipboard {
-            Clipboard::Blocks(_) => {
+            Clipboard::Blocks(..) => {
                 match clipboard.paste_to(self.imp().current_plot().unwrap())
                 {
                     Ok(action) => self.new_action(action),
@@ -73,7 +73,7 @@ impl Application {
 
     pub fn cut_clipboard(&self, clipboard: Clipboard) {
         match clipboard {
-            Clipboard::Blocks(blocks) => self.new_action(Action::DeleteSelection(self.imp().current_plot().unwrap(), blocks, vec![])),
+            Clipboard::Blocks(blocks, _) => self.new_action(Action::DeleteSelection(self.imp().current_plot().unwrap(), blocks, vec![])),
             Clipboard::Module(_) => todo!(),
             Clipboard::Empty => {}
         }

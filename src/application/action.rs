@@ -73,7 +73,7 @@ impl ActionStack {
 
 pub enum Action {
     NewBlock(PlotProvider, Block),
-    PasteBlocks(PlotProvider, Vec<Block>),
+    PasteBlocks(PlotProvider, Vec<Block>, Vec<Connection>),
     MoveBlock(PlotProvider, BlockID, (i32, i32), (i32, i32)),
     NewConnection(PlotProvider, Connection),
     DeleteSelection(PlotProvider, Vec<Block>, Vec<Connection>),
@@ -88,10 +88,11 @@ impl Action {
                 plot_provider.with_mut(|plot| plot.add_block(block.clone()));
                 app.imp().rerender_editor();
             }
-            Self::PasteBlocks(plot_provier, blocks) => {
-                plot_provier.with_mut(|plot| 
-                    blocks.iter().for_each(|block| plot.add_block(block.clone()))
-                );
+            Self::PasteBlocks(plot_provier, blocks, connections) => {
+                plot_provier.with_mut(|plot| {
+                    blocks.iter().for_each(|block| plot.add_block(block.clone()));
+                    connections.iter().for_each(|connection| plot.add_connection(connection.clone()));
+                });
                 app.imp().rerender_editor();
             }
             Self::MoveBlock(plot_provider, block_id, _from, to) => {
@@ -141,12 +142,15 @@ impl Action {
                 plot_provider.with_mut(|plot| plot.delete_block(block.id()));
                 app.imp().rerender_editor();
             }
-            Self::PasteBlocks(plot_provier, blocks) => {
-                plot_provier.with_mut(|plot| 
+            Self::PasteBlocks(plot_provier, blocks, connections) => {
+                plot_provier.with_mut(|plot|  {
                     blocks.iter().for_each(|block| { 
                         plot.delete_block(block.id());
+                    });
+                    connections.iter().for_each(|connection| {
+                        plot.remove_connection(connection.id());
                     })
-                );
+                });
                 app.imp().rerender_editor();
             }
             Self::MoveBlock(plot_provider, block_id, from, _to) => {
