@@ -66,16 +66,19 @@ impl ApplicationTemplate {
     }
 
     pub fn set_project(&self, project: Project, file: Option<gio::File>) {
+        self.stop_simulation();
+
         let mut old = self.project.lock().unwrap();
         *old = project;
-
         drop(old);
-
+        
         self.file.replace(file);
         self.action_stack.borrow_mut().reset();
         if let Some(window) = self.window.borrow().as_ref() {
             window.reset_ui(&self.instance());
         }
+
+        self.start_simulation();
     }
 
     pub fn window(&self) -> &RefCell<Option<MainWindow>> {

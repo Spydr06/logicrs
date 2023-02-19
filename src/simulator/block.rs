@@ -21,15 +21,12 @@ pub struct Block {
     size: (i32, i32),
 
     #[serde(skip)]
-    start_pos: (i32, i32), // starting position of drag movements
-    #[serde(skip)]
     highlighted: bool,
-
     unique: bool,
 
     inputs: Vec<Option<ConnectionID>>,
     outputs: Vec<Option<ConnectionID>>,
-
+    
     decoration: Decoration,
 }
 
@@ -39,7 +36,6 @@ impl Block {
         Self {
             id: crate::new_uuid(),
             position,
-            start_pos: (0, 0),
             size: (
                 cmp::max(75, (name.len() * 10) as i32),
                 cmp::max(num_inputs, num_outputs) as i32 * 25 + 50
@@ -101,14 +97,6 @@ impl Block {
 
     pub fn size(&self) -> (i32, i32) {
         self.size
-    }
-
-    pub fn set_start_pos(&mut self, start_pos: (i32, i32)) {
-        self.start_pos = start_pos
-    }
-
-    pub fn start_pos(&self) -> (i32, i32) {
-        self.start_pos
     }
 
     pub fn connected_to(&self) -> Vec<ConnectionID> {

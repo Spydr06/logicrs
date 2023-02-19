@@ -41,7 +41,7 @@ impl Clipboard {
 impl From<&Plot> for Clipboard {
     fn from(plot: &Plot) -> Self {
         match plot.selection() {
-            Selection::Single(block_id) => {
+            Selection::Single(block_id, _) => {
                 if let Some(block) = plot.get_block(*block_id) && !block.unique() {
                     let mut block = block.clone();
                     block.prepare_copying(());

@@ -174,7 +174,7 @@ impl SelectionField for Plot {
 
     fn unhighlight(&mut self) {
         match self.selection.clone() {
-            Selection::Single(id) => {
+            Selection::Single(id, _) => {
                 self.get_block_mut(id).map(|b| b.set_highlighted(false));
             },
             Selection::Many(ids) => {
@@ -191,7 +191,7 @@ impl SelectionField for Plot {
 
     fn selected(&self) -> Vec<BlockID> {
         match self.selection.clone() {
-            Selection::Single(id) => vec![id],
+            Selection::Single(id, _) => vec![id],
             Selection::Many(ids) => ids,
             _ => vec![]
         }

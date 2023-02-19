@@ -227,12 +227,12 @@ impl CircuitViewTemplate {
             match plot.get_block_at(position) {
                 Some(index) => {
                     if let Some(block) = plot.get_block_mut(index) {
-                        block.set_start_pos(block.position());
                         block.set_highlighted(true);
+                        let start_position = block.position();
 
                         if let Selection::None = plot.selection() {
                             plot.unhighlight();
-                            plot.set_selection(Selection::Single(index));
+                            plot.set_selection(Selection::Single(index, start_position));
                         }
 
                         drop(plot);
@@ -275,9 +275,9 @@ impl CircuitViewTemplate {
                             });
                         }
                         else {
-                            block.set_start_pos(block.position());
+                            let start_position = block.position();
                             block.set_highlighted(true);
-                            plot.set_selection(Selection::Single(index));
+                            plot.set_selection(Selection::Single(index, start_position));
                         }
                     }
                 }
@@ -293,11 +293,10 @@ impl CircuitViewTemplate {
     fn drag_update(&self, offset: (i32, i32)) {
         self.plot_provider.borrow().with_mut(|plot|
             match plot.selection().clone() {
-                Selection::Single(index) => {
+                Selection::Single(index, (start_x, start_y)) => {
                     let editor_mode = self.editor_mode.borrow();
 
                     let block = plot.get_block_mut(index).unwrap();
-                    let (start_x, start_y) = block.start_pos();
                     let new_position = if matches!(*editor_mode, EditorMode::Grid) {
                         ((start_x + offset.0) / GRID_SIZE * GRID_SIZE, (start_y + offset.1) / GRID_SIZE * GRID_SIZE)
                     } else {
@@ -324,7 +323,7 @@ impl CircuitViewTemplate {
         let plot_provider = self.plot_provider.borrow();
         let selection = plot_provider.with(|plot| plot.selection().clone()).unwrap();
         match selection {
-            Selection::Single(index) => {
+            Selection::Single(index, (start_x, start_y)) => {
                 if offset.0 == 0 && offset.1 == 0 {
                     return;
                 }
@@ -333,14 +332,13 @@ impl CircuitViewTemplate {
 
                 let action = plot_provider.with(|plot| {
                     let block = plot.get_block(index).unwrap();
-                    let (start_x, start_y) = block.start_pos();
                     let new_position = if matches!(*editor_mode, EditorMode::Grid) {
                         ((start_x + offset.0) / GRID_SIZE * GRID_SIZE, (start_y + offset.1) / GRID_SIZE * GRID_SIZE)
                     } else {
                         (start_x + offset.0, start_y + offset.1)
                     };
 
-                    Action::MoveBlock(plot_provider.clone(), block.id(), block.start_pos(), new_position)
+                    Action::MoveBlock(plot_provider.clone(), block.id(), (start_x, start_y), new_position)
                 });
 
                 if let Some(action) = action {

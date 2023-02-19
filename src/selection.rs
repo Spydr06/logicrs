@@ -5,7 +5,7 @@ use std::cmp;
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum Selection {
-    Single(BlockID),
+    Single(BlockID, (i32, i32)),
     Many(Vec<BlockID>),
     Area((i32, i32), (i32, i32)),
     Connection {
