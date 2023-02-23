@@ -1,9 +1,9 @@
-use std::{f64, cmp};
+use std::{f64, cmp, collections::HashSet};
 
-use crate::{renderer::*, selection::SelectionField};
+use crate::{renderer::*, selection::SelectionField, project::Project};
 use serde::{Serialize, Deserialize};
 
-use super::{Connection, Plot, Decoration, Module, ConnectionID, Port};
+use super::*;
 
 pub enum Connector {
     Input(u8),
@@ -28,6 +28,16 @@ pub struct Block {
     outputs: Vec<Option<ConnectionID>>,
     
     decoration: Decoration,
+}
+
+impl Identifiable for Block {
+    type ID = BlockID;
+}
+
+impl Simulatable<&mut Plot> for Block {
+    fn simulate(&mut self, done: &mut HashSet<BlockID>, plot: &mut Plot) {
+        
+    }
 }
 
 impl Block {

@@ -1,18 +1,29 @@
-use super::{Block, BlockID, Connection, ConnectionID, Port};
-use crate::{renderer::*, selection::*, project::ProjectRef};
-use std::{collections::HashMap, cmp};
+use super::{Block, BlockID, Connection, ConnectionID, Port, Simulatable, Identifiable};
+use crate::{renderer::*, selection::*, project::{ProjectRef, Project}};
+use std::{collections::{HashMap, HashSet}, cmp};
 use serde::{Serialize, Deserialize};
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Hash)]
+pub enum PlotDescriptor {
+    Main(),
+    Module(String)
+}
+
+#[derive(Clone, Default)]
 pub enum PlotProvider {
+    #[default]
     None,
     Main(ProjectRef),
     Module(ProjectRef, String),
 }
 
-impl Default for PlotProvider {
-    fn default() -> Self {
-        Self::None
+impl Into<PlotDescriptor> for PlotProvider {
+    fn into(self) -> PlotDescriptor {
+        match self {
+            Self::None => panic!(),
+            Self::Main(_) => PlotDescriptor::Main(),
+            Self::Module(_, name) => PlotDescriptor::Module(name)
+        }
     }
 }
 
@@ -20,26 +31,37 @@ impl PlotProvider {
     #[inline]
     pub fn with<T>(&self, func: impl Fn(&Plot) -> T) -> Option<T> {
         match self {
+            Self::None => None,
             Self::Main(project) => Some(func(project.lock().unwrap().main_plot())),
             Self::Module(project, module) => project
                 .lock()
                 .unwrap()
                 .plot(module)
-                .map(|plot| func(plot)),
-            Self::None => None
+                .map(|plot| func(plot))
         }
     }
 
     #[inline]
     pub fn with_mut<T>(&self, func: impl Fn(&mut Plot) -> T) -> Option<T> {
         match self {
+            Self::None => None,
             Self::Main(project) => Some(func(project.lock().unwrap().main_plot_mut())),
             Self::Module(project, module) => project
                 .lock()
                 .unwrap()
                 .plot_mut(module)
                 .map(|plot| func(plot)),
-            Self::None => None
+        }
+    }
+
+    pub fn is_main(&self) -> bool {
+        matches!(self, PlotProvider::Main(_))
+    }
+
+    pub fn is_module(&self) -> Option<&String> {
+        match self {
+            Self::Module(_, name) => Some(name),
+            _ => None
         }
     }
 }
@@ -51,6 +73,19 @@ pub struct Plot {
 
     #[serde(skip)]
     selection: Selection,
+
+    #[serde(skip)]
+    to_update: HashSet<BlockID>
+}
+
+impl Identifiable for Plot {
+    type ID = PlotDescriptor;
+}
+
+impl Simulatable<&mut Project> for Plot {
+    fn simulate(&mut self, done: &mut HashSet<PlotDescriptor>, project: &mut Project) {
+        
+    }
 }
 
 impl Plot {
@@ -59,6 +94,7 @@ impl Plot {
             blocks: HashMap::new(),
             connections: HashMap::new(),
             selection: Selection::None,
+            to_update: HashSet::new()
         }
     }
 
@@ -139,6 +175,18 @@ impl Plot {
         }
 
         deleted_connections
+    }
+
+    pub fn add_block_to_update(&mut self, block: BlockID) {
+        self.to_update.insert(block);
+    }
+
+    pub fn to_update(&self) -> &HashSet<BlockID> {
+        &self.to_update
+    }
+
+    pub fn to_update_mut(&mut self) -> &mut HashSet<BlockID> {
+        &mut self.to_update
     }
 }
 

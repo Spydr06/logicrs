@@ -103,6 +103,8 @@ impl Action {
             }
             Self::NewConnection(plot_provider, connection) => {
                 plot_provider.with_mut(|plot| {
+                    plot.add_block_to_update(connection.origin_id());
+                    plot.add_block_to_update(connection.destination_id());
                     plot.add_connection(connection.clone());
                 });
                 app.imp().rerender_editor();

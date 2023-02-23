@@ -9,9 +9,18 @@ pub use {block::*, connection::*, plot::*, decoration::*, modules::*};
 use std::{
     thread::{self, JoinHandle},
     time::{Duration, Instant},
-    sync::{Arc, atomic::{AtomicBool, Ordering}}
+    sync::{Arc, atomic::{AtomicBool, Ordering}},
+    collections::HashSet
 };
-use crate::project::ProjectRef;
+use crate::project::{ProjectRef, Project};
+
+pub trait Identifiable {
+    type ID;
+}
+
+pub trait Simulatable<D, T: Identifiable = Self> {
+    fn simulate(&mut self, done: &mut HashSet<T::ID>, data: D);
+}
 
 pub struct Simulator {
     running: Arc<AtomicBool>,
@@ -27,7 +36,7 @@ impl Simulator {
         let running = Arc::new(AtomicBool::new(true));
         let sim = Self {
             running: running.clone(),
-            thread: thread::spawn(move || Self::simulate(running, project)),
+            thread: thread::spawn(move || Self::schedule(running, project)),
         };
 
         info!("started simulation.");
@@ -45,12 +54,13 @@ impl Simulator {
         info!("stopped simulation.");
     }
 
-    fn simulate(running: Arc<AtomicBool>, project: ProjectRef) {
+    fn schedule(running: Arc<AtomicBool>, project: ProjectRef) {
         let wait_time = Duration::from_secs_f64(1.0 / Self::TICKS_PER_SECOND);
         while running.load(Ordering::Relaxed) {
             let start = Instant::now();
 
-            Self::update(&project);
+            //let project = project.lock().unwrap();
+
 
             let runtime = start.elapsed();
             if let Some(remaining) = wait_time.checked_sub(runtime) {
@@ -59,7 +69,7 @@ impl Simulator {
         }
     }
 
-    fn update(_project: &ProjectRef) {
-       // info!("tick");
+    fn simulate(project: &mut Project) {
+
     }
 }

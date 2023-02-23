@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::*, fs::{OpenOptions, File}, io::{Write, BufReader}};
+use std::{collections::*, sync::*, fs::{OpenOptions, File}, io::{Write, BufReader}};
 use serde::{Serialize, Deserialize, ser::SerializeStruct};
 use gtk::{gio, prelude::FileExt};
 use crate::simulator::{*, builtin::BUILTINS};
@@ -9,6 +9,9 @@ pub type ProjectRef = Arc<Mutex<Project>>;
 pub struct Project {
     modules: HashMap<String, Module>,
     main_plot: Plot,
+
+    #[serde(skip)]
+    to_update: HashSet<PlotDescriptor>,
 }
 
 impl Default for Project {
@@ -44,6 +47,7 @@ impl Project {
         Self {
             modules: modules.iter().map(|module| (module.name().to_owned(), module.to_owned())).collect(),
             main_plot: Plot::new(),
+            to_update: HashSet::new()
         }
     }
 
@@ -122,5 +126,17 @@ impl Project {
 
     pub fn plot_mut(&mut self, module_name: &String) -> Option<&mut Plot> {
         self.modules.get_mut(module_name).and_then(|module| module.plot_mut().as_mut())
+    }
+
+    pub fn add_plot_to_update(&mut self, plot: PlotDescriptor) {
+        self.to_update.insert(plot);
+    }
+
+    fn to_update(&self) -> &HashSet<PlotDescriptor> {
+        &self.to_update
+    }
+
+    fn to_update_mut(&mut self) -> &mut HashSet<PlotDescriptor> {
+        &mut self.to_update
     }
 }

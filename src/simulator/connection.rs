@@ -1,5 +1,5 @@
 use crate::renderer::*;
-use super::{Connector, Plot, BlockID};
+use super::*;
 use serde::{Serialize, Deserialize};
 
 pub type ConnectionID = uuid::Uuid;
@@ -31,6 +31,10 @@ pub struct Connection {
     from: Linkage,
     to: Linkage,
     active: bool
+}
+
+impl Identifiable for Connection {
+    type ID = ConnectionID;
 }
 
 impl Connection {

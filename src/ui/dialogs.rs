@@ -141,7 +141,7 @@ pub async fn confirm_delete_module(app: Application, window: gtk::Window, module
     }
 }
 
-pub fn run <F, T>(application: Application, window: gtk::Window, data: T, dialog: fn(Application, gtk::Window, T) -> F) 
+pub fn run<F, T>(application: Application, window: gtk::Window, data: T, dialog: fn(Application, gtk::Window, T) -> F) 
 where
     F: Future<Output = ()> + 'static,
 {
