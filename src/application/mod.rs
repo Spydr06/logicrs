@@ -232,5 +232,17 @@ impl Application {
                 .module_list().show_search();
         }));
         self.add_action(&search_module_action);
+
+        let dark_mode_action = gio::SimpleAction::new("dark-theme", None);
+        dark_mode_action.connect_activate(|_, _| adw::StyleManager::default().set_color_scheme(adw::ColorScheme::ForceDark));
+        self.add_action(&dark_mode_action);
+
+        let light_mode_action = gio::SimpleAction::new("light-theme", None);
+        light_mode_action.connect_activate(|_, _| adw::StyleManager::default().set_color_scheme(adw::ColorScheme::ForceLight));
+        self.add_action(&light_mode_action);
+
+        let system_pref_mode = gio::SimpleAction::new("system-preference-theme", None);
+        system_pref_mode.connect_activate(|_, _| adw::StyleManager::default().set_color_scheme(adw::ColorScheme::Default));
+        self.add_action(&system_pref_mode);
     }
 }

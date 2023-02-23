@@ -104,6 +104,23 @@
       </item>
     </section>
     <section>
+      <submenu>
+        <attribute name="label">_Theme</attribute>
+        <item>
+          <attribute name="label" translatable="yes">_Dark</attribute>
+          <attribute name="action">app.dark-theme</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Light</attribute>
+          <attribute name="action">app.light-theme</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_System preference</attribute>
+          <attribute name="action">app.system-preference-theme</attribute>
+        </item>
+      </submenu>
+    </section>
+    <section>
       <!--<item>
         <attribute name="label" translatable="yes">_Preferences</attribute>
         <attribute name="action">app.preferences</attribute>

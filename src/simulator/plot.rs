@@ -9,6 +9,16 @@ pub enum PlotDescriptor {
     Module(String)
 }
 
+impl From<&PlotProvider> for PlotDescriptor {
+    fn from(value: &PlotProvider) -> Self {
+        match value {
+            PlotProvider::Main(_) => Self::Main(),
+            PlotProvider::Module(_, name) => Self::Module(name.clone()),
+            _ => panic!()
+        }
+    }
+}
+
 #[derive(Clone, Default)]
 pub enum PlotProvider {
     #[default]
@@ -51,6 +61,14 @@ impl PlotProvider {
                 .unwrap()
                 .plot_mut(module)
                 .map(|plot| func(plot)),
+        }
+    }
+
+    pub fn project(&self) -> Option<ProjectRef> {
+        match self {
+            Self::Main(project) | 
+            Self::Module(project, _) => Some(project.clone()),
+            _ => None
         }
     }
 

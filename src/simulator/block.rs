@@ -1,6 +1,6 @@
 use std::{f64, cmp, collections::HashSet};
 
-use crate::{renderer::*, selection::SelectionField, project::Project};
+use crate::{renderer::*, selection::SelectionField};
 use serde::{Serialize, Deserialize};
 
 use super::*;

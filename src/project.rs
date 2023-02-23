@@ -39,7 +39,6 @@ impl Project {
         let filter = gtk::FileFilter::new();
         filter.set_name(Some("LogicRs project files"));
         filter.add_pattern(Self::FILE_PATTERN);
-        filter.add_pattern(&Self::FILE_PATTERN.to_uppercase());
         filter
     }
 

@@ -59,7 +59,9 @@ impl Simulator {
         while running.load(Ordering::Relaxed) {
             let start = Instant::now();
 
-            //let project = project.lock().unwrap();
+            let project = project.lock().unwrap();
+
+            drop(project);
 
 
             let runtime = start.elapsed();
@@ -70,6 +72,6 @@ impl Simulator {
     }
 
     fn simulate(project: &mut Project) {
-
+        
     }
 }
