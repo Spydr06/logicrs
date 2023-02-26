@@ -230,15 +230,15 @@ impl Renderable for Plot {
     {
         let screen_space = renderer.screen_space();
 
-        // render grid
-        renderer.set_line_width(4.);
-        for (_, connection) in &self.connections {
-            connection.render(renderer, plot)?;
-        }
-        
         // render all blocks
         for (_, block) in self.blocks.iter().filter(|(_, block)| block.is_in_area(screen_space)) {
             block.render(renderer, plot)?;
+        }
+
+        // render all connections
+        renderer.set_line_width(4.);
+        for (_, connection) in &self.connections {
+            connection.render(renderer, plot)?;
         }
 
         Ok(())

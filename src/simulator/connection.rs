@@ -1,6 +1,7 @@
 use crate::renderer::*;
 use super::*;
 use serde::{Serialize, Deserialize};
+use std::f64;
 
 pub type ConnectionID = uuid::Uuid;
 
@@ -125,6 +126,16 @@ impl Renderable for Connection {
         );
         renderer.move_to(start)
             .curve_to(offset.0, offset.1, end)
-            .stroke().map(|_| ())
+            .stroke()?;
+
+        let connector_color = unsafe { if self.active { &COLOR_THEME.enabled_fg_color } else { &COLOR_THEME.disabled_fg_color } };
+        let connector = |position|
+            renderer
+            .arc(position, 6., 0., f64::consts::TAU)
+            .set_color(connector_color)
+            .fill();
+
+        connector(start)?;
+        connector(end).map(|_| ())
     }
 }

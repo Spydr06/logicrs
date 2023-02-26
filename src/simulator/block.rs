@@ -200,18 +200,6 @@ impl Block {
             error!("no module named {} found", self.name);
         }
     }
-
-    fn draw_connector<R>(&self, renderer: &R, position: (i32, i32), highlighted: bool) -> Result<(), R::Error>
-        where R: Renderer
-    {
-        renderer
-            .arc(position, 6., 0., f64::consts::TAU)
-            .set_color(unsafe {if highlighted { &COLOR_THEME.suggestion_fg_color } else { &COLOR_THEME.disabled_fg_color }})
-            .fill_preserve()?
-            .set_color(unsafe {if self.highlighted { &COLOR_THEME.accent_fg_color } else { &COLOR_THEME.border_color }})
-            .stroke()
-            .map(|_| ())
-    }
 }
 
 
@@ -238,14 +226,24 @@ impl Renderable for Block {
         };
         renderer.stroke()?;
 
+        let show_suggestion = plot.selection().connecting();
+        let connector = |position, not_connected, is_input| {
+            renderer
+            .arc(position, 6., 0., f64::consts::TAU);
+            if not_connected {
+                renderer.set_color(unsafe {if show_suggestion && is_input { &COLOR_THEME.suggestion_fg_color } else { &COLOR_THEME.disabled_fg_color }} )
+                .fill_preserve()?;
+            }
+            renderer.set_color(unsafe {if self.highlighted { &COLOR_THEME.accent_fg_color } else { &COLOR_THEME.border_color }}).stroke()
+        };
+
         renderer.set_line_width(1.);
-        let highlight_inputs = plot.selection().connecting();
-        for i in 0..self.inputs.len() {
-            self.draw_connector(renderer, (self.position.0, self.position.1 + 25 * i as i32 + 50), highlight_inputs)?;
+        for (i, connection) in self.inputs.iter().enumerate() {
+            connector((self.position.0, self.position.1 + 25 * i as i32 + 50), connection.is_none(), true)?;
         }
 
-        for i in 0..self.outputs.len() {
-            self.draw_connector(renderer, (self.position.0 + self.size.0, self.position.1 + 25 * i as i32 + 50), false)?;
+        for (i, connection) in self.outputs.iter().enumerate() {
+            connector((self.position.0 + self.size.0, self.position.1 + 25 * i as i32 + 50), connection.is_none(), false)?;
         }
 
         self.decoration.render(renderer, self).map(|_| ())
