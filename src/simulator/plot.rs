@@ -1,4 +1,4 @@
-use super::{Block, BlockID, Connection, ConnectionID, Port, Simulatable, Identifiable};
+use super::{Block, BlockID, Connection, ConnectionID, Port, Identifiable};
 use crate::{renderer::*, selection::*, project::{ProjectRef, Project}};
 use std::{collections::{HashMap, HashSet}, cmp};
 use serde::{Serialize, Deserialize};
@@ -100,12 +100,6 @@ impl Identifiable for Plot {
     type ID = PlotDescriptor;
 }
 
-impl Simulatable<&mut Project> for Plot {
-    fn simulate(&mut self, done: &mut HashSet<PlotDescriptor>, project: &mut Project) {
-        
-    }
-}
-
 impl Plot {
     pub fn new() -> Self {
         Self {
@@ -157,6 +151,7 @@ impl Plot {
         let destination = self.blocks.get_mut(&connection.to().block_id).expect("faulty destination block");
         destination.set_connection(connection.from_port(), Some(connection.id()));
 
+        self.to_update.insert(connection.origin_id());
         self.connections.insert(connection.id(), connection);
     }
 
@@ -205,6 +200,44 @@ impl Plot {
 
     pub fn to_update_mut(&mut self) -> &mut HashSet<BlockID> {
         &mut self.to_update
+    }
+
+    pub fn simulate(&mut self, project: &mut Project) {
+        let to_update = self.to_update.clone();
+        self.to_update.clear();
+
+        let mut updated = HashSet::new();
+        to_update.iter().for_each(|block_id|
+            if let Some(block) = self.blocks.get(block_id) {
+                // collect input states
+                let mut inputs = 0u128;
+                for (i, connection_id) in block.inputs().iter().enumerate() {
+                    if let Some(connection) = connection_id.map(|connection_id| self.connections.get(&connection_id)).flatten() {
+                        inputs |= (connection.is_active() as u128) << i as u128;
+                    }
+                }   
+    
+                if let Some(module) = project.module(block.name()) {
+                    let outputs = module.simulate(inputs);
+
+                    for (i, connection_id) in block.outputs().iter().enumerate() {
+                        if let Some(connection) = connection_id.map(|connection_id| self.connections.get_mut(&connection_id)).flatten() {
+                            let active = (outputs >> i as u128) & 1 != 0;
+                            if active != connection.is_active() {
+                                self.to_update.insert(connection.destination_id());
+                                connection.set_active(active);
+                            }
+                        }
+                    }
+                }
+                else {
+                    error!("no module named {} found", block.name());
+                }
+                updated.insert(*block_id);
+            }
+        );
+
+        // TODO: check for recursion
     }
 }
 

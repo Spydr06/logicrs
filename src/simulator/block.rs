@@ -1,4 +1,4 @@
-use std::{f64, cmp, collections::HashSet};
+use std::{f64, cmp};
 
 use crate::{renderer::*, selection::SelectionField};
 use serde::{Serialize, Deserialize};
@@ -34,13 +34,9 @@ impl Identifiable for Block {
     type ID = BlockID;
 }
 
-impl Simulatable<&mut Plot> for Block {
-    fn simulate(&mut self, done: &mut HashSet<BlockID>, plot: &mut Plot) {
-        
-    }
-}
-
 impl Block {
+    pub const MAX_CONNECTIONS: u8 = 128;
+
     pub fn new_sized(module: &&Module, position: (i32, i32), unique: bool, num_inputs: u8, num_outputs: u8) -> Self {
         let name = module.name().clone();
         Self {
@@ -61,6 +57,10 @@ impl Block {
 
     pub fn new(module: &&Module, position: (i32, i32)) -> Self {
         Self::new_sized(module, position, false, module.get_num_inputs(), module.get_num_outputs())
+    }
+
+    pub fn name(&self) -> &String {
+        &self.name
     }
 
     pub fn unique(&self) -> bool {
@@ -128,8 +128,16 @@ impl Block {
         self
     }
 
+    pub fn outputs(&self) -> &Vec<Option<ConnectionID>> {
+        &self.outputs
+    }
+    
     pub fn outputs_mut(&mut self) -> &mut Vec<Option<ConnectionID>> {
         &mut self.outputs
+    }
+
+    pub fn inputs(&self) -> &Vec<Option<ConnectionID>> {
+        &self.inputs
     }
 
     pub fn inputs_mut(&mut self) -> &mut Vec<Option<ConnectionID>> {

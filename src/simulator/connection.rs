@@ -92,6 +92,14 @@ impl Connection {
     pub fn set_destination_id(&mut self, block_id: BlockID) {
         self.to.block_id = block_id;
     }
+
+    pub fn is_active(&self) -> bool {
+        self.active
+    }
+
+    pub fn set_active(&mut self, is_active: bool) {
+        self.active = is_active;
+    }
 }
 
 impl Renderable for Connection {

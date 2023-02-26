@@ -8,10 +8,7 @@ pub type ProjectRef = Arc<Mutex<Project>>;
 #[derive(Deserialize)]
 pub struct Project {
     modules: HashMap<String, Module>,
-    main_plot: Plot,
-
-    #[serde(skip)]
-    to_update: HashSet<PlotDescriptor>,
+    main_plot: Plot
 }
 
 impl Default for Project {
@@ -46,7 +43,6 @@ impl Project {
         Self {
             modules: modules.iter().map(|module| (module.name().to_owned(), module.to_owned())).collect(),
             main_plot: Plot::new(),
-            to_update: HashSet::new()
         }
     }
 
@@ -127,15 +123,9 @@ impl Project {
         self.modules.get_mut(module_name).and_then(|module| module.plot_mut().as_mut())
     }
 
-    pub fn add_plot_to_update(&mut self, plot: PlotDescriptor) {
-        self.to_update.insert(plot);
-    }
-
-    fn to_update(&self) -> &HashSet<PlotDescriptor> {
-        &self.to_update
-    }
-
-    fn to_update_mut(&mut self) -> &mut HashSet<PlotDescriptor> {
-        &mut self.to_update
+    pub fn iter_plots_mut(&mut self) -> impl Iterator<Item = &mut Plot> {
+        self.modules.iter_mut()
+            .filter_map(|(_, module)| module.plot_mut().as_mut())
+            .chain(std::iter::once(&mut self.main_plot))
     }
 }

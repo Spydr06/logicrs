@@ -103,13 +103,8 @@ impl Action {
             }
             Self::NewConnection(plot_provider, connection) => {
                 plot_provider.with_mut(|plot| {
-                    plot.add_block_to_update(connection.origin_id());
-                    plot.add_block_to_update(connection.destination_id());
                     plot.add_connection(connection.clone());
                 });
-                if let Some(project) = plot_provider.project() {
-                    project.lock().unwrap().add_plot_to_update(PlotDescriptor::from(&*plot_provider));
-                }
                 app.imp().rerender_editor();
             }
             Self::DeleteSelection(plot_provider, blocks, incoming_connections) => {

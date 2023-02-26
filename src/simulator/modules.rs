@@ -69,6 +69,12 @@ impl Module {
     pub fn decoration(&self) -> &Decoration {
         &self.decoration
     }
+
+    pub fn simulate(&self, inputs: u128) -> u128 {
+        let outputs = std::u128::MAX;
+        println!("simulate module {} with inputs: {inputs:#b} generates: {outputs:#b}", self.name);
+        outputs
+    }
 }
 
 impl Ord for Module {

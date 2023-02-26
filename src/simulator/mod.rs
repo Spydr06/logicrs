@@ -9,17 +9,12 @@ pub use {block::*, connection::*, plot::*, decoration::*, modules::*};
 use std::{
     thread::{self, JoinHandle},
     time::{Duration, Instant},
-    sync::{Arc, atomic::{AtomicBool, Ordering}},
-    collections::HashSet
+    sync::{Arc, atomic::{AtomicBool, Ordering}}
 };
 use crate::project::{ProjectRef, Project};
 
 pub trait Identifiable {
     type ID;
-}
-
-pub trait Simulatable<D, T: Identifiable = Self> {
-    fn simulate(&mut self, done: &mut HashSet<T::ID>, data: D);
 }
 
 pub struct Simulator {
@@ -59,10 +54,9 @@ impl Simulator {
         while running.load(Ordering::Relaxed) {
             let start = Instant::now();
 
-            let project = project.lock().unwrap();
-
+            let mut project = project.lock().unwrap();
+            Self::simulate(&mut project);
             drop(project);
-
 
             let runtime = start.elapsed();
             if let Some(remaining) = wait_time.checked_sub(runtime) {
@@ -72,6 +66,7 @@ impl Simulator {
     }
 
     fn simulate(project: &mut Project) {
-        
+        let mut_ref_ptr = project as *mut Project;
+        project.iter_plots_mut().for_each(|plot| plot.simulate(unsafe { &mut *mut_ref_ptr }));
     }
 }
