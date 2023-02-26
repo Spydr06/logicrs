@@ -1,4 +1,4 @@
-use std::{f64, cmp};
+use std::{f64, cmp, collections::{HashSet, HashMap}};
 
 use crate::{renderer::*, selection::SelectionField};
 use serde::{Serialize, Deserialize};
@@ -170,6 +170,35 @@ impl Block {
             }
         }
         None
+    }
+
+    pub fn simulate(&mut self, connections: &mut HashMap<ConnectionID, Connection>, to_update: &mut HashSet<BlockID>, project: &mut Project) {
+        // collect input states
+        let mut inputs = 0u128;
+        for (i, connection_id) in self.inputs.iter().enumerate() {
+            if let Some(connection) = connection_id.map(|connection_id| connections.get(&connection_id)).flatten() {
+                inputs |= (connection.is_active() as u128) << i as u128;
+            }
+        }   
+    
+        if let Some(module) = project.module(&self.name) {
+            // simulate the block
+            let outputs = module.simulate(inputs, self);
+
+            // dissect output state
+            for (i, connection_id) in self.outputs.iter().enumerate() {
+                if let Some(connection) = connection_id.map(|connection_id| connections.get_mut(&connection_id)).flatten() {
+                    let active = (outputs >> i as u128) & 1 != 0;
+                    if active != connection.is_active() {
+                        to_update.insert(connection.destination_id());
+                        connection.set_active(active);
+                    }
+                }
+            }
+        }
+        else {
+            error!("no module named {} found", self.name);
+        }
     }
 
     fn draw_connector<R>(&self, renderer: &R, position: (i32, i32), highlighted: bool) -> Result<(), R::Error>

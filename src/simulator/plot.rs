@@ -214,31 +214,8 @@ impl Plot {
 
             to_update.iter().for_each(|block_id|
                 if let Some(block) = self.blocks.get_mut(block_id) {
-                    // collect input states
-                    let mut inputs = 0u128;
-                    for (i, connection_id) in block.inputs().iter().enumerate() {
-                        if let Some(connection) = connection_id.map(|connection_id| self.connections.get(&connection_id)).flatten() {
-                            inputs |= (connection.is_active() as u128) << i as u128;
-                        }
-                    }   
-                
-                    if let Some(module) = project.module(block.name()) {
-                        let outputs = module.simulate(inputs, block);
-
-                        for (i, connection_id) in block.outputs().iter().enumerate() {
-                            if let Some(connection) = connection_id.map(|connection_id| self.connections.get_mut(&connection_id)).flatten() {
-                                let active = (outputs >> i as u128) & 1 != 0;
-                                if active != connection.is_active() {
-                                    self.to_update.insert(connection.destination_id());
-                                    connection.set_active(active);
-                                }
-                            }
-                        }
-                    }
-                    else {
-                        error!("no module named {} found", block.name());
-                    }
-                    updated.insert(*block_id);
+                    block.simulate(&mut self.connections, &mut self.to_update, project);
+                    updated.insert(*block_id);   
                 }
             );
 
