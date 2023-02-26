@@ -68,17 +68,17 @@ lazy_static! {
         ));
 
         builtins.insert("Button", Builtin::new(
-            Module::new_builtin("Button", false, 0, 1, Decoration::None),
+            Module::new_builtin("Button", false, 0, 1, Decoration::Button(false)),
             |_, instance| instance.is_active() as u128
         ));
 
         builtins.insert("Switch", Builtin::new(
-            Module::new_builtin("Switch", false, 0, 1, Decoration::None),
+            Module::new_builtin("Switch", false, 0, 1, Decoration::Switch(false)),
             |_, instance| instance.is_active() as u128
         ));
 
         builtins.insert("Lamp", Builtin::new(
-            Module::new_builtin("Lamp", false, 1, 0, Decoration::None),
+            Module::new_builtin("Lamp", false, 1, 0, Decoration::Lamp(false)),
             |input, instance| { 
                 instance.set_active(input & 0b01 == 0b01);
                 0

@@ -162,6 +162,7 @@ impl Plot {
                 if let Some(block) = plot.get_block_mut(id) {
                     block.set_connection(port, None);
                 }
+                plot.to_update.insert(id);
             };
 
             refactor(self, connection.destination_id(), connection.to_port());

@@ -1,5 +1,6 @@
 use crate::renderer::*;
 use serde::{Serialize, Deserialize};
+use std::f64;
 
 use super::Block;
 
@@ -24,7 +25,7 @@ impl Decoration {
         where R: Renderer
     {
         match self {
-            Decoration::Label(label) => {
+            Self::Label(label) => {
                 renderer
                 .set_font_size(26.0)    
                 .move_to((block.position().0 + (block.size().0 / 2 - 7 * label.chars().count() as i32), block.position().1 + (block.size().1 / 2 + 20)))
@@ -33,7 +34,7 @@ impl Decoration {
                 .set_font_size(DEFAULT_FONT_SIZE);
                 Ok(())
             },
-            Decoration::NotLabel(label) => {
+            Self::NotLabel(label) => {
                 let offset = (
                     7 * label.chars().count() as i32,
                     block.position().1 + block.size().1 / 2 - 2
@@ -51,6 +52,16 @@ impl Decoration {
                 .move_to((position.0, offset.1))
                 .set_line_width(2.5)
                 .line_to((position.0 + 2 * offset.0, offset.1))
+                .stroke()
+                .map(|_| ())
+            }
+            Self::Lamp(active) | Self::Button(active) | Self::Switch(active) => {
+                renderer
+                .arc((block.position().0 + block.size().0 / 2, block.position().1 + 50), 12., 0., f64::consts::TAU)
+                .set_color(unsafe { if *active { &COLOR_THEME.suggestion_fg_color } else { &COLOR_THEME.border_color }})
+                .fill_preserve()?
+                .set_line_width(1.5)
+                .set_color(unsafe { &COLOR_THEME.border_color })
                 .stroke()
                 .map(|_| ())
             }
