@@ -13,7 +13,7 @@ pub struct Project {
 
 impl Default for Project {
     fn default() -> Self {
-        Self::new(&builtin::BUILTINS)
+        Self::new(builtin::BUILTINS.iter().map(|(_, builtin)| builtin.module().clone()).collect())
     }
 }
 
@@ -39,9 +39,9 @@ impl Project {
         filter
     }
 
-    pub fn new(modules: &Vec<Module>) -> Self {
+    pub fn new(modules: Vec<Module>) -> Self {
         Self {
-            modules: modules.iter().map(|module| (module.name().to_owned(), module.to_owned())).collect(),
+            modules: modules.iter().map(|module| (module.name().to_owned(), module.clone())).collect(),
             main_plot: Plot::new(),
         }
     }
@@ -52,7 +52,7 @@ impl Project {
         let mut project: Self = serde_json::from_reader(BufReader::new(f))
             .map_err(|err| err.to_string())?;
 
-        BUILTINS.iter().for_each(|module| project.add_module(module.to_owned()));
+        BUILTINS.iter().for_each(|(_, builtin)| project.add_module(builtin.module().clone()));
 
         info!("Loaded from file `{}`", file.path().unwrap().to_str().unwrap());
         Ok(project)

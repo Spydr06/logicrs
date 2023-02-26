@@ -203,41 +203,47 @@ impl Plot {
     }
 
     pub fn simulate(&mut self, project: &mut Project) {
-        let to_update = self.to_update.clone();
-        self.to_update.clear();
-
         let mut updated = HashSet::new();
-        to_update.iter().for_each(|block_id|
-            if let Some(block) = self.blocks.get(block_id) {
-                // collect input states
-                let mut inputs = 0u128;
-                for (i, connection_id) in block.inputs().iter().enumerate() {
-                    if let Some(connection) = connection_id.map(|connection_id| self.connections.get(&connection_id)).flatten() {
-                        inputs |= (connection.is_active() as u128) << i as u128;
-                    }
-                }   
-    
-                if let Some(module) = project.module(block.name()) {
-                    let outputs = module.simulate(inputs);
 
-                    for (i, connection_id) in block.outputs().iter().enumerate() {
-                        if let Some(connection) = connection_id.map(|connection_id| self.connections.get_mut(&connection_id)).flatten() {
-                            let active = (outputs >> i as u128) & 1 != 0;
-                            if active != connection.is_active() {
-                                self.to_update.insert(connection.destination_id());
-                                connection.set_active(active);
+        loop {
+            let to_update = self.to_update.clone();
+            self.to_update.clear();
+            if to_update.len() == 0 {
+                break;
+            }
+
+            to_update.iter().for_each(|block_id|
+                if let Some(block) = self.blocks.get_mut(block_id) {
+                    // collect input states
+                    let mut inputs = 0u128;
+                    for (i, connection_id) in block.inputs().iter().enumerate() {
+                        if let Some(connection) = connection_id.map(|connection_id| self.connections.get(&connection_id)).flatten() {
+                            inputs |= (connection.is_active() as u128) << i as u128;
+                        }
+                    }   
+                
+                    if let Some(module) = project.module(block.name()) {
+                        let outputs = module.simulate(inputs, block);
+
+                        for (i, connection_id) in block.outputs().iter().enumerate() {
+                            if let Some(connection) = connection_id.map(|connection_id| self.connections.get_mut(&connection_id)).flatten() {
+                                let active = (outputs >> i as u128) & 1 != 0;
+                                if active != connection.is_active() {
+                                    self.to_update.insert(connection.destination_id());
+                                    connection.set_active(active);
+                                }
                             }
                         }
                     }
+                    else {
+                        error!("no module named {} found", block.name());
+                    }
+                    updated.insert(*block_id);
                 }
-                else {
-                    error!("no module named {} found", block.name());
-                }
-                updated.insert(*block_id);
-            }
-        );
+            );
 
-        // TODO: check for recursion
+            // TODO: check for recursion
+        }
     }
 }
 

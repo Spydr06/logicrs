@@ -144,6 +144,14 @@ impl Block {
         &mut self.inputs
     }
 
+    pub fn is_active(&self) -> bool {
+        self.decoration.is_active()
+    }
+
+    pub fn set_active(&mut self, is_active: bool) {
+        self.decoration.set_active(is_active)
+    }
+
     pub fn position_on_connection(&self, position: (i32, i32), is_input: bool) -> Option<u8> {
         if is_input {
             for i in 0..self.inputs.len() {

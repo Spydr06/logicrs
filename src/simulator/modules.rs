@@ -1,6 +1,8 @@
-use crate::simulator::*;
+use crate::simulator::{*, builtin::BUILTINS};
 
 use serde::{Serialize, Deserialize};
+
+pub type SimulatorFn = fn(u128, &mut Block) -> u128;
 
 #[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub struct Module {
@@ -70,9 +72,16 @@ impl Module {
         &self.decoration
     }
 
-    pub fn simulate(&self, inputs: u128) -> u128 {
-        let outputs = std::u128::MAX;
-        println!("simulate module {} with inputs: {inputs:#b} generates: {outputs:#b}", self.name);
+    pub fn simulate(&self, inputs: u128, instance: &mut Block) -> u128 {
+        let outputs = 
+        if self.builtin && let Some(builtin) = BUILTINS.get(self.name.as_str()) {
+            builtin.simulate(inputs, instance)
+        }
+        else {
+            panic!("custom modules are not supported currently");
+        };
+
+        info!("simulate module {} with inputs: {inputs:#b} generates: {outputs:#b}", self.name);
         outputs
     }
 }
