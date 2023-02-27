@@ -203,16 +203,18 @@ impl Plot {
         &mut self.to_update
     }
 
-    pub fn simulate(&mut self, project: &mut Project) {
+    pub fn simulate(&mut self, project: &mut Project) -> bool {
         let mut updated = HashSet::new();
+        let mut changes = false;
 
         loop {
-            let to_update = self.to_update.clone();
-            self.to_update.clear();
-            if to_update.len() == 0 {
+            if self.to_update.len() == 0 {
                 break;
             }
-
+            let to_update = self.to_update.clone();
+            self.to_update.clear();
+            changes = true;
+            
             to_update.iter().for_each(|block_id|
                 if let Some(block) = self.blocks.get_mut(block_id) {
                     block.simulate(&mut self.connections, &mut self.to_update, project);
@@ -220,8 +222,11 @@ impl Plot {
                 }
             );
 
+
             // TODO: check for recursion
         }
+
+        changes
     }
 }
 

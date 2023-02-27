@@ -34,7 +34,7 @@ lazy_static! {
 
         builtins.insert("And", Builtin::new(
             Module::new_builtin("And", false, 2, 1, Decoration::Label(String::from("&"))),
-            |input, _| (input & 0b10 == 0b10) as u128
+            |input, _| (input == 0b11) as u128
         ));
 
         builtins.insert("Nand", Builtin::new(

@@ -88,4 +88,26 @@ impl Decoration {
             _ => false
         }
     }
+
+    pub fn on_click(&mut self) {
+        match self {
+            Self::Switch(active) => *active = !*active,
+            Self::Button(active) => *active = true,
+            _ => (),
+        }
+    }
+
+    pub fn on_click_release(&mut self) {
+        match self {
+            Self::Button(active) => *active = false,
+            _ => ()
+        }
+    }
+
+    pub fn clickable(&self) -> bool {
+        match self {
+            Self::Switch(_) | Self::Button(_) => true,
+            _ => false
+        }
+    }
 }

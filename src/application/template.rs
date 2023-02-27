@@ -21,7 +21,7 @@ impl ApplicationTemplate {
     const CSS_RESOURCE: &'static str = "/style/style.css";
 
     fn start_simulation(&self) {
-        *self.simulator.borrow_mut() = Some(Simulator::new(self.project.clone()))
+        *self.simulator.borrow_mut() = Some(Simulator::new(self.project.clone(), self.window.clone()))
     }
 
     fn stop_simulation(&self) {
