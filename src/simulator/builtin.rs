@@ -59,7 +59,7 @@ lazy_static! {
 
         builtins.insert("Xor", Builtin::new(
             Module::new_builtin("Xor", false, 2, 1, Decoration::Label(String::from("=1"))),
-            |input, _| (input == 0b01 || input == 0x10) as u128
+            |input, _| (input == 0b01 || input == 0b10) as u128
         ));
 
         builtins.insert("Xnor", Builtin::new(

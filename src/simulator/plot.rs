@@ -157,7 +157,7 @@ impl Plot {
 
     pub fn remove_connection(&mut self, id: ConnectionID) -> Option<Connection> {
         if let Some(c) = self.connections.get(&id) {
-            let connection = c.clone();
+            let mut connection = c.clone();
             let refactor = |plot: &mut Plot, id: BlockID, port: Port| {
                 if let Some(block) = plot.get_block_mut(id) {
                     block.set_connection(port, None);
@@ -169,6 +169,8 @@ impl Plot {
             refactor(self, connection.origin_id(), connection.from_port());
 
             self.connections.remove(&id);
+
+            connection.set_active(false);
             return Some(connection);
         }
         None
