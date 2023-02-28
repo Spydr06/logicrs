@@ -1,6 +1,6 @@
 use gtk::{prelude::*, subclass::prelude::*, gio, glib, gdk};
 use adw::subclass::prelude::*;
-use std::{cell::{RefCell, Cell}};
+use std::cell::RefCell;
 use crate::{
     ui::{main_window::MainWindow, circuit_view::CircuitView, dialogs},
     fatal::*, project::*, simulator::*, selection::{SelectionField, Selection}, renderer::Theme,
@@ -15,7 +15,6 @@ pub struct ApplicationTemplate {
     simulator: RefCell<Option<Simulator>>,
     file: RefCell<Option<gio::File>>,
     action_stack: RefCell<ActionStack>,
-    in_shutdown_phase: Cell<bool>,
 } 
 
 impl ApplicationTemplate {
@@ -151,10 +150,6 @@ impl ApplicationTemplate {
         self.action_stack.borrow().is_dirty()
     }
 
-    pub fn in_shutdown_phase(&self) -> bool {
-        self.in_shutdown_phase.get()
-    }
-
     pub fn generate_clipboard(&self) -> Clipboard {
         if let Some(selected) = self.with_current_plot(|plot| !matches!(plot.selection(), Selection::None)) && selected {
             self.with_current_plot(|plot| Clipboard::from(plot)).unwrap_or_default()
@@ -255,8 +250,7 @@ impl ApplicationImpl for ApplicationTemplate {
 
     fn shutdown(&self) {
         self.stop_simulation();
-        
-        self.in_shutdown_phase.set(true);
+
         if let Some(window) = self.window.replace(None) {
             window.destroy();
         }
