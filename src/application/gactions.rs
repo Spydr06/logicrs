@@ -1,7 +1,177 @@
 use super::*;
 use crate::{fatal::*, project::Project};
 
+pub(super) type GActionCallbackFn = fn(Application, Option<&glib::Variant>);
+
+pub(super) struct GAction<'a> {
+    name: &'a str,
+    accels: &'a[&'a str],
+    parameter_type: Option<&'a glib::VariantTy>,
+    callback: GActionCallbackFn
+}
+
+impl<'a> GAction<'a> {
+    const fn new(name: &'a str, accels: &'a[&str], parameter_type: Option<&'a glib::VariantTy>, callback: GActionCallbackFn) -> Self {
+        Self {
+            name,
+            accels,
+            parameter_type,
+            callback
+        }
+    }
+
+    pub(super) fn name(&self) -> &str {
+        self.name
+    }
+
+    pub(super) fn callback(&self) -> GActionCallbackFn {
+        self.callback
+    }
+
+    pub(super) fn accels(&self) -> &[&str] {
+        self.accels
+    }
+}
+
+impl<'a> From<&GAction<'a>> for gio::SimpleAction {
+    fn from(value: &GAction<'a>) -> Self {
+        gio::SimpleAction::new(value.name, value.parameter_type)
+    }
+}
+
+pub(super) const ACTIONS: &[GAction] = &[
+    GAction::new("quit", &["<primary>Q", "<primary>W"], None, Application::gaction_quit),
+    GAction::new("about", &["<primary>comma"], None, Application::gaction_about),  
+    GAction::new("save", &["<primary>S"], None, Application::gaction_save),
+    GAction::new("save-as", &["<primary><shift>S"], None, Application::gaction_save_as),
+    GAction::new("open", &["<primary>O"], None, Application::gaction_open),
+    GAction::new("new", &["<primary>N"], None, Application::gaction_new),
+    GAction::new("delete-block", &["Delete"], None, Application::gaction_delete_block),
+    GAction::new("create-new-module", &["<primary><shift>N"], None, Application::gaction_create_new_module),
+    GAction::new("undo", &["<primary>Z"], None, Application::gaction_undo),
+    GAction::new("redo", &["<primary>Y"], None, Application::gaction_redo),
+    GAction::new("copy", &["<primary>C"], None, Application::gaction_copy),
+    GAction::new("cut", &["<primary>X"], None, Application::gaction_cut),
+    GAction::new("paste", &["<primary>V"], None, Application::gaction_paste),
+    GAction::new("select-all", &["<primary>A"], None, Application::gaction_select_all),
+    GAction::new("delete-module", &[], Some(glib::VariantTy::STRING), Application::gaction_delete_module),
+    GAction::new("edit-module", &[], Some(glib::VariantTy::STRING), Application::gaction_edit_module),
+    GAction::new("search-module", &["<primary>F"], None, Application::gaction_search_module),
+    GAction::new("dark-theme", &[], None, Application::gaction_dark_mode),
+    GAction::new("light-theme", &[], None, Application::gaction_light_mode),
+    GAction::new("system-preference-theme", &[], None, Application::gaction_system_preference_mode)
+];
+
 impl Application {
+    fn gaction_quit(self, _: Option<&glib::Variant>) {
+        self.quit();
+    }
+
+    fn gaction_about(self, _: Option<&glib::Variant>) {
+        self.show_about()
+    }
+
+    fn gaction_save(self, _: Option<&glib::Variant>) {
+        if let Err(err) = self.imp().save() {
+            let message =  format!("Error saving to '{}': {}", self.imp().file_name(), err);
+            error!("{}", message);
+            if let Some(window) = self.active_window() {
+                dialogs::run(self, window, message, dialogs::basic_error);
+            }
+        }
+    }
+
+    fn gaction_save_as(self, _: Option<&glib::Variant>) {
+        self.save_as();
+    }
+
+    fn gaction_open(self, _: Option<&glib::Variant>) {
+        self.open();
+    }
+
+    fn gaction_new(self, _: Option<&glib::Variant>) {
+        self.open_new();
+    }
+
+    fn gaction_delete_block(self, _: Option<&glib::Variant>) {
+        if let Some(plot_provider) = self.imp().current_plot() {
+            let blocks = plot_provider.with_mut(|plot| 
+                plot.selected().iter().map(|id| plot.get_block(*id).unwrap().to_owned()).collect()
+            ).unwrap_or_default();
+            self.new_action(Action::DeleteSelection(plot_provider, blocks, vec![]));
+        }
+    }
+
+    fn gaction_create_new_module(self, _: Option<&glib::Variant>) {
+        if let Some(window) = self.active_window() {
+            dialogs::run(self, window, (), dialogs::new_module); 
+        }
+    }
+
+    fn gaction_undo(self, _: Option<&glib::Variant>) {
+        self.undo_action();
+    }
+
+    fn gaction_redo(self, _: Option<&glib::Variant>) {
+        self.redo_action();
+    }
+
+
+    fn gaction_copy(self, _: Option<&glib::Variant>) {
+        self.copy_clipboard(false);
+    }
+
+    fn gaction_cut(self, _: Option<&glib::Variant>) {
+        self.copy_clipboard(true);
+    }
+
+    fn gaction_paste(self, _: Option<&glib::Variant>) {
+        self.paste_clipboard();
+    }
+
+    fn gaction_select_all(self, _: Option<&glib::Variant>) {
+        self.imp().with_current_plot_mut(|plot| plot.select_all());
+        self.imp().rerender_editor();
+    }
+
+    fn gaction_delete_module(self, parameter: Option<&glib::Variant>) {
+        let module_name = parameter
+                .expect("Could not get module name target.")
+                .get::<String>().unwrap();
+
+        if let Some(window) = self.active_window() {
+            dialogs::run(self, window, module_name, dialogs::confirm_delete_module);
+        }
+    }
+
+    fn gaction_edit_module(self, parameter: Option<&glib::Variant>) {
+        let module_name = parameter
+            .expect("Could not get module name target.")
+            .get::<String>().unwrap();
+        self.imp().edit_module(module_name);
+    }
+
+    fn gaction_search_module(self, _: Option<&glib::Variant>) {
+        self.imp().window()
+            .borrow().as_ref().unwrap()
+            .module_list().show_search();
+    }
+
+    fn gaction_dark_mode(self, _: Option<&glib::Variant>) {
+        adw::StyleManager::default()
+            .set_color_scheme(adw::ColorScheme::ForceDark)
+    }
+
+    fn gaction_light_mode(self, _: Option<&glib::Variant>) {
+        adw::StyleManager::default()
+            .set_color_scheme(adw::ColorScheme::ForceLight)
+    }
+
+    fn gaction_system_preference_mode(self, _: Option<&glib::Variant>) {
+        adw::StyleManager::default()
+            .set_color_scheme(adw::ColorScheme::Default)
+    }
+
     pub(super) fn quit(&self) {
         self.close_current_file(glib::clone!(@weak self as app => move |response| {
             match response {

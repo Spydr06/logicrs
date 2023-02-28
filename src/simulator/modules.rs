@@ -78,7 +78,8 @@ impl Module {
             builtin.simulate(inputs, instance)
         }
         else {
-            panic!("custom modules are not supported currently");
+            error!("custom modules are not supported currently");
+            0
         };
 
         info!("simulate module {} with inputs: {inputs:#b} generates: {outputs:#b}", self.name);

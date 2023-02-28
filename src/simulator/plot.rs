@@ -217,15 +217,18 @@ impl Plot {
             self.to_update.clear();
             changes = true;
             
-            to_update.iter().for_each(|block_id|
+            for block_id in to_update.iter() {
+                if updated.contains(block_id) {
+                    // recursion detected
+                    // TODO: warn user about recursion
+                    continue;
+                }
+
                 if let Some(block) = self.blocks.get_mut(block_id) {
                     block.simulate(&mut self.connections, &mut self.to_update, project);
                     updated.insert(*block_id);   
                 }
-            );
-
-
-            // TODO: check for recursion
+            }
         }
 
         changes

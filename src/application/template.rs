@@ -212,20 +212,6 @@ impl ObjectImpl for ApplicationTemplate {
 
         let obj = self.instance();
         obj.setup_gactions();
-        obj.set_accels_for_action("app.quit", &["<primary>Q", "<primary>W"]);
-        obj.set_accels_for_action("app.about", &["<primary>comma"]);
-        obj.set_accels_for_action("app.save", &["<primary>S"]);
-        obj.set_accels_for_action("app.save-as", &["<primary><shift>S"]);
-        obj.set_accels_for_action("app.open", &["<primary>O"]);
-        obj.set_accels_for_action("app.new", &["<primary>N"]);
-        obj.set_accels_for_action("app.delete-block", &["Delete"]);
-        obj.set_accels_for_action("app.undo", &["<primary>Z"]);
-        obj.set_accels_for_action("app.redo", &["<primary>Y"]);
-        obj.set_accels_for_action("app.copy", &["<primary>C"]);
-        obj.set_accels_for_action("app.cut", &["<primary>X"]);
-        obj.set_accels_for_action("app.paste", &["<primary>V"]);
-        obj.set_accels_for_action("app.select-all", &["<primary>A"]);
-        obj.set_accels_for_action("app.search-module", &["<primary>F"]);
     }
 }
 impl ApplicationImpl for ApplicationTemplate {
