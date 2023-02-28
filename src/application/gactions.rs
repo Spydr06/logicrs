@@ -72,7 +72,7 @@ impl Application {
     }
 
     fn gaction_save(self, _: Option<&glib::Variant>) {
-        if let Err(err) = self.imp().save() {
+        if let Err(err) = self.imp().save(|_| ()) {
             let message =  format!("Error saving to '{}': {}", self.imp().file_name(), err);
             error!("{}", message);
             if let Some(window) = self.active_window() {
@@ -82,7 +82,7 @@ impl Application {
     }
 
     fn gaction_save_as(self, _: Option<&glib::Variant>) {
-        self.save_as();
+        self.save_as(|_| ());
     }
 
     fn gaction_open(self, _: Option<&glib::Variant>) {
@@ -172,28 +172,6 @@ impl Application {
             .set_color_scheme(adw::ColorScheme::Default)
     }
 
-    pub(super) fn quit(&self) {
-        self.close_current_file(glib::clone!(@weak self as app => move |response| {
-            match response {
-                "Cancel" => return,
-                "No" =>  {},
-                "Yes" => {
-                    if let Err(err) = app.imp().save() {
-                        let message = format!("Error saving to '{}': {}", app.imp().file_name(), err);
-                        error!("{}", message);
-                        if let Some(window) = app.active_window() {
-                            dialogs::run(app, window, message, dialogs::basic_error);
-                        }
-                        return;
-                    }
-                }
-                _ => panic!("unexpected response \"{}\"", response)
-            };
-
-            app.imp().shutdown();
-        }));
-    }
-
     pub(super) fn close_current_file<F>(&self, after: F)
     where
         F: Fn(&str) + 'static,
@@ -230,7 +208,7 @@ impl Application {
                 "Cancel" => return,
                 "No" =>  {},
                 "Yes" => {
-                    if let Err(err) = app.imp().save() {
+                    if let Err(err) = app.imp().save(|_| ()) {
                         let message = format!("Error saving to '{}': {}", app.imp().file_name(), err);
                         error!("{}", message);
                         if let Some(window) = app.active_window() {
@@ -252,7 +230,7 @@ impl Application {
                 "Cancel" => return,
                 "No" =>  {},
                 "Yes" => {
-                    if let Err(err) = app.imp().save() {
+                    if let Err(err) = app.imp().save(|_| ()) {
                         let message = format!("Error saving to '{}': {}", app.imp().file_name(), err);
                         error!("{}", message);
                         if let Some(window) = app.active_window() {
@@ -303,7 +281,7 @@ impl Application {
         }));
     }
 
-    pub(super) fn save_as(&self) {
+    pub(super) fn save_as(&self, then: fn(&Application)) {
         let window = self.active_window().unwrap();
 
         let save_dialog = gtk::FileChooserNative::builder()
@@ -331,7 +309,7 @@ impl Application {
                             file.create(gio::FileCreateFlags::NONE, gio::Cancellable::NONE).unwrap_or_die();
                         }
                         app.imp().set_file(file);
-                        app.imp().save().unwrap_or_die();
+                        app.imp().save(then).unwrap_or_die();
                     }
                 } else {
                     warn!("got file chooser response more than once");

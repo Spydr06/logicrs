@@ -1,12 +1,12 @@
 use gtk::{prelude::*, subclass::prelude::*, gio, glib, gdk};
 use adw::subclass::prelude::*;
-use std::cell::RefCell;
+use std::{cell::{RefCell, Cell}};
 use crate::{
     ui::{main_window::MainWindow, circuit_view::CircuitView, dialogs},
     fatal::*, project::*, simulator::*, selection::{SelectionField, Selection}, renderer::Theme,
 };
 
-use super::{action::*, clipboard::Clipboard};
+use super::{action::*, clipboard::Clipboard, Application};
 
 #[derive(Default)]
 pub struct ApplicationTemplate {
@@ -15,6 +15,7 @@ pub struct ApplicationTemplate {
     simulator: RefCell<Option<Simulator>>,
     file: RefCell<Option<gio::File>>,
     action_stack: RefCell<ActionStack>,
+    in_shutdown_phase: Cell<bool>,
 } 
 
 impl ApplicationTemplate {
@@ -49,16 +50,17 @@ impl ApplicationTemplate {
         self.window.replace(Some(window));
     }
 
-    pub fn save(&self) -> Result<(), String> {
+    pub fn save(&self, then: fn(&Application)) -> Result<(), String> {
         if let Some(file) = self.file.borrow().as_ref() { 
             let project = self.project.lock().unwrap();
             project.write_to(file)?;
             if let Some(window) = self.window.borrow().as_ref() {
                 window.set_subtitle(&self.file_name());
             }
+            then(&*self.instance());
         }
         else {
-            self.instance().save_as();
+            self.instance().save_as(then);
         }
 
         self.action_stack().borrow_mut().set_dirty(false);
@@ -147,6 +149,10 @@ impl ApplicationTemplate {
 
     pub fn is_dirty(&self) -> bool {
         self.action_stack.borrow().is_dirty()
+    }
+
+    pub fn in_shutdown_phase(&self) -> bool {
+        self.in_shutdown_phase.get()
     }
 
     pub fn generate_clipboard(&self) -> Clipboard {
@@ -249,8 +255,10 @@ impl ApplicationImpl for ApplicationTemplate {
 
     fn shutdown(&self) {
         self.stop_simulation();
-        if let Err(err) = self.save() {
-            error!("Error saving to: {}: {err}", self.file_name());
+        
+        self.in_shutdown_phase.set(true);
+        if let Some(window) = self.window.replace(None) {
+            window.destroy();
         }
     }
 }

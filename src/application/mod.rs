@@ -25,10 +25,12 @@ impl Default for Application {
 impl Application {
     pub fn new() -> Self {
         gio::resources_register_include!("logicrs.gresource").expect("Failed to register resources.");
-        glib::Object::new::<Self>(&[
+        let app = glib::Object::new::<Self>(&[
             ("application-id", &"com.spydr06.logicrs"),
             ("flags", &gio::ApplicationFlags::HANDLES_OPEN),
-        ])
+        ]);
+
+        app
     }
 
     pub fn new_action(&self, action: Action) {
@@ -92,6 +94,30 @@ impl Application {
             }
             Err(err) => warn!("Error serializing clipboard: {err}")
         }
+    }
+
+    pub fn quit(&self) {
+        self.close_current_file(glib::clone!(@weak self as app => move |response| {
+            match response {
+                "Cancel" => {
+                    return;
+                },
+                "No" =>  {
+                    app.imp().shutdown();
+                },
+                "Yes" => {
+                    if let Err(err) = app.imp().save(|app| app.imp().shutdown()) {
+                        let message = format!("Error saving to '{}': {}", app.imp().file_name(), err);
+                        error!("{}", message);
+                        if let Some(window) = app.active_window() {
+                            dialogs::run(app, window, message, dialogs::basic_error);
+                        }
+                        return;
+                    }
+                }
+                _ => panic!("unexpected response \"{}\"", response)
+            };
+        }));
     }
 
     pub(self) fn setup_gactions(&self) {
