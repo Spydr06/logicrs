@@ -1,6 +1,6 @@
 use std::{f64, cmp, collections::{HashSet, HashMap}};
 
-use crate::{renderer::*, selection::SelectionField};
+use crate::{renderer::{*, vector::Vector2}, selection::SelectionField};
 use serde::{Serialize, Deserialize};
 
 use super::*;
@@ -17,8 +17,8 @@ pub struct Block {
     id: BlockID,
     name: String,
 
-    position: (i32, i32),
-    size: (i32, i32),
+    position: Vector2<i32>,
+    size: Vector2<i32>,
 
     #[serde(skip)]
     highlighted: bool,
@@ -37,12 +37,12 @@ impl Identifiable for Block {
 impl Block {
     pub const MAX_CONNECTIONS: u8 = 128;
 
-    pub fn new_sized(module: &&Module, position: (i32, i32), unique: bool, num_inputs: u8, num_outputs: u8) -> Self {
+    pub fn new_sized(module: &&Module, position: Vector2<i32>, unique: bool, num_inputs: u8, num_outputs: u8) -> Self {
         let name = module.name().clone();
         Self {
             id: crate::new_uuid(),
             position,
-            size: (
+            size: Vector2(
                 cmp::max(75, (name.len() * 10) as i32),
                 cmp::max(num_inputs, num_outputs) as i32 * 25 + 50
             ),
@@ -55,7 +55,7 @@ impl Block {
         }
     }
 
-    pub fn new(module: &&Module, position: (i32, i32)) -> Self {
+    pub fn new(module: &&Module, position: Vector2<i32>) -> Self {
         Self::new_sized(module, position, false, module.get_num_inputs(), module.get_num_outputs())
     }
 
@@ -75,16 +75,16 @@ impl Block {
         &self.name
     }
 
-    pub fn is_in_area(&self, area: ((i32, i32), (i32, i32))) -> bool {
+    pub fn is_in_area(&self, area: ScreenSpace) -> bool {
         !(
-            self.position.0 > area.1.0 || 
-            self.position.1 > area.1.1 ||
-            self.position.0 + self.size.0 < area.0.0 || 
-            self.position.1 + self.size.1 < area.0.1
+            self.position.0 > area.1.0 as i32 || 
+            self.position.1 > area.1.1 as i32 ||
+            self.position.0 + self.size.0 < area.0.0 as i32 || 
+            self.position.1 + self.size.1 < area.0.1 as i32
         )
     }
 
-    pub fn touches(&self, point: (i32, i32)) -> bool {
+    pub fn touches(&self, point: Vector2<i32>) -> bool {
         point.0 > self.position.0 - 3 && point.0 < self.position.0 + self.size.0 + 3 &&
         point.1 > self.position.1 - 3 && point.1 < self.position.1 + self.size.1 + 3
     }
@@ -97,15 +97,15 @@ impl Block {
         self.highlighted
     }
 
-    pub fn set_position(&mut self, position: (i32, i32)) {
+    pub fn set_position(&mut self, position: Vector2<i32>) {
         self.position = position;
     }
 
-    pub fn position(&self) -> (i32, i32) {
+    pub fn position(&self) -> Vector2<i32> {
         self.position
     }
 
-    pub fn size(&self) -> (i32, i32) {
+    pub fn size(&self) -> Vector2<i32> {
         self.size
     }
 
@@ -113,10 +113,10 @@ impl Block {
         self.inputs.iter().chain(self.outputs.iter()).filter_map(|a| *a).collect()
     }
 
-    pub fn get_connector_pos(&self, connector: Connector) -> (i32, i32) {
+    pub fn get_connector_pos(&self, connector: Connector) -> Vector2<i32> {
         match connector {
-            Connector::Input(i) => (self.position.0, self.position.1 + 25 * i as i32 + 50),
-            Connector::Output(i) => (self.position.0 + self.size.0, self.position.1 + 25 * i as i32 + 50)
+            Connector::Input(i) => Vector2(self.position.0, self.position.1 + 25 * i as i32 + 50),
+            Connector::Output(i) => Vector2(self.position.0 + self.size.0, self.position.1 + 25 * i as i32 + 50)
         }
     }
 
@@ -152,7 +152,7 @@ impl Block {
         self.decoration.set_active(is_active)
     }
 
-    pub fn position_on_connection(&self, position: (i32, i32), is_input: bool) -> Option<u8> {
+    pub fn position_on_connection(&self, position: Vector2<i32>, is_input: bool) -> Option<u8> {
         if is_input {
             for i in 0..self.inputs.len() {
                 let connector_pos = (self.position.0, self.position.1 + 25 * i as i32 + 50);
@@ -211,11 +211,11 @@ impl Renderable for Block {
         renderer.rounded_rect(self.position, self.size, 5)
             .set_color(unsafe { &COLOR_THEME.block_bg_color }).fill()?;
 
-        renderer.top_rounded_rect(self.position, (self.size.0, 25), 5)
+        renderer.top_rounded_rect(self.position, Vector2(self.size.0, 25), 5)
             .set_color(unsafe { &COLOR_THEME.border_color })
             .fill()?;
 
-        renderer.move_to((self.position.0 + 5, self.position.1 + 18))
+        renderer.move_to(Vector2(self.position.0 + 5, self.position.1 + 18))
             .set_color(unsafe { &COLOR_THEME.block_fg_color })
             .show_text(self.name.as_str())?;
 
@@ -227,23 +227,20 @@ impl Renderable for Block {
         renderer.stroke()?;
 
         let show_suggestion = plot.selection().connecting();
-        let connector = |position, not_connected, is_input| {
+        let connector = |position, is_input|
             renderer
-            .arc(position, 6., 0., f64::consts::TAU);
-            if not_connected {
-                renderer.set_color(unsafe {if show_suggestion && is_input { &COLOR_THEME.suggestion_fg_color } else { &COLOR_THEME.disabled_fg_color }} )
-                .fill_preserve()?;
-            }
-            renderer.set_color(unsafe {if self.highlighted { &COLOR_THEME.accent_fg_color } else { &COLOR_THEME.border_color }}).stroke()
-        };
+                .arc(position, 6., 0., f64::consts::TAU)
+                .set_color(unsafe {if show_suggestion && is_input { &COLOR_THEME.suggestion_fg_color } else { &COLOR_THEME.disabled_fg_color }} )
+                .fill_preserve()?
+                .set_color(unsafe {if self.highlighted { &COLOR_THEME.accent_fg_color } else { &COLOR_THEME.border_color }}).stroke();
 
         renderer.set_line_width(1.);
-        for (i, connection) in self.inputs.iter().enumerate() {
-            connector((self.position.0, self.position.1 + 25 * i as i32 + 50), connection.is_none(), true)?;
+        for (i, _) in self.inputs.iter().enumerate().filter(|(_, c)| c.is_none()) {
+            connector(Vector2(self.position.0, self.position.1 + 25 * i as i32 + 50), true)?;
         }
 
-        for (i, connection) in self.outputs.iter().enumerate() {
-            connector((self.position.0 + self.size.0, self.position.1 + 25 * i as i32 + 50), connection.is_none(), false)?;
+        for (i, _) in self.outputs.iter().enumerate().filter(|(_, c)| c.is_none()) {
+            connector(Vector2(self.position.0 + self.size.0, self.position.1 + 25 * i as i32 + 50), false)?;
         }
 
         self.decoration.render(renderer, self).map(|_| ())

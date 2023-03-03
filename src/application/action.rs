@@ -1,4 +1,4 @@
-use crate::{simulator::*, config, project::ProjectRef};
+use crate::{simulator::*, config, project::ProjectRef, renderer::vector::Vector2};
 
 use super::*;
 
@@ -74,7 +74,7 @@ impl ActionStack {
 pub enum Action {
     NewBlock(PlotProvider, Block),
     PasteBlocks(PlotProvider, Vec<Block>, Vec<Connection>),
-    MoveBlock(PlotProvider, BlockID, (i32, i32), (i32, i32)),
+    MoveBlock(PlotProvider, BlockID, Vector2<i32>, Vector2<i32>),
     NewConnection(PlotProvider, Connection),
     DeleteSelection(PlotProvider, Vec<Block>, Vec<Connection>),
     CreateModule(ProjectRef, Module),

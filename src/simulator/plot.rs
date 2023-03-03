@@ -1,5 +1,5 @@
 use super::{Block, BlockID, Connection, ConnectionID, Port, Identifiable};
-use crate::{renderer::*, selection::*, project::{ProjectRef, Project}};
+use crate::{renderer::{*, vector::Vector2}, selection::*, project::{ProjectRef, Project}};
 use std::{collections::{HashMap, HashSet}, cmp};
 use serde::{Serialize, Deserialize};
 
@@ -130,7 +130,7 @@ impl Plot {
         self.blocks.get_mut(&id)
     }
 
-    pub fn get_block_at(&self, position: (i32, i32)) -> Option<BlockID> {
+    pub fn get_block_at(&self, position: Vector2<i32>) -> Option<BlockID> {
         for (i, block) in self.blocks.iter() {
             if block.touches(position) {
                 return Some(*i);
@@ -300,7 +300,7 @@ impl SelectionField for Plot {
             let y2 = cmp::max(selection_start.1, selection_end.1);
             
             for (_, block) in self.blocks_mut().iter_mut() {
-                if block.is_in_area(((x1, y1), (x2, y2))) {
+                if block.is_in_area(((x1 as f64, y1 as f64).into(), (x2 as f64, y2 as f64).into()).into()) {
                     block.set_highlighted(true);
                     selected.push(block.id());
                 }

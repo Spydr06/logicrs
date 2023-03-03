@@ -8,10 +8,10 @@ use gtk::cairo::{
 };
 
 pub struct CairoRenderer {
-    size: (i32, i32),
+    size: Vector2<i32>,
     scale: f64,
-    translation: (f64, f64),
-    original_translation: (f64, f64),
+    translation: Vector2<f64>,
+    original_translation: Vector2<f64>,
     font: FontFace,
     context: Option<Context>
 }
@@ -19,10 +19,10 @@ pub struct CairoRenderer {
 impl CairoRenderer {
     pub fn new() -> Self {
         Self {
-            size: (0, 0),
+            size: Vector2::default(),
             scale: DEFAULT_SCALE,
-            translation: (0., 0.),
-            original_translation: (0., 0.),
+            translation: Vector2::default(),
+            original_translation: Vector2::default(),
             context: None,
             font: FontFace::toy_create("Cascadia Code", gtk::cairo::FontSlant::Normal, gtk::cairo::FontWeight::Normal).unwrap()
         }
@@ -36,7 +36,7 @@ impl CairoRenderer {
 }
 
 impl CairoRenderer {
-    pub fn original_translation(&self) -> (f64, f64) {
+    pub fn original_translation(&self) -> Vector2<f64> {
         self.original_translation
     }
 
@@ -55,16 +55,16 @@ impl Renderer for CairoRenderer {
     type Error = cairo::Error;
 
     fn callback(&mut self, plot: &Plot, mode: EditorMode, _area: &DrawingArea, context: &Self::Context, width: i32, height: i32) -> Result<&mut Self, Self::Error> {
-        self.set_size((width, height)).set_context(Some(context.clone()));     
+        self.set_size(Vector2(width, height)).set_context(Some(context.clone()));     
         if width == 0 || height == 0 {
             return Ok(self);
         }
 
-        let screen_center = (width as f64 / 2., height as f64 / 2.);
-
-        context.translate(screen_center.0, screen_center.1);
+     //   let screen_center = (width as f64 / 2., height as f64 / 2.);
+//
+     //   context.translate(screen_center.0, screen_center.1);
+        context.translate(self.translation.x(), self.translation.y());
         context.scale(self.scale, self.scale);
-        context.translate(self.translation.0 - screen_center.0, self.translation.1 - screen_center.1);
 
         context.set_antialias(Antialias::Default);
         let (bg_color_r, bg_color_g, bg_color_b, _) = unsafe { COLOR_THEME.bg_color };
@@ -82,24 +82,24 @@ impl Renderer for CairoRenderer {
     }
 
     #[inline]
-    fn size(&self) -> (i32, i32) {
+    fn size(&self) -> Vector2<i32> {
         self.size
     }
 
     #[inline]
-    fn set_size(&mut self, size: (i32, i32)) -> &mut Self {
+    fn set_size(&mut self, size: Vector2<i32>) -> &mut Self {
         self.size = size;
         self
     }
 
     #[inline]
-    fn translate(&mut self, translation: (f64, f64)) -> &mut Self {
+    fn translate(&mut self, translation: Vector2<f64>) -> &mut Self {
         self.translation = translation;
         self
     }
 
     #[inline]
-    fn translation(&self) -> (f64, f64) {
+    fn translation(&self) -> Vector2<f64> {
         self.translation
     }
 
@@ -111,12 +111,6 @@ impl Renderer for CairoRenderer {
     #[inline]
     fn set_scale(&mut self, scale: f64) -> &mut Self {
         self.scale = scale.clamp(MINIMUM_SCALE, MAXIMUM_SCALE);
-        self
-    }
-
-    #[inline]
-    fn zoom(&mut self, amount: f64) -> &mut Self {
-        self.set_scale(self.scale * amount);
         self
     }
 
@@ -177,7 +171,7 @@ impl Renderer for CairoRenderer {
     }
 
     #[inline]
-    fn arc(&self, position: (i32, i32), radius: f64, angle1: f64, angle2: f64) -> &Self {
+    fn arc(&self, position: Vector2<i32>, radius: f64, angle1: f64, angle2: f64) -> &Self {
         if let Some(context) = &self.context {
             context.arc(position.0 as f64, position.1 as f64, radius, angle1, angle2);
         }
@@ -185,7 +179,7 @@ impl Renderer for CairoRenderer {
     }
 
     #[inline]
-    fn rectangle(&self, position: (i32, i32), size: (i32, i32)) -> &Self {
+    fn rectangle(&self, position: Vector2<i32>, size: Vector2<i32>) -> &Self {
         if let Some(context) = &self.context {
             context.rectangle(position.0 as f64, position.1 as f64, size.0 as f64, size.1 as f64);
         }
@@ -193,7 +187,7 @@ impl Renderer for CairoRenderer {
     }
 
     #[inline]
-    fn move_to(&self, position: (i32, i32)) -> &Self {
+    fn move_to(&self, position: Vector2<i32>) -> &Self {
         if let Some(context) = &self.context {
             context.move_to(position.0 as f64, position.1 as f64);
         }
@@ -201,7 +195,7 @@ impl Renderer for CairoRenderer {
     }
 
     #[inline]
-    fn curve_to(&self, start: (i32, i32), mid: (i32, i32), end: (i32, i32)) -> &Self {
+    fn curve_to(&self, start: Vector2<i32>, mid: Vector2<i32>, end: Vector2<i32>) -> &Self {
         if let Some(context) = &self.context {
             context.curve_to(
                 start.0 as f64, start.1 as f64, 
@@ -213,7 +207,7 @@ impl Renderer for CairoRenderer {
     }
 
     #[inline]
-    fn line_to(&self, position: (i32, i32)) -> &Self {
+    fn line_to(&self, position: Vector2<i32>) -> &Self {
         if let Some(context) = &self.context {
             context.line_to(position.0 as f64, position.1 as f64);
         }

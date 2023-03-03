@@ -1,6 +1,6 @@
-use std::cell::RefCell;
+use std::cell::{RefCell, Cell};
 use gtk::{prelude::*, subclass::prelude::*, gio, glib, gdk};
-use crate::{selection::*, renderer::*, simulator::*, fatal::FatalResult, application::{Application, action::Action, editor::{EditorMode, GRID_SIZE}}};
+use crate::{selection::*, renderer::{*, vector::*}, simulator::*, fatal::FatalResult, application::{Application, action::Action, editor::{EditorMode, GRID_SIZE}}};
 
 glib::wrapper! {
     pub struct CircuitView(ObjectSubclass<CircuitViewTemplate>)
@@ -65,9 +65,10 @@ pub struct CircuitViewTemplate {
 
     renderer: RefCell<CairoRenderer>,
     plot_provider: RefCell<PlotProvider>,
-    ctrl_down: RefCell<bool>,
+    ctrl_down: Cell<bool>,
     application: RefCell<Application>,
     editor_mode: RefCell<EditorMode>,
+    mouse_position: Cell<Vector2<f64>>
 }
 
 impl CircuitViewTemplate {
@@ -93,7 +94,7 @@ impl CircuitViewTemplate {
         self.zoom_reset.connect_clicked(glib::clone!(@weak self as widget => move |_| {
             let mut r = widget.renderer.borrow_mut();
             r.set_scale(DEFAULT_SCALE);
-            r.translate((0., 0.));
+            r.translate(Vector2::default());
             widget.drawing_area.queue_draw();
             widget.left_osd_label.set_label("0, 0");
             //println!("scale: {}%", r.lock().unwrap().scale() * 100.);
@@ -101,31 +102,35 @@ impl CircuitViewTemplate {
 
         self.zoom_in.connect_clicked(glib::clone!(@weak self as widget => move |_| {
             let mut r = widget.renderer.borrow_mut();
-            r.zoom(1.1);
+            r.zoom(1.1, None);
             widget.drawing_area.queue_draw();
             //println!("scale: {}%", scale * 100.);
         }));
 
         self.zoom_out.connect_clicked(glib::clone!(@weak self as widget => move |_| {
             let mut r = widget.renderer.borrow_mut();
-            r.zoom(0.9);
+            r.zoom(0.9, None);
             widget.drawing_area.queue_draw();
             //println!("scale: {}%", scale * 100.);
         }));
     }
 
-    fn init_dragging(&self) {
+    fn init_mouse(&self) {
+        let mouse_controller = gtk::EventControllerMotion::new();
+        mouse_controller.connect_motion(glib::clone!(@weak self as widget => move |_, x, y| widget.mouse_position.set(Vector2(x, y))));
+        self.drawing_area.add_controller(&mouse_controller);
+
         let gesture_drag = gtk::GestureDrag::builder().button(gdk::ffi::GDK_BUTTON_PRIMARY as u32).build();
         gesture_drag.connect_drag_begin(glib::clone!(@weak self as widget => move |gesture, x, y| {
             gesture.set_state(gtk::EventSequenceState::Claimed);
             widget.drawing_area.grab_focus();
             
-            if *widget.ctrl_down.borrow() {
+            if widget.ctrl_down.get() {
                 widget.renderer.borrow_mut().save_translation();
                 widget.set_left_osd_visible(true);
             }
             else {
-                widget.drag_begin(widget.renderer.borrow().world_coords(x, y));
+                widget.drag_begin(VectorCast::cast(widget.renderer.borrow().screen_to_world(Vector2(x, y))));
             }
         }));
 
@@ -133,15 +138,15 @@ impl CircuitViewTemplate {
             gesture.set_state(gtk::EventSequenceState::Claimed);
             let scale = widget.renderer.borrow().scale();
 
-            if *widget.ctrl_down.borrow() {
+            if widget.ctrl_down.get() {
                 let original_translation = widget.renderer.borrow().original_translation();
-                widget.renderer.borrow_mut().translate((x / scale + original_translation.0, y / scale + original_translation.1));
+                widget.renderer.borrow_mut().translate((x / scale + original_translation.x(), y / scale + original_translation.y()).into());
                 widget.drawing_area.queue_draw();
                 let translation = widget.renderer.borrow().translation();
-                widget.set_left_osd_label(&format!("{}, {}", translation.0 as i32, translation.1 as i32));
+                widget.set_left_osd_label(&format!("{}, {}", translation.x() as i32, translation.y() as i32));
             }
             else {
-                widget.drag_update(((x / scale) as i32, (y / scale) as i32));
+                widget.drag_update(Vector2((x / scale) as i32, (y / scale) as i32));
             }
         }));
 
@@ -149,12 +154,12 @@ impl CircuitViewTemplate {
         gesture_drag.connect_drag_end(glib::clone!(@weak self as widget, @weak app => move |gesture, x, y| {
             gesture.set_state(gtk::EventSequenceState::Claimed);
 
-            if *widget.ctrl_down.borrow() && (x != 0. || y != 0.) {
+            if widget.ctrl_down.get() && (x != 0. || y != 0.) {
                 widget.set_left_osd_visible(false);
             }
             else {
                 let scale = widget.renderer.borrow().scale();
-                widget.drag_end(((x / scale) as i32, (y / scale) as i32));
+                widget.drag_end(Vector2((x / scale) as i32, (y / scale) as i32));
             }
         }));
 
@@ -174,14 +179,14 @@ impl CircuitViewTemplate {
         let key_controller = gtk::EventControllerKey::new();
         key_controller.connect_key_pressed(glib::clone!(@weak self as widget => @default-panic, move |_, key, _, _| {
             if key == gdk::Key::Control_L {
-                widget.ctrl_down.replace(true);
+                widget.ctrl_down.set(true);
             }
             gtk::Inhibit(true)
         }));
 
         key_controller.connect_key_released(glib::clone!(@weak self as widget => @default-panic, move |_, key, _, _| 
             if key == gdk::Key::Control_L {
-                widget.ctrl_down.replace(false);
+                widget.ctrl_down.set(false);
                 widget.set_left_osd_visible(false);
             }
         ));
@@ -191,7 +196,7 @@ impl CircuitViewTemplate {
     fn init_scrolling(&self) {
         let scroll_controller = gtk::EventControllerScroll::new(gtk::EventControllerScrollFlags::VERTICAL);
         scroll_controller.connect_scroll(glib::clone!(@weak self as widget => @default-panic, move |_, _, y| {
-            widget.renderer.borrow_mut().zoom(if y > 0. { 0.9 } else { 1.1 });
+            widget.renderer.borrow_mut().zoom(if y > 0. { 0.9 } else { 1.1 }, Some(widget.mouse_position.get()));
             widget.drawing_area.queue_draw();
 
             gtk::Inhibit(true)
@@ -214,17 +219,17 @@ impl CircuitViewTemplate {
         self.drawing_area.set_focus_on_click(true);
 
         self.init_buttons();
-        self.init_dragging();
+        self.init_mouse();
         self.init_keyboard();
         self.init_scrolling();
         self.init_context_menu();
     }
 
     fn context_menu(&self, x: f64, y: f64) {        
-        let position = self.renderer.borrow().world_coords(x, y);
+        let position = self.renderer.borrow().screen_to_world(Vector2(x, y));
 
         self.plot_provider.borrow_mut().with_mut(|plot| {
-            match plot.get_block_at(position) {
+            match plot.get_block_at(VectorCast::cast(position)) {
                 Some(index) => {
                     if let Some(block) = plot.get_block_mut(index) {
                         block.set_highlighted(true);
@@ -259,7 +264,7 @@ impl CircuitViewTemplate {
         self.left_osd_label.set_text(label);
     }
 
-    fn drag_begin(&self, position: (i32, i32)) {
+    fn drag_begin(&self, position: Vector2<i32>) {
         self.plot_provider.borrow().with_mut(|plot| {
             plot.unhighlight();
             match plot.get_block_at(position) {
@@ -290,28 +295,28 @@ impl CircuitViewTemplate {
         self.drawing_area.queue_draw();
     }
         
-    fn drag_update(&self, offset: (i32, i32)) {
+    fn drag_update(&self, offset: Vector2<i32>) {
         self.plot_provider.borrow().with_mut(|plot|
             match plot.selection().clone() {
-                Selection::Single(index, (start_x, start_y)) => {
+                Selection::Single(index, Vector2(start_x, start_y)) => {
                     let editor_mode = self.editor_mode.borrow();
 
                     let block = plot.get_block_mut(index).unwrap();
                     let new_position = if matches!(*editor_mode, EditorMode::Grid) {
-                        ((start_x + offset.0) / GRID_SIZE * GRID_SIZE, (start_y + offset.1) / GRID_SIZE * GRID_SIZE)
+                        (Vector2(start_x, start_y) + offset) / GRID_SIZE.into() * GRID_SIZE.into()
                     } else {
-                        (start_x + offset.0, start_y + offset.1)
+                        Vector2(start_x, start_y) + offset
                     };
 
                     block.set_position(new_position);
                     self.drawing_area.queue_draw();
                 }
                 Selection::Connection { block_id, output, start, position: _ } => {
-                    plot.set_selection(Selection::Connection { block_id, output, start, position: (start.0 + offset.0, start.1 + offset.1)});
+                    plot.set_selection(Selection::Connection { block_id, output, start, position: start + offset});
                     self.drawing_area.queue_draw();
                 }
                 Selection::Area(area_start, _) => {
-                    plot.set_selection(Selection::Area(area_start, (area_start.0 + offset.0, area_start.1 + offset.1)));
+                    plot.set_selection(Selection::Area(area_start, area_start + offset));
                     self.drawing_area.queue_draw();
                 }
                 _ => ()
@@ -319,11 +324,11 @@ impl CircuitViewTemplate {
         );
     }
 
-    fn drag_end(&self, offset: (i32, i32)) {
+    fn drag_end(&self, offset: Vector2<i32>) {
         let plot_provider = self.plot_provider.borrow();
         let selection = plot_provider.with(|plot| plot.selection().clone()).unwrap();
         match selection {
-            Selection::Single(index, (start_x, start_y)) => {
+            Selection::Single(index, Vector2(start_x, start_y)) => {
                 if offset.0 == 0 && offset.1 == 0 {
                     return;
                 }
@@ -333,12 +338,12 @@ impl CircuitViewTemplate {
                 let action = plot_provider.with(|plot| {
                     let block = plot.get_block(index).unwrap();
                     let new_position = if matches!(*editor_mode, EditorMode::Grid) {
-                        ((start_x + offset.0) / GRID_SIZE * GRID_SIZE, (start_y + offset.1) / GRID_SIZE * GRID_SIZE)
+                        (Vector2(start_x, start_y) + offset) / GRID_SIZE.into() * GRID_SIZE.into()
                     } else {
-                        (start_x + offset.0, start_y + offset.1)
+                        Vector2(start_x, start_y) + offset
                     };
 
-                    Action::MoveBlock(plot_provider.clone(), block.id(), (start_x, start_y), new_position)
+                    Action::MoveBlock(plot_provider.clone(), block.id(), Vector2(start_x, start_y), new_position)
                 });
 
                 if let Some(action) = action {

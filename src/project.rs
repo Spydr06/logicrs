@@ -1,7 +1,7 @@
 use std::{collections::*, sync::*, fs::{OpenOptions, File}, io::{Write, BufReader}};
 use serde::{Serialize, Deserialize, ser::SerializeStruct};
 use gtk::{gio, prelude::FileExt};
-use crate::simulator::{*, builtin::BUILTINS};
+use crate::{simulator::{*, builtin::BUILTINS}, renderer::vector::Vector2};
 
 pub type ProjectRef = Arc<Mutex<Project>>;
 
@@ -94,10 +94,10 @@ impl Project {
         // generate Input/Output blocks inside the new module
         if let Some(plot) = module.plot_mut() {
             let input_module = self.modules.get(&*builtin::INPUT_MODULE_NAME).unwrap();
-            plot.add_block(Block::new_sized(&input_module, (50, 50), true, 0,  num_inputs));
+            plot.add_block(Block::new_sized(&input_module, Vector2(50, 50), true, 0,  num_inputs));
 
             let output_module = self.modules.get(&*builtin::OUTPUT_MODULE_NAME).unwrap();
-            plot.add_block(Block::new_sized(&output_module, (400, 50), true, num_outputs, 0));
+            plot.add_block(Block::new_sized(&output_module, Vector2(400, 50), true, num_outputs, 0));
         }
 
         self.modules.insert(module.name().clone(), module);

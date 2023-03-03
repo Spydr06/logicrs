@@ -1,18 +1,18 @@
 use serde::{Serialize, Deserialize};
 
-use crate::{renderer::{Renderable, COLOR_THEME}, simulator::{Plot, BlockID}};
+use crate::{renderer::{Renderable, COLOR_THEME, vector::Vector2}, simulator::{Plot, BlockID}};
 use std::cmp;
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum Selection {
-    Single(BlockID, (i32, i32)),
+    Single(BlockID, Vector2<i32>),
     Many(Vec<BlockID>),
-    Area((i32, i32), (i32, i32)),
+    Area(Vector2<i32>, Vector2<i32>),
     Connection {
         block_id: BlockID,
         output: u8,
-        start: (i32, i32),
-        position: (i32, i32),
+        start: Vector2<i32>,
+        position: Vector2<i32>,
     },
     None
 }
@@ -35,9 +35,9 @@ impl Renderable for Selection {
 
         match self {
             Self::Area(start, end) => {
-                let position = (cmp::min(start.0, end.0), cmp::min(start.1, end.1));
-                let size = (cmp::max(start.0, end.0) - position.0, cmp::max(start.1, end.1) - position.1);
-                renderer.rectangle(position, size)
+                let position = cmp::min(start, end);
+                let size = *cmp::max(start, end) - *position;
+                renderer.rectangle(*position, size)
                     .set_line_width(1.)
                     .set_color(unsafe { &COLOR_THEME.accent_bg_color })
                     .fill_preserve()?
@@ -45,9 +45,9 @@ impl Renderable for Selection {
                     .stroke().map(|_| ())
             }
             Self::Connection {start, position: end , ..} => {
-                let offset = (
-                    (start.0 + ((end.0 - start.0) as f32 * 0.7) as i32, start.1),
-                    (end.0 + ((start.0 - end.0) as f32 * 0.7) as i32, end.1),
+                let offset = Vector2(
+                    Vector2(start.0 + ((end.0 - start.0) as f32 * 0.7) as i32, start.1),
+                    Vector2(end.0 + ((start.0 - end.0) as f32 * 0.7) as i32, end.1),
                 );
 
                 renderer.set_line_width(4.)

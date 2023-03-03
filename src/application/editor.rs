@@ -1,4 +1,4 @@
-use crate::renderer::{Renderable, COLOR_THEME};
+use crate::renderer::{Renderable, COLOR_THEME, vector::{Vector2, VectorCast}};
 
 #[derive(Default, Copy, Clone)]
 pub enum EditorMode {
@@ -24,16 +24,13 @@ impl Renderable for EditorMode {
         where R: crate::renderer::Renderer {
         match self {
             EditorMode::Grid => {
-                let (start, end) = renderer.screen_space();
-                let offset = (
-                    start.0 / GRID_SIZE * GRID_SIZE,
-                    start.1 / GRID_SIZE * GRID_SIZE
-                );
+                let Vector2(start, end) = renderer.screen_space();
+                let offset = VectorCast::cast(start) / GRID_SIZE.into() * GRID_SIZE.into();
 
                 renderer.set_color(unsafe { &COLOR_THEME.grid_color });
-                for i in (offset.0..end.0).step_by(GRID_SIZE as usize) {
-                    for j in (offset.1..end.1).step_by(GRID_SIZE as usize) {
-                        renderer.rectangle((i - 1, j - 1), (2, 2)).fill()?;
+                for i in (offset.0..end.0 as i32).step_by(GRID_SIZE as usize) {
+                    for j in (offset.1..end.1 as i32).step_by(GRID_SIZE as usize) {
+                        renderer.rectangle(Vector2(i - 1, j - 1), Vector2(2, 2)).fill()?;
                     }
                 }
 
