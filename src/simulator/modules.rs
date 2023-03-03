@@ -16,6 +16,8 @@ pub struct Module {
 }
 
 impl Module {
+    pub const MAX_MODULE_NAME_LEN: i32 = 25;
+
     pub fn new(name: String, num_inputs: u8, num_outputs: u8) -> Self {
         Self {
             name,

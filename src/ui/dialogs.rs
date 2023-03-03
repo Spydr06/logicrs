@@ -63,6 +63,8 @@ pub async fn new_module(app: Application, window: gtk::Window, _data: ()) {
     let name_input = Entry::builder()
         .text("New Module")
         .hexpand(true)
+        .max_length(Module::MAX_MODULE_NAME_LEN)
+        .overwrite_mode(true)
         .build();
         content.append(&name_input);
 
