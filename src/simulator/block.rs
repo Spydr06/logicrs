@@ -26,6 +26,8 @@ pub struct Block {
 
     inputs: Vec<Option<ConnectionID>>,
     outputs: Vec<Option<ConnectionID>>,
+
+    state: u128,
     
     decoration: Decoration,
 }
@@ -51,6 +53,7 @@ impl Block {
             inputs: vec![None; num_inputs as usize],
             outputs: vec![None; num_outputs as usize],
             name,
+            state: 0,
             decoration: module.decoration().clone(),
         }
     }
@@ -152,6 +155,14 @@ impl Block {
         self.decoration.set_active(is_active)
     }
 
+    pub fn state(&self) -> u128 {
+        self.state
+    }
+
+    pub fn set_state(&mut self, state: u128) {
+        self.state = state;
+    }
+
     pub fn position_on_connection(&self, position: Vector2<i32>, is_input: bool) -> Option<u8> {
         if is_input {
             for i in 0..self.inputs.len() {
@@ -174,16 +185,12 @@ impl Block {
 
     pub fn simulate(&mut self, connections: &mut HashMap<ConnectionID, Connection>, to_update: &mut HashSet<BlockID>, project: &mut Project) {
         // collect input states
-        let mut inputs = 0u128;
-        for (i, connection_id) in self.inputs.iter().enumerate() {
-            if let Some(connection) = connection_id.map(|connection_id| connections.get(&connection_id)).flatten() {
-                inputs |= (connection.is_active() as u128) << i as u128;
-            }
-        }   
+        let inputs = self.inputs.collect(connections);
     
-        if let Some(module) = project.module(&self.name) {
+        let mut_ref_ptr = project as *mut Project;
+        if let Some(module) = project.module_mut(&self.name) {
             // simulate the block
-            let outputs = module.simulate(inputs, self);
+            let outputs = module.simulate(inputs, self, unsafe { &mut *mut_ref_ptr });
 
             // dissect output state
             for (i, connection_id) in self.outputs.iter().enumerate() {

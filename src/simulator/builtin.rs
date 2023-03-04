@@ -32,6 +32,21 @@ lazy_static! {
     pub static ref BUILTINS: HashMap<&'static str, Builtin> = {
         let mut builtins = HashMap::new();
 
+        builtins.insert("Low", Builtin::new(
+            Module::new_builtin("Low", false, 0, 1, Decoration::Label("0".to_string())),
+            |_, _| { 0 }
+        ));
+
+        builtins.insert("High", Builtin::new(
+            Module::new_builtin("High", false, 0, 1, Decoration::Label("1".to_string())),
+            |_, _| { std::u128::MAX }
+        ));
+
+        builtins.insert("Junction", Builtin::new(
+            Module::new_builtin("Junction", false, 1, 2, Decoration::None),
+            |input, _| [0, std::u128::MAX][input as usize]
+        ));
+
         builtins.insert("And", Builtin::new(
             Module::new_builtin("And", false, 2, 1, Decoration::Label(String::from("&"))),
             |input, _| (input == 0b11) as u128
@@ -87,12 +102,12 @@ lazy_static! {
 
         builtins.insert("Input", Builtin::new(
             Module::new_builtin("Input", true, 0, Block::MAX_CONNECTIONS, Decoration::None),
-            |_, _| { 0 }
+            |_, instance| { instance.state() }
         ));
 
         builtins.insert("Output", Builtin::new(
             Module::new_builtin("Output", true, Block::MAX_CONNECTIONS, 0, Decoration::None),
-            |_, _| { 0 }
+            |input, instance| { instance.set_state(input); 0 }
         ));
         
         builtins

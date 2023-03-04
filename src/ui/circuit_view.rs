@@ -301,14 +301,19 @@ impl CircuitViewTemplate {
                 Selection::Single(index, Vector2(start_x, start_y)) => {
                     let editor_mode = self.editor_mode.borrow();
 
-                    let block = plot.get_block_mut(index).unwrap();
+                    let block = plot.get_block_mut(index);
+                    if block.is_none() {
+                        plot.set_selection(Selection::None);
+                        return;
+                    }
+
                     let new_position = if matches!(*editor_mode, EditorMode::Grid) {
                         (Vector2(start_x, start_y) + offset) / GRID_SIZE.into() * GRID_SIZE.into()
                     } else {
                         Vector2(start_x, start_y) + offset
                     };
 
-                    block.set_position(new_position);
+                    block.unwrap().set_position(new_position);
                     self.drawing_area.queue_draw();
                 }
                 Selection::Connection { block_id, output, start, position: _ } => {

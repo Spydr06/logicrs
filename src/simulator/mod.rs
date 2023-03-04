@@ -9,7 +9,7 @@ pub use {block::*, connection::*, plot::*, decoration::*, modules::*};
 use std::{
     thread::{self, JoinHandle},
     time::{Duration, Instant},
-    sync::{Arc, atomic::{AtomicBool, Ordering}, mpsc::{Receiver, Sender, self}}, cell::RefCell
+    sync::{Arc, atomic::{AtomicBool, Ordering}, mpsc::{Receiver, Sender, self}}, cell::RefCell, collections::{HashMap, HashSet}
 };
 use gtk::{subclass::prelude::ObjectSubclassIsExt, prelude::Cast};
 
@@ -117,5 +117,21 @@ impl Simulator {
         if changes {
             UICallback::Redraw.handle(tx)
         }
+    }
+}
+
+pub trait Collect<T, D> {
+    fn collect(&self, data: &D) -> T;
+}
+
+impl Collect<u128, HashMap<ConnectionID, Connection>> for Vec<Option<ConnectionID>> {
+    fn collect(&self, connections: &HashMap<ConnectionID, Connection>) -> u128 {
+        let mut inputs = 0;
+        for (i, connection_id) in self.iter().enumerate() {
+            if let Some(connection) = connection_id.map(|connection_id| connections.get(&connection_id)).flatten() {
+                inputs |= (connection.is_active() as u128) << i as u128;
+            }
+        }
+        inputs
     }
 }

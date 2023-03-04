@@ -79,6 +79,10 @@ impl Project {
         self.modules.get(name)
     }
 
+    pub fn module_mut(&mut self, name: &String) -> Option<&mut Module> {
+        self.modules.get_mut(name)
+    }
+
     pub fn modules(&self) -> &HashMap<String, Module> {
         &self.modules
     }
@@ -88,16 +92,23 @@ impl Project {
     }
 
     pub fn add_module(&mut self, mut module: Module) {
-        let num_inputs = module.get_num_inputs();
-        let num_outputs = module.get_num_outputs();
-
-        // generate Input/Output blocks inside the new module
-        if let Some(plot) = module.plot_mut() {
+        if module.plot().is_some() {
+            let num_inputs = module.get_num_inputs();
+            let num_outputs = module.get_num_outputs();
+            
+            println!("{:?} {:?}", self.modules, module);
             let input_module = self.modules.get(&*builtin::INPUT_MODULE_NAME).unwrap();
-            plot.add_block(Block::new_sized(&input_module, Vector2(50, 50), true, 0,  num_inputs));
-
+            let input_block = Block::new_sized(&input_module, Vector2(50, 50), true, 0,  num_inputs);
+            
             let output_module = self.modules.get(&*builtin::OUTPUT_MODULE_NAME).unwrap();
-            plot.add_block(Block::new_sized(&output_module, Vector2(400, 50), true, num_outputs, 0));
+            let output_block = Block::new_sized(&output_module, Vector2(400, 50), true, num_outputs, 0);
+
+            module.set_io_blocks(input_block.id(), output_block.id());
+
+            // generate Input/Output blocks inside the new module
+            let plot = module.plot_mut().unwrap();
+            plot.add_block(input_block);
+            plot.add_block(output_block);
         }
 
         self.modules.insert(module.name().clone(), module);
@@ -112,7 +123,7 @@ impl Project {
     }
 
     pub fn plot(&self, module_name: &String) -> Option<&Plot> {
-        self.modules.get(module_name).and_then(|module| module.plot().as_ref())
+        self.modules.get(module_name).and_then(|module| module.plot())
     }
 
     pub fn main_plot_mut(&mut self) -> &mut Plot {
@@ -120,12 +131,12 @@ impl Project {
     }
 
     pub fn plot_mut(&mut self, module_name: &String) -> Option<&mut Plot> {
-        self.modules.get_mut(module_name).and_then(|module| module.plot_mut().as_mut())
+        self.modules.get_mut(module_name).and_then(|module| module.plot_mut())
     }
 
     pub fn iter_plots_mut(&mut self) -> impl Iterator<Item = &mut Plot> {
         self.modules.iter_mut()
-            .filter_map(|(_, module)| module.plot_mut().as_mut())
+            .filter_map(|(_, module)| module.plot_mut())
             .chain(std::iter::once(&mut self.main_plot))
     }
 }
