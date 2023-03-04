@@ -96,7 +96,6 @@ impl Project {
             let num_inputs = module.get_num_inputs();
             let num_outputs = module.get_num_outputs();
             
-            println!("{:?} {:?}", self.modules, module);
             let input_module = self.modules.get(&*builtin::INPUT_MODULE_NAME).unwrap();
             let input_block = Block::new_sized(&input_module, Vector2(50, 50), true, 0,  num_inputs);
             

@@ -2,7 +2,7 @@ use crate::{application::{Application, editor::EditorMode}, simulator::PlotProvi
 use super::circuit_view::CircuitView;
 use gtk::{prelude::*, subclass::prelude::*, gio, glib};
 
-use std::{cell::RefCell, collections::HashMap};
+use std::{cell::{RefCell, Cell}, collections::HashMap};
 
 glib::wrapper! {
     pub struct CircuitPanel(ObjectSubclass<CircuitPanelTemplate>)
@@ -106,7 +106,8 @@ pub struct CircuitPanelTemplate {
     toggle_grid_button: TemplateChild<gtk::ToggleButton>,
 
     application: RefCell<Application>,
-    pages: RefCell<HashMap<String, adw::TabPage>>
+    pages: RefCell<HashMap<String, adw::TabPage>>,
+    force_closing: Cell<bool>
 }
 
 impl CircuitPanelTemplate {
@@ -139,9 +140,11 @@ impl CircuitPanelTemplate {
     }
 
     fn close_tabs(&self) {
+        self.force_closing.set(true);
         for i in (0..self.view.n_pages()).rev() {
             self.view.close_page(&self.view.nth_page(i));
         }
+        self.force_closing.set(false);
     }
 }
 
@@ -173,6 +176,13 @@ impl ObjectImpl for CircuitPanelTemplate {
                 }
                 i += 1;
             }
+        }));
+
+        self.view.connect_close_page(glib::clone!(@weak self as widget => @default-panic, move |view, page| {
+            let is_main = page.child().downcast::<CircuitView>()
+                .map(|circuit_view| circuit_view.plot_provider().is_main());
+            view.close_page_finish(page, !matches!(is_main, Ok(true)) || widget.force_closing.get());
+            true
         }));
     }
 }

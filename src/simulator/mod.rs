@@ -9,7 +9,7 @@ pub use {block::*, connection::*, plot::*, decoration::*, modules::*};
 use std::{
     thread::{self, JoinHandle},
     time::{Duration, Instant},
-    sync::{Arc, atomic::{AtomicBool, Ordering}, mpsc::{Receiver, Sender, self}}, cell::RefCell, collections::{HashMap, HashSet}
+    sync::{Arc, atomic::{AtomicBool, Ordering}, mpsc::{Receiver, Sender, self}}, cell::RefCell, collections::HashMap
 };
 use gtk::{subclass::prelude::ObjectSubclassIsExt, prelude::Cast};
 

@@ -247,7 +247,6 @@ impl Renderable for Plot {
         }
 
         // render all connections
-        renderer.set_line_width(4.);
         for (_, connection) in &self.connections {
             connection.render(renderer, plot)?;
         }

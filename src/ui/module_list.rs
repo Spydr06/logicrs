@@ -97,7 +97,13 @@ pub struct ModuleListTemplate {
     stack: TemplateChild<gtk::Stack>,
 
     #[template_child]
-    builtin_list_box: TemplateChild<gtk::ListBox>,
+    basic_list_box: TemplateChild<gtk::ListBox>,
+
+    #[template_child]
+    input_output_list_box: TemplateChild<gtk::ListBox>,
+
+    #[template_child]
+    gate_list_box: TemplateChild<gtk::ListBox>,
 
     #[template_child]
     custom_list_box: TemplateChild<gtk::ListBox>,
@@ -110,6 +116,20 @@ pub struct ModuleListTemplate {
 }
 
 impl ModuleListTemplate {
+    fn list_for(&self, category: Category) -> &gtk::ListBox {
+        match category {
+            Category::Basic => &self.basic_list_box,
+            Category::InputOutput => &self.input_output_list_box,
+            Category::Gate => &self.gate_list_box,
+            Category::Custom => &self.custom_list_box,
+            Category::Hidden => panic!("no list for hidden modules")
+        }
+    }
+
+    fn lists(&self) -> [&gtk::ListBox; 4] {
+        [&self.basic_list_box, &self.input_output_list_box, &self.gate_list_box, &self.custom_list_box]
+    }
+
     fn module_item_content(&self, module: &Module) -> gtk::Box {        
         let b = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
@@ -131,9 +151,7 @@ impl ModuleListTemplate {
             .css_classes(vec![String::from("module_list_item")])
             .build();
         
-        module.builtin()
-            .then_some(&self.builtin_list_box)
-            .unwrap_or(&self.custom_list_box)
+        self.list_for(module.category())
             .append(&item);
             
         let left_click_gesture = gtk::GestureClick::builder()
@@ -177,7 +195,7 @@ impl ModuleListTemplate {
     }
 
     fn clear_list(&self) {
-        [&self.builtin_list_box, &self.custom_list_box].iter().for_each(|list| 
+        self.lists().iter().for_each(|list| 
             while let Some(row) = list.row_at_index(0) {
                 list.remove(&row);
             }
@@ -196,18 +214,19 @@ impl ModuleListTemplate {
     }
 
     fn n_visible(&self) -> u32 {
-        self.builtin_list_box.n_visible() + self.custom_list_box.n_visible()
+        self.lists().iter().map(|list| list.n_visible()).sum()
     }
 
     fn filter(&self, search_text: Option<String>) {
         if let Some(search_text) = search_text {
             let search_text_copy = search_text.clone();
-            self.custom_list_box.set_filter_func(move |item| Self::filter_func(item, &search_text_copy));
-            self.builtin_list_box.set_filter_func(move |item| Self::filter_func(item, &search_text));
+            self.lists().iter().for_each(move |list| {
+                let search_text_copy = search_text_copy.clone();
+                list.set_filter_func(move |item| Self::filter_func(item, &search_text_copy));
+            });
         }
         else {
-            self.custom_list_box.unset_filter_func();
-            self.builtin_list_box.unset_filter_func();
+            self.lists().iter().for_each(|list| list.unset_filter_func());
         }
 
         self.stack.set_visible_child_name(if self.n_visible() == 0 { "empty" } else { "modules" });
@@ -251,8 +270,7 @@ impl ObjectImpl for ModuleListTemplate {
             a.label().expect("could not get label from ModuleListItem")
             .cmp(&b.label().expect("could not get label from ModuleListItem"))
         );
-        self.builtin_list_box.set_sort_func(order_alphabetically);
-        self.custom_list_box.set_sort_func(order_alphabetically);
+        self.lists().iter().for_each(|list| list.set_sort_func(order_alphabetically));
     }
 }
 

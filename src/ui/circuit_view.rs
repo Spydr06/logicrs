@@ -97,21 +97,18 @@ impl CircuitViewTemplate {
             r.translate(Vector2::default());
             widget.drawing_area.queue_draw();
             widget.left_osd_label.set_label("0, 0");
-            //println!("scale: {}%", r.lock().unwrap().scale() * 100.);
         }));
 
         self.zoom_in.connect_clicked(glib::clone!(@weak self as widget => move |_| {
             let mut r = widget.renderer.borrow_mut();
             r.zoom(1.1, None);
             widget.drawing_area.queue_draw();
-            //println!("scale: {}%", scale * 100.);
         }));
 
         self.zoom_out.connect_clicked(glib::clone!(@weak self as widget => move |_| {
             let mut r = widget.renderer.borrow_mut();
             r.zoom(0.9, None);
             widget.drawing_area.queue_draw();
-            //println!("scale: {}%", scale * 100.);
         }));
     }
 
@@ -140,7 +137,7 @@ impl CircuitViewTemplate {
 
             if widget.ctrl_down.get() {
                 let original_translation = widget.renderer.borrow().original_translation();
-                widget.renderer.borrow_mut().translate((x / scale + original_translation.x(), y / scale + original_translation.y()).into());
+                widget.renderer.borrow_mut().translate((x + original_translation.x(), y + original_translation.y()).into());
                 widget.drawing_area.queue_draw();
                 let translation = widget.renderer.borrow().translation();
                 widget.set_left_osd_label(&format!("{}, {}", translation.x() as i32, translation.y() as i32));

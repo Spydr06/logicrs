@@ -54,7 +54,7 @@
                         <property name="orientation">vertical</property>
                         <child>
                           <object class="GtkLabel">
-                            <property name="label">Builtin Modules</property>
+                            <property name="label">Basic Modules</property>
                             <property name="xalign">0.0</property>
                             <style>
                               <class name="module_list_label"/>
@@ -62,7 +62,41 @@
                           </object>
                         </child>
                         <child>
-                          <object class="GtkListBox"  id="builtin_list_box">
+                          <object class="GtkListBox"  id="basic_list_box">
+                            <property name="selection-mode">browse</property>
+                            <style>
+                              <class name="module_list_box"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label">Input/Output Modules</property>
+                            <property name="xalign">0.0</property>
+                            <style>
+                              <class name="module_list_label"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkListBox"  id="input_output_list_box">
+                            <property name="selection-mode">browse</property>
+                            <style>
+                              <class name="module_list_box"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label">Gate Modules</property>
+                            <property name="xalign">0.0</property>
+                            <style>
+                              <class name="module_list_label"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkListBox"  id="gate_list_box">
                             <property name="selection-mode">browse</property>
                             <style>
                               <class name="module_list_box"/>

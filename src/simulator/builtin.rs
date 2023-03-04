@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::simulator::Decoration;
+use crate::simulator::{Decoration, Category};
 
 use super::{Module, SimulatorFn, Block};
 
@@ -33,67 +33,67 @@ lazy_static! {
         let mut builtins = HashMap::new();
 
         builtins.insert("Low", Builtin::new(
-            Module::new_builtin("Low", false, 0, 1, Decoration::Label("0".to_string())),
+            Module::new_builtin("Low", Category::Basic, 0, 1, Decoration::Label("0".to_string())),
             |_, _| { 0 }
         ));
 
         builtins.insert("High", Builtin::new(
-            Module::new_builtin("High", false, 0, 1, Decoration::Label("1".to_string())),
+            Module::new_builtin("High", Category::Basic, 0, 1, Decoration::Label("1".to_string())),
             |_, _| { std::u128::MAX }
         ));
 
         builtins.insert("Junction", Builtin::new(
-            Module::new_builtin("Junction", false, 1, 2, Decoration::None),
+            Module::new_builtin("Junction", Category::Basic, 1, 2, Decoration::None),
             |input, _| [0, std::u128::MAX][input as usize]
         ));
 
         builtins.insert("And", Builtin::new(
-            Module::new_builtin("And", false, 2, 1, Decoration::Label(String::from("&"))),
+            Module::new_builtin("And", Category::Gate, 2, 1, Decoration::Label(String::from("&"))),
             |input, _| (input == 0b11) as u128
         ));
 
         builtins.insert("Nand", Builtin::new(
-            Module::new_builtin("Nand", false, 2, 1, Decoration::NotLabel(String::from("&"))),
+            Module::new_builtin("Nand", Category::Gate, 2, 1, Decoration::NotLabel(String::from("&"))),
             |input, _| (input & 0b10 != 0b10) as u128
         ));
 
         builtins.insert("Or", Builtin::new(
-            Module::new_builtin("Or", false, 2, 1, Decoration::Label(String::from("≥1"))),
+            Module::new_builtin("Or", Category::Gate, 2, 1, Decoration::Label(String::from("≥1"))),
             |input, _| (input > 0) as u128
         ));
 
         builtins.insert("Nor", Builtin::new(
-            Module::new_builtin("Nor", false, 2, 1, Decoration::NotLabel(String::from("≥1"))),
+            Module::new_builtin("Nor", Category::Gate, 2, 1, Decoration::NotLabel(String::from("≥1"))),
             |input, _| (input == 0) as u128
         ));
 
         builtins.insert("Not", Builtin::new(
-            Module::new_builtin("Not", false, 1, 1, Decoration::NotLabel(String::from("1"))),
+            Module::new_builtin("Not", Category::Gate, 1, 1, Decoration::NotLabel(String::from("1"))),
             |input, _| !input
         ));
 
         builtins.insert("Xor", Builtin::new(
-            Module::new_builtin("Xor", false, 2, 1, Decoration::Label(String::from("=1"))),
+            Module::new_builtin("Xor", Category::Gate, 2, 1, Decoration::Label(String::from("=1"))),
             |input, _| (input == 0b01 || input == 0b10) as u128
         ));
 
         builtins.insert("Xnor", Builtin::new(
-            Module::new_builtin("Xnor", false, 2, 1, Decoration::NotLabel(String::from("=1"))),
+            Module::new_builtin("Xnor", Category::Gate, 2, 1, Decoration::NotLabel(String::from("=1"))),
             |input, _| (input == 0b00 || input == 0b10) as u128
         ));
 
         builtins.insert("Button", Builtin::new(
-            Module::new_builtin("Button", false, 0, 1, Decoration::Button(false)),
+            Module::new_builtin("Button", Category::InputOutput, 0, 1, Decoration::Button(false)),
             |_, instance| instance.is_active() as u128
         ));
 
         builtins.insert("Switch", Builtin::new(
-            Module::new_builtin("Switch", false, 0, 1, Decoration::Switch(false)),
+            Module::new_builtin("Switch", Category::InputOutput, 0, 1, Decoration::Switch(false)),
             |_, instance| instance.is_active() as u128
         ));
 
         builtins.insert("Lamp", Builtin::new(
-            Module::new_builtin("Lamp", false, 1, 0, Decoration::Lamp(false)),
+            Module::new_builtin("Lamp", Category::InputOutput, 1, 0, Decoration::Lamp(false)),
             |input, instance| { 
                 instance.set_active(input & 0b01 == 0b01);
                 0
@@ -101,12 +101,12 @@ lazy_static! {
         ));
 
         builtins.insert("Input", Builtin::new(
-            Module::new_builtin("Input", true, 0, Block::MAX_CONNECTIONS, Decoration::None),
+            Module::new_builtin("Input", Category::Hidden, 0, Block::MAX_CONNECTIONS, Decoration::None),
             |_, instance| { instance.state() }
         ));
 
         builtins.insert("Output", Builtin::new(
-            Module::new_builtin("Output", true, Block::MAX_CONNECTIONS, 0, Decoration::None),
+            Module::new_builtin("Output", Category::Hidden, Block::MAX_CONNECTIONS, 0, Decoration::None),
             |input, instance| { instance.set_state(input); 0 }
         ));
         

@@ -107,6 +107,8 @@ impl Renderable for Connection {
     fn render<R>(&self, renderer: &R, plot: &Plot) -> Result<(), R::Error>
         where R: Renderer
     {
+        renderer.set_line_width(4.);
+
         let from = plot.get_block(self.from.block_id);
         let to = plot.get_block(self.to.block_id);
         if from.is_none() || to.is_none() {
@@ -129,13 +131,16 @@ impl Renderable for Connection {
             .stroke()?;
 
         let connector_color = unsafe { if self.active { &COLOR_THEME.enabled_fg_color } else { &COLOR_THEME.disabled_fg_color } };
-        let connector = |position|
+        let connector = |position, highlighted|
             renderer
             .arc(position, 6., 0., f64::consts::TAU)
             .set_color(connector_color)
-            .fill();
+            .fill_preserve()?
+            .set_color(unsafe { if highlighted { &COLOR_THEME.accent_fg_color} else { &COLOR_THEME.border_color }})
+            .stroke();
 
-        connector(start)?;
-        connector(end).map(|_| ())
+        renderer.set_line_width(1.);
+        connector(start, from.unwrap().highlighted())?;
+        connector(end, to.unwrap().highlighted()).map(|_| ())
     }
 }

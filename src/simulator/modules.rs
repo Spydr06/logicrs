@@ -4,6 +4,16 @@ use serde::{Serialize, Deserialize};
 
 pub type SimulatorFn = fn(u128, &mut Block) -> u128;
 
+#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum Category {
+    #[default]
+    Basic,
+    InputOutput,
+    Gate,
+    Hidden,
+    Custom
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Custom {
     plot: Plot,
@@ -34,8 +44,8 @@ impl Custom {
 #[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub struct Module {
     name: String,
+    category: Category,
     builtin: bool,
-    hidden: bool,
     num_inputs: u8,
     num_outputs: u8,
     decoration: Decoration,
@@ -48,8 +58,8 @@ impl Module {
     pub fn new(name: String, num_inputs: u8, num_outputs: u8) -> Self {
         Self {
             name,
+            category: Category::Custom,
             builtin: false,
-            hidden: false,
             custom_data: Some(Custom::new(Plot::new())),
             num_inputs,
             num_outputs,
@@ -57,11 +67,11 @@ impl Module {
         }
     }
 
-    pub fn new_builtin<'a>(name: &'a str, hidden: bool, num_inputs: u8, num_outputs: u8, decoration: Decoration) -> Self {
+    pub fn new_builtin<'a>(name: &'a str, category: Category, num_inputs: u8, num_outputs: u8, decoration: Decoration) -> Self {
         Self {
             name: name.to_string(),
+            category,
             builtin: true,
-            hidden,
             custom_data: None,
             num_inputs,
             num_outputs,
@@ -98,7 +108,11 @@ impl Module {
     }
 
     pub fn hidden(&self) -> bool {
-        self.hidden
+        matches!(self.category, Category::Hidden)
+    }
+
+    pub fn category(&self) -> Category {
+        self.category
     }
 
     pub fn name(&self) -> &String {
