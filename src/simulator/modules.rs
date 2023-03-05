@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::simulator::{*, builtin::BUILTINS};
 
 use serde::{Serialize, Deserialize};
@@ -131,36 +133,45 @@ impl Module {
         &self.decoration
     }
 
-    pub fn simulate(&mut self, inputs: u128, instance: &mut Block, project: &mut Project) -> u128 {
+    pub fn simulate(&mut self, inputs: u128, instance: &mut Block, project: &mut Project, call_stack: &mut HashSet<String>) -> u128 {
         let outputs = 
         if self.builtin && let Some(builtin) = BUILTINS.get(self.name.as_str()) {
             builtin.simulate(inputs, instance)
         }
         else {
+            if call_stack.contains(&self.name) {
+                error!("recursion detected, {} is already on the call stack", self.name);
+            }
+
+            call_stack.insert(self.name.clone());
+
             let custom_data = self.custom_data.as_mut().expect("cannot simulate custom module without correct data");
             let plot = &mut custom_data.plot;
 
-         //   if !plot.to_update().is_empty() {
-         //       custom_data.cache.clear();
-         //   }
-         //   else if let Some(outputs) = custom_data.cache.get(&inputs).map(|c| *c) {
-         //       info!("(cached) simulate {} with inputs {inputs:#b} generates: {outputs:#b}", self.name());
-         //       return outputs;
-         //   }
+           // if !plot.to_update().is_empty() {
+           //     custom_data.cache.clear();
+           // }
+           // else if let Some(outputs) = custom_data.cache.get(&inputs).map(|c| *c) {
+           //     info!("\x1b[93m(cached)\x1b[0m simulate {} with inputs {inputs:#b} generates: {outputs:#b}", self.name());
+           //     call_stack.remove(&self.name);
+           //     return outputs;
+           // }
 
             if let Some(input) = plot.get_block_mut(custom_data.input_block) {
                 input.set_state(inputs);
             }
+
             plot.add_block_to_update(custom_data.input_block);
-            plot.simulate(project);
+            plot.simulate(project, call_stack);
             
             if let Some(input) = plot.get_block_mut(custom_data.input_block) {
                 input.set_state(0);
             }
 
-            //error!("custom modules are not supported currently");
             let outputs = plot.get_block(custom_data.output_block).map(|block| block.state()).unwrap_or(0);
-           // custom_data.cache.insert(inputs, outputs);
+         //   custom_data.cache.insert(inputs, outputs);
+
+            call_stack.remove(&self.name);
             outputs
         };
 

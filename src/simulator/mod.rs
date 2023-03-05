@@ -9,7 +9,7 @@ pub use {block::*, connection::*, plot::*, decoration::*, modules::*};
 use std::{
     thread::{self, JoinHandle},
     time::{Duration, Instant},
-    sync::{Arc, atomic::{AtomicBool, Ordering}, mpsc::{Receiver, Sender, self}}, cell::RefCell, collections::HashMap
+    sync::{Arc, atomic::{AtomicBool, Ordering}, mpsc::{Receiver, Sender, self}}, cell::RefCell, collections::{HashMap, HashSet}
 };
 use gtk::{subclass::prelude::ObjectSubclassIsExt, prelude::Cast};
 
@@ -107,13 +107,17 @@ impl Simulator {
 
     fn simulate(project: &mut Project, tx: &Sender<UICallback>) {
         let mut_ref_ptr = project as *mut Project;
+        let mut call_stack = HashSet::new();
         let mut changes = false;
+
+
         project.iter_plots_mut().for_each(|plot| {
-            if plot.simulate(unsafe { &mut *mut_ref_ptr }) {
+            if plot.simulate(unsafe { &mut *mut_ref_ptr }, &mut call_stack) {
                 changes = true;
             }
         });
 
+        assert!(call_stack.is_empty(), "callstack wasn't empty: {call_stack:?}");
         if changes {
             UICallback::Redraw.handle(tx)
         }

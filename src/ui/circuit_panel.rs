@@ -178,7 +178,7 @@ impl ObjectImpl for CircuitPanelTemplate {
             }
         }));
 
-        self.view.connect_close_page(glib::clone!(@weak self as widget => @default-panic, move |view, page| {
+        self.view.connect_close_page(glib::clone!(@weak self as widget => @default-return false, move |view, page| {
             let is_main = page.child().downcast::<CircuitView>()
                 .map(|circuit_view| circuit_view.plot_provider().is_main());
             view.close_page_finish(page, !matches!(is_main, Ok(true)) || widget.force_closing.get());

@@ -74,6 +74,10 @@ impl Block {
         self.id
     }
 
+    pub fn set_id(&mut self, id: BlockID) {
+        self.id = id;
+    }
+
     pub fn module_id(&self) -> &String {
         &self.name
     }
@@ -114,6 +118,10 @@ impl Block {
 
     pub fn connected_to(&self) -> Vec<ConnectionID> {
         self.inputs.iter().chain(self.outputs.iter()).filter_map(|a| *a).collect()
+    }
+
+    pub fn connections_mut(&mut self) -> impl Iterator<Item = &mut Option<ConnectionID>> {
+        self.inputs.iter_mut().chain(self.outputs.iter_mut())
     }
 
     pub fn get_connector_pos(&self, connector: Connector) -> Vector2<i32> {
@@ -183,14 +191,14 @@ impl Block {
         None
     }
 
-    pub fn simulate(&mut self, connections: &mut HashMap<ConnectionID, Connection>, to_update: &mut HashSet<BlockID>, project: &mut Project) {
+    pub fn simulate(&mut self, connections: &mut HashMap<ConnectionID, Connection>, to_update: &mut HashSet<BlockID>, project: &mut Project, call_stack: &mut HashSet<String>) {
         // collect input states
         let inputs = self.inputs.collect(connections);
     
         let mut_ref_ptr = project as *mut Project;
         if let Some(module) = project.module_mut(&self.name) {
             // simulate the block
-            let outputs = module.simulate(inputs, self, unsafe { &mut *mut_ref_ptr });
+            let outputs = module.simulate(inputs, self, unsafe { &mut *mut_ref_ptr }, call_stack);
 
             // dissect output state
             for (i, connection_id) in self.outputs.iter().enumerate() {

@@ -27,11 +27,9 @@ impl Clipboard {
 
     pub fn paste_to(&self, plot_provider: PlotProvider) -> Result<Action, String> {
         if let Clipboard::Blocks(blocks, connections) = self {
-            return plot_provider.with_mut(|plot| { 
-                let mut data = (blocks.to_owned(), connections.to_owned());
-                data.prepare_pasting(plot);
-                Action::PasteBlocks(plot_provider.to_owned(), data.0, data.1)
-            }).ok_or(String::from("no current plot"));
+            let mut data = (blocks.to_owned(), connections.to_owned());
+            data.prepare_pasting();
+            return Ok(Action::PasteBlocks(plot_provider.to_owned(), data.0, data.1));
         }
         
         panic!("called `paste_to()` on clipboard != Clipboard::Blocks")
@@ -102,12 +100,44 @@ impl Copyable<()> for Block {
     }
 }
 
-trait Pasteable<T> {
-    fn prepare_pasting(&mut self, _data: T) -> &mut Self;
+trait Pasteable {
+    fn prepare_pasting(&mut self) -> &mut Self;
 }
 
-impl Pasteable<&mut Plot> for (Vec<Block>, Vec<Connection>) {
-    fn prepare_pasting(&mut self, _plot: &mut Plot) -> &mut Self {
+impl Pasteable for (Vec<Block>, Vec<Connection>) {
+    fn prepare_pasting(&mut self) -> &mut Self {
+        self.0.iter_mut().for_each(|block| {
+            let old_id = block.id();
+            let new_id = crate::new_uuid();
+            block.set_id(new_id);
+
+            self.1.iter_mut().for_each(|connection| {
+                if connection.origin_id() == old_id {
+                    connection.set_origin_id(new_id);
+                }
+                if connection.destination_id() == old_id {
+                    connection.set_destination_id(new_id);
+                }
+            });
+        });
+
+        self.1.iter_mut().for_each(|connection| {
+            let old_id = connection.id();
+            let new_id = crate::new_uuid();
+            connection.set_id(new_id);
+
+            self.0.iter_mut().for_each(|block|
+                block.connections_mut()
+                    .filter(|c| c.is_some())
+                    .map(|c| c.as_mut().unwrap())
+                    .for_each(|c|
+                        if *c == old_id {
+                            *c = new_id;
+                        }
+                )
+            );
+        });
+
         self
     }
 }

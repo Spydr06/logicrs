@@ -54,6 +54,10 @@ impl Connection {
         self.id
     }
 
+    pub fn set_id(&mut self, id: ConnectionID) {
+        self.id = id;
+    }
+
     pub fn to(&self) -> Linkage {
         self.from
     }
