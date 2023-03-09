@@ -106,6 +106,12 @@ pub struct ModuleListTemplate {
     gate_list_box: TemplateChild<gtk::ListBox>,
 
     #[template_child]
+    latch_list_box: TemplateChild<gtk::ListBox>,
+
+    #[template_child]
+    flip_flop_list_box: TemplateChild<gtk::ListBox>,
+
+    #[template_child]
     custom_list_box: TemplateChild<gtk::ListBox>,
 
     #[template_child]
@@ -121,6 +127,8 @@ impl ModuleListTemplate {
             Category::Basic => &self.basic_list_box,
             Category::InputOutput => &self.input_output_list_box,
             Category::Gate => &self.gate_list_box,
+            Category::Latch => &self.latch_list_box,
+            Category::FlipFlop => &self.flip_flop_list_box,
             Category::Custom => &self.custom_list_box,
             Category::Hidden => panic!("no list for hidden modules")
         }

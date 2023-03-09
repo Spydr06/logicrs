@@ -163,10 +163,12 @@ impl Block {
         self.decoration.set_active(is_active)
     }
 
+    #[inline(always)]
     pub fn state(&self) -> u128 {
         self.state
     }
 
+    #[inline(always)]
     pub fn set_state(&mut self, state: u128) {
         self.state = state;
     }

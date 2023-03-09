@@ -109,7 +109,78 @@ lazy_static! {
             Module::new_builtin("Output", Category::Hidden, Block::MAX_CONNECTIONS, 0, Decoration::None),
             |input, instance| { instance.set_state(input); 0 }
         ));
-        
+
+        builtins.insert("SR Nand Latch", Builtin::new(
+            Module::new_builtin("SR Nand Latch", Category::Latch, 2, 2, Decoration::NotLabel("SR".to_string())),
+            sr_nand_latch
+        ));
+
+        builtins.insert("SR Latch", Builtin::new(
+            Module::new_builtin("SR Latch", Category::Latch, 2, 1, Decoration::Label("S\nR".to_string())),
+            sr_latch
+        ));
+
+        builtins.insert("JK Latch", Builtin::new(
+            Module::new_builtin("JK Latch", Category::Latch, 2, 1, Decoration::Label("J\nK".to_string())),
+            jk_latch
+        ));
+
+        builtins.insert("T Flip-Flop", Builtin::new(
+            Module::new_builtin("T Flip-Flop", Category::FlipFlop, 1, 1, Decoration::Label("T".to_string())),
+            t_flip_flop
+        ));
+
         builtins
     };
+}
+
+fn jk_latch(input: u128, instance: &mut Block) -> u128 {
+    let j = input & 0b01 > 0;
+    let k = input & 0b10 > 0;
+
+    if j && k {
+        instance.set_state((instance.state() == 0) as u128);
+    }
+    else if j {
+        instance.set_state(1);
+    }
+    else if k {
+        instance.set_state(0);
+    }
+
+    instance.state()
+}
+
+fn sr_latch(input: u128, instance: &mut Block) -> u128 {
+    // reset (R)
+    if input & 0b10 > 0 {
+        instance.set_state(0);
+    }
+    // set (S)
+    else if input & 0b01 > 0 {
+        instance.set_state(1);
+    }
+
+    instance.state()
+}
+
+fn sr_nand_latch(input: u128, instance: &mut Block) -> u128 {
+    // set (S)
+    if input & 0b01 == 0 {
+        instance.set_state(1);
+    }
+    // reset (R)
+    else if input & 0b10 == 0 {
+        instance.set_state(0);
+    }
+
+    instance.state() | (((instance.state() == 0) as u128) << 1)
+}
+
+fn t_flip_flop(input: u128, instance: &mut Block) -> u128 {
+    if input & 1 > 0 && instance.state() & 0b10 == 0 {
+        instance.set_state(instance.state() ^ 1);
+    }
+    instance.set_state((instance.state() & !0b10) | (input << 1));
+    instance.state() & 1
 }

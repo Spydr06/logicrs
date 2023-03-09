@@ -105,6 +105,40 @@
                         </child>
                         <child>
                           <object class="GtkLabel">
+                            <property name="label">Latch Modules</property>
+                            <property name="xalign">0.0</property>
+                            <style>
+                              <class name="module_list_label"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkListBox"  id="latch_list_box">
+                            <property name="selection-mode">browse</property>
+                            <style>
+                              <class name="module_list_box"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label">Flip-Flop Modules</property>
+                            <property name="xalign">0.0</property>
+                            <style>
+                              <class name="module_list_label"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkListBox"  id="flip_flop_list_box">
+                            <property name="selection-mode">browse</property>
+                            <style>
+                              <class name="module_list_box"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
                             <property name="label">Custom Modules</property>
                             <property name="xalign">0.0</property>
                             <style>
