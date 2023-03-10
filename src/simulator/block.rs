@@ -216,14 +216,14 @@ impl Block {
         None
     }
 
-    pub fn simulate(&mut self, connections: &mut HashMap<ConnectionID, Connection>, to_update: &mut HashSet<BlockID>, project: &mut Project, call_stack: &mut HashSet<String>) {
+    pub fn simulate(&mut self, connections: &mut HashMap<ConnectionID, Connection>, to_update: &mut HashSet<BlockID>, project: &mut Project, call_stack: &mut HashSet<String>) -> SimResult<()> {
         // collect input states
         let inputs = self.inputs.collect(connections);
     
         let mut_ref_ptr = project as *mut Project;
         if let Some(module) = project.module_mut(&self.name) {
             // simulate the block
-            let outputs = module.simulate(inputs, self, unsafe { &mut *mut_ref_ptr }, call_stack);
+            let outputs = module.simulate(inputs, self, unsafe { &mut *mut_ref_ptr }, call_stack)?;
 
             // dissect output state
             for (i, connection_id) in self.outputs.iter().enumerate() {
@@ -239,6 +239,8 @@ impl Block {
         else {
             error!("no module named {} found", self.name);
         }
+
+        Ok(())
     }
 }
 

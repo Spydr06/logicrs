@@ -135,14 +135,14 @@ impl Module {
         &self.decoration
     }
 
-    pub fn simulate(&mut self, inputs: u128, instance: &mut Block, project: &mut Project, call_stack: &mut HashSet<String>) -> u128 {
+    pub fn simulate(&mut self, inputs: u128, instance: &mut Block, project: &mut Project, call_stack: &mut HashSet<String>) -> SimResult<u128> {
         let outputs = 
         if self.builtin && let Some(builtin) = BUILTINS.get(self.name.as_str()) {
             builtin.simulate(inputs, instance)
         }
         else {
             if call_stack.contains(&self.name) {
-                error!("recursion detected, {} is already on the call stack", self.name);
+                return Err(format!("Recursion detected; Block of module \"{}\" is already on the call stack.", self.name))
             }
             call_stack.insert(self.name.clone());
 
@@ -157,7 +157,7 @@ impl Module {
             }
 
             plot.add_block_to_update(custom_data.input_block);
-            plot.simulate(project, call_stack);
+            let err = plot.simulate(project, call_stack).err();
             
             if let Some(input) = plot.get_block_mut(custom_data.input_block) {
                 input.set_bytes(0);
@@ -169,11 +169,14 @@ impl Module {
             instance.set_state(State::Inherit(state));
 
             call_stack.remove(&self.name);
+            if let Some(err) = err {
+                return Err(err);
+            }
             outputs
         };
 
         info!("simulate module {} with inputs: {inputs:#b} generates: {outputs:#b}", self.name);
-        outputs
+        Ok(outputs)
     }
 }
 

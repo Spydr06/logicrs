@@ -230,7 +230,7 @@ impl Plot {
         &mut self.to_update
     }
 
-    pub fn simulate(&mut self, project: &mut Project, call_stack: &mut HashSet<String>) -> bool {
+    pub fn simulate(&mut self, project: &mut Project, call_stack: &mut HashSet<String>) -> SimResult<bool> {
         let mut updated = HashSet::new();
         let mut changes = false;
 
@@ -250,13 +250,13 @@ impl Plot {
                 }
 
                 if let Some(block) = self.blocks.get_mut(block_id) {
-                    block.simulate(&mut self.connections, &mut self.to_update, project, call_stack);
+                    block.simulate(&mut self.connections, &mut self.to_update, project, call_stack)?;
                     updated.insert(*block_id);   
                 }
             }
         }
 
-        changes
+        Ok(changes)
     }
 }
 

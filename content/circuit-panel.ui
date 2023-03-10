@@ -71,6 +71,28 @@
           </object>
         </child>
         <child>
+          <object class="GtkInfoBar" id="info_bar">
+            <property name="hexpand">True</property>
+            <property name="visible">False</property>
+            <property name="message_type">GTK_MESSAGE_ERROR</property>
+            <child>
+              <object class="GtkLabel" id="info_label">
+                <property name="label">Test Error</property>
+                <property name="hexpand">True</property>
+                <property name="halign">1</property>
+                <style>
+                  <class name="bold"></class>
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="info_close_button">
+                <property name="icon_name">small-x-symbolic</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
           <object class="AdwTabView" id="view">
             <property name="vexpand">True</property>
             <property name="menu-model">tab_menu</property>

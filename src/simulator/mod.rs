@@ -25,7 +25,8 @@ thread_local! {
 }
 
 pub enum UICallback {
-    Redraw
+    Redraw,
+    Error(String)
 }
 
 impl UICallback {
@@ -49,9 +50,17 @@ impl UICallback {
                         view.rerender();
                 }
             }
+            Self::Error(err) => {
+                if let Some(panel) = window.borrow().as_ref()
+                    .map(|window| window.panel()) {
+                        panel.push_error(err.clone());
+                }              
+            }
         }
     }
 }
+
+pub type SimResult<T> = Result<T, String>;
 
 pub struct Simulator {
     running: Arc<AtomicBool>,
@@ -114,8 +123,9 @@ impl Simulator {
         project.iter_plots_mut().for_each(|plot| plot.push_state());
         project.iter_plots_mut().for_each(|plot| {
             plot.pop_state();
-            if plot.simulate(unsafe { &mut *mut_ref_ptr }, &mut call_stack) {
-                changes = true;
+            match plot.simulate(unsafe { &mut *mut_ref_ptr }, &mut call_stack) {
+                Ok(c) => if c { changes = true },
+                Err(err) => UICallback::Error(err).handle(tx)
             }
             plot.push_state();
         });

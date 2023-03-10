@@ -79,6 +79,20 @@ impl CircuitPanel {
     pub fn remove_tab(&self, module_name: &String) {
         self.imp().remove_tab(module_name)
     }
+
+    pub fn push_error(&self, error: String) {
+        let template = self.imp();
+        if template.info_bar.is_visible() {
+            let mut errors = template.errors.borrow_mut();
+            if !errors.contains(&error) {
+                errors.push(error);
+            }
+        }
+        else {
+            template.info_label.set_label(&error);
+            template.info_bar.show();
+        }
+    }
 }
 
 #[derive(gtk::CompositeTemplate, Default)]
@@ -105,9 +119,19 @@ pub struct CircuitPanelTemplate {
     #[template_child]
     toggle_grid_button: TemplateChild<gtk::ToggleButton>,
 
+    #[template_child]
+    info_bar: TemplateChild<gtk::InfoBar>,
+
+    #[template_child]
+    info_label: TemplateChild<gtk::Label>,
+
+    #[template_child]
+    info_close_button: TemplateChild<gtk::Button>,
+
     application: RefCell<Application>,
     pages: RefCell<HashMap<String, adw::TabPage>>,
-    force_closing: Cell<bool>
+    force_closing: Cell<bool>,
+    errors: RefCell<Vec<String>>
 }
 
 impl CircuitPanelTemplate {
@@ -183,6 +207,15 @@ impl ObjectImpl for CircuitPanelTemplate {
                 .map(|circuit_view| circuit_view.plot_provider().is_main());
             view.close_page_finish(page, !matches!(is_main, Ok(true)) || widget.force_closing.get());
             true
+        }));
+
+        self.info_close_button.connect_clicked(glib::clone!(@weak self as widget => move |_| widget.info_bar.hide()));
+        self.info_bar.connect_hide(glib::clone!(@weak self as widget => move |bar| {
+            let mut errors = widget.errors.borrow_mut();
+            if let Some(err) = errors.pop() {
+                widget.info_label.set_label(&err);
+                bar.show();
+            }
         }));
     }
 }

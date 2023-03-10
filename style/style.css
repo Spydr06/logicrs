@@ -17,3 +17,7 @@
     border-style: solid;
     background-color: @dialog_bg_color; */
 }
+
+.bold {
+    font-weight: bold;
+}
