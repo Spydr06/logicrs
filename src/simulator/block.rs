@@ -27,7 +27,7 @@ pub struct Block {
     inputs: Vec<Option<ConnectionID>>,
     outputs: Vec<Option<ConnectionID>>,
 
-    state: u128,
+    state: State,
     
     decoration: Decoration,
 }
@@ -53,7 +53,7 @@ impl Block {
             inputs: vec![None; num_inputs as usize],
             outputs: vec![None; num_outputs as usize],
             name,
-            state: 0,
+            state: if module.builtin() { State::Direct(0) } else { State::Inherit(PlotState::default()) },
             decoration: module.decoration().clone(),
         }
     }
@@ -164,13 +164,26 @@ impl Block {
     }
 
     #[inline(always)]
-    pub fn state(&self) -> u128 {
-        self.state
+    pub fn state(&self) -> &State {
+        &self.state
     }
 
     #[inline(always)]
-    pub fn set_state(&mut self, state: u128) {
+    pub fn set_state(&mut self, state: State) {
         self.state = state;
+    }
+
+    #[inline(always)]
+    pub fn set_bytes(&mut self, bytes: u128) {
+        self.state = State::Direct(bytes);
+    }
+
+    #[inline(always)]
+    pub fn bytes(&self) -> u128 {
+        match self.state {
+            State::Direct(bytes) => bytes,
+            _ => panic!()
+        }
     }
 
     pub fn position_on_connection(&self, position: Vector2<i32>, is_input: bool) -> Option<u8> {

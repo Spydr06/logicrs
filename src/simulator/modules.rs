@@ -144,34 +144,27 @@ impl Module {
             if call_stack.contains(&self.name) {
                 error!("recursion detected, {} is already on the call stack", self.name);
             }
-
             call_stack.insert(self.name.clone());
 
             let custom_data = self.custom_data.as_mut().expect("cannot simulate custom module without correct data");
             let plot = &mut custom_data.plot;
 
-           // if !plot.to_update().is_empty() {
-           //     custom_data.cache.clear();
-           // }
-           // else if let Some(outputs) = custom_data.cache.get(&inputs).map(|c| *c) {
-           //     info!("\x1b[93m(cached)\x1b[0m simulate {} with inputs {inputs:#b} generates: {outputs:#b}", self.name());
-           //     call_stack.remove(&self.name);
-           //     return outputs;
-           // }
+            instance.state().apply(plot);
 
             if let Some(input) = plot.get_block_mut(custom_data.input_block) {
-                input.set_state(inputs);
+                input.set_bytes(inputs);
             }
 
             plot.add_block_to_update(custom_data.input_block);
             plot.simulate(project, call_stack);
             
             if let Some(input) = plot.get_block_mut(custom_data.input_block) {
-                input.set_state(0);
+                input.set_bytes(0);
             }
 
-            let outputs = plot.get_block(custom_data.output_block).map(|block| block.state()).unwrap_or(0);
-         //   custom_data.cache.insert(inputs, outputs);
+            let outputs = plot.get_block(custom_data.output_block).map(|block| block.bytes()).unwrap_or(0);
+            let state = PlotState::from(plot);
+            instance.set_state(State::Inherit(state));
 
             call_stack.remove(&self.name);
             outputs

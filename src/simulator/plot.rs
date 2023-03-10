@@ -1,4 +1,4 @@
-use super::{Block, BlockID, Connection, ConnectionID, Port, Identifiable};
+use super::*;
 use crate::{renderer::{*, vector::Vector2}, selection::*, project::{ProjectRef, Project}};
 use std::{collections::{HashMap, HashSet}, cmp};
 use serde::{Serialize, Deserialize};
@@ -89,6 +89,8 @@ pub struct Plot {
     blocks: HashMap<BlockID, Block>,
     connections: HashMap<ConnectionID, Connection>,
 
+    states: Vec<PlotState>,
+
     #[serde(skip)]
     selection: Selection,
 
@@ -105,8 +107,23 @@ impl Plot {
         Self {
             blocks: HashMap::new(),
             connections: HashMap::new(),
+            states: vec![PlotState::default()],
             selection: Selection::None,
             to_update: HashSet::new()
+        }
+    }
+
+    pub fn push_state(&mut self) {
+        let state = self.into();
+        self.states.push(state);
+    }
+
+    pub fn pop_state(&mut self) {
+        if let Some(state) = self.states.pop() {
+            state.apply(self);
+        }
+        else {
+            error!("Plot::pop_state() failed: stack is empty.")
         }
     }
 
@@ -140,6 +157,14 @@ impl Plot {
         None
     }
 
+    pub fn connections(&self) -> &HashMap<ConnectionID, Connection> {
+        &self.connections
+    }
+
+    pub fn connections_mut(&mut self) -> &mut HashMap<ConnectionID, Connection> {
+        &mut self.connections
+    }
+
     pub fn get_connection(&self, id: ConnectionID) -> Option<&Connection> {
         self.connections.get(&id)
     }
@@ -169,8 +194,8 @@ impl Plot {
             refactor(self, connection.origin_id(), connection.from_port());
 
             self.connections.remove(&id);
-
             connection.set_active(false);
+
             return Some(connection);
         }
         None

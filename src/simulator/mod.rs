@@ -4,8 +4,9 @@ pub mod plot;
 pub mod decoration;
 pub mod builtin;
 pub mod modules;
+pub mod state;
 
-pub use {block::*, connection::*, plot::*, decoration::*, modules::*};
+pub use {block::*, connection::*, plot::*, decoration::*, modules::*, state::*};
 use std::{
     thread::{self, JoinHandle},
     time::{Duration, Instant},
@@ -110,12 +111,15 @@ impl Simulator {
         let mut call_stack = HashSet::new();
         let mut changes = false;
 
-
+        project.iter_plots_mut().for_each(|plot| plot.push_state());
         project.iter_plots_mut().for_each(|plot| {
+            plot.pop_state();
             if plot.simulate(unsafe { &mut *mut_ref_ptr }, &mut call_stack) {
                 changes = true;
             }
+            plot.push_state();
         });
+        project.iter_plots_mut().for_each(|plot| plot.pop_state());
 
         assert!(call_stack.is_empty(), "callstack wasn't empty: {call_stack:?}");
         if changes {
