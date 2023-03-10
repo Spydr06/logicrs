@@ -1,4 +1,4 @@
-use crate::{simulator::*, selection::*};
+use crate::{simulator::*, selection::*, renderer::vector::*};
 use serde::{Serialize, Deserialize};
 
 use super::action::Action;
@@ -25,10 +25,10 @@ impl Clipboard {
         serde_json::from_str(data).map_err(|err| err.to_string())
     }
 
-    pub fn paste_to(&self, plot_provider: PlotProvider) -> Result<Action, String> {
+    pub fn paste_to(&self, plot_provider: PlotProvider, position: Vector2<f64>) -> Result<Action, String> {
         if let Clipboard::Blocks(blocks, connections) = self {
             let mut data = (blocks.to_owned(), connections.to_owned());
-            data.prepare_pasting();
+            data.prepare_pasting(position);
             return Ok(Action::PasteBlocks(plot_provider.to_owned(), data.0, data.1));
         }
         
@@ -100,16 +100,20 @@ impl Copyable<()> for Block {
     }
 }
 
-trait Pasteable {
-    fn prepare_pasting(&mut self) -> &mut Self;
+trait Pasteable<T> {
+    fn prepare_pasting(&mut self, data: T) -> &mut Self;
 }
 
-impl Pasteable for (Vec<Block>, Vec<Connection>) {
-    fn prepare_pasting(&mut self) -> &mut Self {
+impl Pasteable<Vector2<f64>> for (Vec<Block>, Vec<Connection>) {
+    fn prepare_pasting(&mut self, position: Vector2<f64>) -> &mut Self {
+        let min = self.0.iter().map(|block| block.position()).min().unwrap_or_default();
+        let offset = Vector2::cast(position) - min;
+
         self.0.iter_mut().for_each(|block| {
             let old_id = block.id();
             let new_id = crate::new_uuid();
             block.set_id(new_id);
+            block.set_position(block.position() + offset);
 
             self.1.iter_mut().for_each(|connection| {
                 if connection.origin_id() == old_id {

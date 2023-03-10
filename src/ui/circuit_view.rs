@@ -34,6 +34,11 @@ impl CircuitView {
     pub fn plot_provider(&self) -> PlotProvider {
         self.imp().plot_provider()
     }
+
+    pub fn mouse_world_position(&self) -> Vector2<f64> {
+        let mouse_position = self.imp().mouse_position.get();
+        self.imp().renderer.borrow().screen_to_world(mouse_position)
+    }
 }
 
 #[derive(gtk::CompositeTemplate, Default)]

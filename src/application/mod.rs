@@ -48,7 +48,12 @@ impl Application {
     pub fn apply_clipboard(&self, clipboard: Clipboard) {
         match clipboard {
             Clipboard::Blocks(..) => {
-                match clipboard.paste_to(self.imp().current_plot().unwrap())
+                let position = self.imp()
+                    .current_circuit_view()
+                    .map(|view| view.mouse_world_position())
+                    .unwrap_or_default();
+                
+                match clipboard.paste_to(self.imp().current_plot().unwrap(), position)
                 {
                     Ok(action) => self.new_action(action),
                     Err(err) => dialogs::run(self.to_owned(), self.active_window().unwrap(), err, dialogs::basic_error)
