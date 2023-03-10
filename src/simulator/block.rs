@@ -23,6 +23,7 @@ pub struct Block {
     #[serde(skip)]
     highlighted: bool,
     unique: bool,
+    passthrough: bool,
 
     inputs: Vec<Option<ConnectionID>>,
     outputs: Vec<Option<ConnectionID>>,
@@ -50,6 +51,7 @@ impl Block {
             ),
             highlighted: false,
             unique,
+            passthrough: true,
             inputs: vec![None; num_inputs as usize],
             outputs: vec![None; num_outputs as usize],
             name,
@@ -184,6 +186,14 @@ impl Block {
             State::Direct(bytes) => bytes,
             _ => panic!()
         }
+    }
+
+    pub fn set_passthrough(&mut self, passthrough: bool) {
+        self.passthrough = passthrough
+    }
+
+    pub fn passthrough(&self) -> bool {
+        self.passthrough
     }
 
     pub fn position_on_connection(&self, position: Vector2<i32>, is_input: bool) -> Option<u8> {

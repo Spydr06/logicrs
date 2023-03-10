@@ -153,6 +153,7 @@ impl Module {
 
             if let Some(input) = plot.get_block_mut(custom_data.input_block) {
                 input.set_bytes(inputs);
+                input.set_passthrough(false);
             }
 
             plot.add_block_to_update(custom_data.input_block);
@@ -160,6 +161,7 @@ impl Module {
             
             if let Some(input) = plot.get_block_mut(custom_data.input_block) {
                 input.set_bytes(0);
+                input.set_passthrough(true);
             }
 
             let outputs = plot.get_block(custom_data.output_block).map(|block| block.bytes()).unwrap_or(0);

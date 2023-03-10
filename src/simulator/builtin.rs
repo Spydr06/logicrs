@@ -101,13 +101,13 @@ lazy_static! {
         ));
 
         builtins.insert("Input", Builtin::new(
-            Module::new_builtin("Input", Category::Hidden, 0, Block::MAX_CONNECTIONS, Decoration::None),
-            |_, instance| { instance.bytes() }
+            Module::new_builtin("Input", Category::Hidden, Block::MAX_CONNECTIONS, Block::MAX_CONNECTIONS, Decoration::None),
+            |input, instance| if instance.passthrough() { input } else { instance.bytes() }
         ));
 
         builtins.insert("Output", Builtin::new(
-            Module::new_builtin("Output", Category::Hidden, Block::MAX_CONNECTIONS, 0, Decoration::None),
-            |input, instance| { instance.set_bytes(input); 0 }
+            Module::new_builtin("Output", Category::Hidden, Block::MAX_CONNECTIONS, Block::MAX_CONNECTIONS, Decoration::None),
+            |input, instance| { instance.set_bytes(input); input }
         ));
 
         builtins.insert("SR Nand Latch", Builtin::new(
