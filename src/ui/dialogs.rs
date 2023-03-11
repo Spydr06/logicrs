@@ -2,7 +2,7 @@ use adw::prelude::*;
 use gtk::{
     traits::DialogExt,
     subclass::prelude::ObjectSubclassIsExt,
-    ButtonsType, Entry, MessageDialog, ResponseType, ComboBoxText, Orientation, Box, 
+    ButtonsType, Entry, MessageDialog, ResponseType, Orientation, Box, 
 };
 
 use std::future::Future;
@@ -38,20 +38,6 @@ pub async fn invalid_module(window: gtk::Window, msg: String) {
     dialog.close();
 }
 
-const OUTPUTS: [&'static str; 16] = [
-    "1 Output", "2 Outputs", "3 Outputs", "4 Outputs",
-    "5 Outputs", "6 Outputs", "7 Outputs", "8 Outputs",
-    "9 Outputs", "10 Outputs", "11 Outputs", "12 Outputs",
-    "13 Outputs", "14 Outputs", "15 Outputs", "16 Outputs",
-];
-
-const INPUTS: [&'static str; 16] = [
-    "1 Input", "2 Inputs", "3 Inputs", "4 Inputs",
-    "5 Inputs", "6 Inputs", "7 Inputs", "8 Inputs",
-    "9 Inputs", "10 Inputs", "11 Inputs", "12 Inputs",
-    "13 Inputs", "14 Inputs", "15 Inputs", "16 Inputs",
-];
-
 pub async fn new_module(app: Application, window: gtk::Window, _data: ()) {
     let content = Box::builder()
         .orientation(Orientation::Horizontal)
@@ -68,22 +54,26 @@ pub async fn new_module(app: Application, window: gtk::Window, _data: ()) {
         .build();
         content.append(&name_input);
 
-    let input_chooser = ComboBoxText::builder()
-        .sensitive(true)
+    let input_adjustment = gtk::Adjustment::new(2.0, 1.0, 129.0, 1.0, 1.0, 1.0);
+    let input_chooser = gtk::SpinButton::builder()
+        .climb_rate(1.0)
+        .adjustment(&input_adjustment)
         .margin_start(12)
-        .tooltip_text("Number of input pins")
+        .text("Inputs")
+        .numeric(true)
+        .tooltip_text("Select the number of input pins.")
         .build();
-    INPUTS.iter().for_each(|&elem| { input_chooser.append(Some(elem), elem) });
-    input_chooser.set_active_id(Some(INPUTS[1]));
     content.append(&input_chooser);
 
-    let output_chooser = ComboBoxText::builder()        
-        .sensitive(true)
+    let output_adjustment = gtk::Adjustment::new(1.0, 1.0, 129.0, 1.0, 1.0, 1.0);
+    let output_chooser = gtk::SpinButton::builder()        
+        .climb_rate(1.0)
+        .adjustment(&output_adjustment)
         .margin_start(12)
-        .tooltip_text("Number of ouput pins")
+        .text("Outputs")
+        .numeric(true)
+        .tooltip_text("Select the number of output pins.")
         .build();
-    OUTPUTS.iter().for_each(|&elem| { output_chooser.append(Some(elem), elem) });
-    output_chooser.set_active_id(Some(OUTPUTS[0]));
     content.append(&output_chooser);
 
     let dialog = MessageDialog::builder()
@@ -101,8 +91,9 @@ pub async fn new_module(app: Application, window: gtk::Window, _data: ()) {
     dialog.close();
 
     if answer == ResponseType::Ok {
-        let num_inputs = INPUTS.iter().position(|&elem| elem == input_chooser.active_id().unwrap()).unwrap_or_default() + 1;
-        let num_outputs = OUTPUTS.iter().position(|&elem| elem == output_chooser.active_id().unwrap()).unwrap_or_default() + 1;
+       // let num_inputs = INPUTS.iter().position(|&elem| elem == input_chooser.active_id().unwrap()).unwrap_or_default() + 1;
+        let num_inputs = input_chooser.value_as_int();
+        let num_outputs = output_chooser.value_as_int();
 
         // generate new module
         if let Err(err) = create_new_module(app, name_input.buffer().text().trim().to_string(), num_inputs as u8, num_outputs as u8) {
