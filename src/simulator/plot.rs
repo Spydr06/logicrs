@@ -1,5 +1,5 @@
 use super::*;
-use crate::{renderer::{*, vector::Vector2}, selection::*, project::{ProjectRef, Project}};
+use crate::{renderer::{*, vector::Vector2}, application::selection::*, project::{ProjectRef, Project}};
 use std::{collections::{HashMap, HashSet}, cmp};
 use serde::{Serialize, Deserialize};
 

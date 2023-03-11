@@ -1,6 +1,6 @@
 use std::cell::{RefCell, Cell};
 use gtk::{prelude::*, subclass::prelude::*, gio, glib, gdk};
-use crate::{selection::*, renderer::{*, vector::*}, simulator::*, fatal::FatalResult, application::{Application, action::Action, editor::{EditorMode, GRID_SIZE}}};
+use crate::{renderer::{*, vector::*}, simulator::*, fatal::FatalResult, application::{selection::*, Application, action::Action, editor::{EditorMode, GRID_SIZE}}};
 
 glib::wrapper! {
     pub struct CircuitView(ObjectSubclass<CircuitViewTemplate>)

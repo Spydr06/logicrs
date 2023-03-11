@@ -3,10 +3,10 @@ use adw::subclass::prelude::*;
 use std::cell::RefCell;
 use crate::{
     ui::{main_window::MainWindow, circuit_view::CircuitView, dialogs},
-    fatal::*, project::*, simulator::*, selection::{SelectionField, Selection}, renderer::Theme,
+    fatal::*, project::*, simulator::*, renderer::Theme,
 };
 
-use super::{action::*, clipboard::Clipboard, Application};
+use super::{action::*, clipboard::Clipboard, Application, selection::*};
 
 #[derive(Default)]
 pub struct ApplicationTemplate {

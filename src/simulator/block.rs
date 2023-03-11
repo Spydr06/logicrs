@@ -1,6 +1,6 @@
 use std::{f64, cmp, collections::{HashSet, HashMap}};
 
-use crate::{renderer::{*, vector::Vector2}, selection::SelectionField};
+use crate::{renderer::{*, vector::Vector2}, application::selection::SelectionField};
 use serde::{Serialize, Deserialize};
 
 use super::*;

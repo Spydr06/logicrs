@@ -1,4 +1,4 @@
-use crate::{simulator::Plot, selection::*};
+use crate::{simulator::Plot, application::selection::*};
 
 use super::*;
 use gtk::cairo::{

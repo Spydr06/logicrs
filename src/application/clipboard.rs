@@ -1,7 +1,7 @@
-use crate::{simulator::*, selection::*, renderer::vector::*};
+use crate::{simulator::*, renderer::vector::*};
 use serde::{Serialize, Deserialize};
 
-use super::action::Action;
+use super::{action::Action, selection::*};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Clipboard {

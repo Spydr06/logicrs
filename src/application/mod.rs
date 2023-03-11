@@ -3,12 +3,14 @@ pub mod gactions;
 pub mod action;
 pub mod clipboard;
 pub mod editor;
+pub mod selection;
 
 use action::*;
 use std::cell::RefCell;
 use adw::traits::MessageDialogExt;
 use gtk::{prelude::*, subclass::prelude::*, gio, glib};
-use crate::{config, ui::dialogs, selection::SelectionField, application::clipboard::Clipboard};
+use selection::SelectionField;
+use crate::{config, ui::dialogs, application::clipboard::Clipboard};
 
 glib::wrapper! {
     pub struct Application(ObjectSubclass<template::ApplicationTemplate>)

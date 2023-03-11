@@ -9,7 +9,6 @@ mod simulator;
 mod config;
 mod fatal;
 mod project;
-mod selection;
 
 #[macro_use]
 extern crate log;
