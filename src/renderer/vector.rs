@@ -74,3 +74,31 @@ impl<T: Div<Output = T>> Div for Vector2<T> {
         Self(self.0 / rhs.0, self.1 / rhs.1)
     }
 }
+
+impl<T: AddAssign> AddAssign for Vector2<T> {
+    fn add_assign(&mut self, rhs: Self) {
+        self.0 += rhs.0;
+        self.1 += rhs.1;
+    }
+}
+
+impl<T: SubAssign> SubAssign for Vector2<T> {
+    fn sub_assign(&mut self, rhs: Self) {
+        self.0 -= rhs.0;
+        self.1 -= rhs.1;
+    }
+}
+
+impl<T: MulAssign> MulAssign for Vector2<T> {
+    fn mul_assign(&mut self, rhs: Self) {
+        self.0 *= rhs.0;
+        self.1 *= rhs.1;
+    }
+}
+
+impl<T: DivAssign> DivAssign for Vector2<T> {
+    fn div_assign(&mut self, rhs: Self) {
+        self.0 /= rhs.0;
+        self.1 /= rhs.1;
+    }
+}

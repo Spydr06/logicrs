@@ -52,10 +52,20 @@ impl Decoration {
                 .stroke()
                 .map(|_| ())
             }
-            Self::Lamp(active) | Self::Button(active) | Self::Switch(active) => {
+            Self::Lamp(active) => {
                 renderer
                 .arc(Vector2(block.position().0 + block.size().0 / 2, block.position().1 + 50), 12., 0., f64::consts::TAU)
                 .set_color(unsafe { if *active { &COLOR_THEME.suggestion_fg_color } else { &COLOR_THEME.border_color }})
+                .fill_preserve()?
+                .set_line_width(1.5)
+                .set_color(unsafe { &COLOR_THEME.border_color })
+                .stroke()
+                .map(|_| ())
+            }
+            Self::Button(active) | Self::Switch(active) => {
+                renderer
+                .arc(Vector2(block.position().0 + block.size().0 / 2, block.position().1 + 50), 12., 0., f64::consts::TAU)
+                .set_color(unsafe { if *active { &COLOR_THEME.button_active_color } else { &COLOR_THEME.button_inactive_color }})
                 .fill_preserve()?
                 .set_line_width(1.5)
                 .set_color(unsafe { &COLOR_THEME.border_color })
@@ -86,15 +96,21 @@ impl Decoration {
         }
     }
 
-    pub fn on_click(&mut self) {
+    pub fn on_mouse_press(&mut self) -> bool {
         match self {
-            Self::Switch(active) => *active = !*active,
-            Self::Button(active) => *active = true,
-            _ => (),
+            Self::Switch(active) => {
+                *active = !*active;
+                true
+            },
+            Self::Button(active) => {
+                *active = true;
+                true
+            },
+            _ => false,
         }
     }
 
-    pub fn on_click_release(&mut self) {
+    pub fn on_mouse_release(&mut self) {
         match self {
             Self::Button(active) => *active = false,
             _ => ()

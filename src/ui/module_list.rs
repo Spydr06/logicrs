@@ -134,8 +134,8 @@ impl ModuleListTemplate {
         }
     }
 
-    fn lists(&self) -> [&gtk::ListBox; 4] {
-        [&self.basic_list_box, &self.input_output_list_box, &self.gate_list_box, &self.custom_list_box]
+    fn lists(&self) -> [&gtk::ListBox; 6] {
+        [&self.basic_list_box, &self.input_output_list_box, &self.gate_list_box, &self.latch_list_box, &self.flip_flop_list_box, &self.custom_list_box]
     }
 
     fn module_item_content(&self, module: &Module) -> gtk::Box {        

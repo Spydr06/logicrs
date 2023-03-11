@@ -196,6 +196,21 @@ impl Block {
         self.passthrough
     }
 
+    pub fn on_mouse_press(&mut self, mut position: Vector2<i32>) -> bool {
+        position -= self.position;
+        if position.0 > 15 && position.1 > 25 && 
+            position.0 < self.size.0 - 15 && position.1 < self.size.1 - 10 {
+            self.decoration.on_mouse_press()
+        }
+        else {
+            false
+        }
+    }
+
+    pub fn on_mouse_release(&mut self) {
+        self.decoration.on_mouse_release();
+    }
+
     pub fn position_on_connection(&self, position: Vector2<i32>, is_input: bool) -> Option<u8> {
         if is_input {
             for i in 0..self.inputs.len() {

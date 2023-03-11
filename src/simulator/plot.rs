@@ -235,11 +235,10 @@ impl Plot {
         let mut changes = false;
 
         loop {
-            if self.to_update.len() == 0 {
+            if self.to_update.is_empty() {
                 break;
             }
-            let to_update = self.to_update.clone();
-            self.to_update.clear();
+            let to_update = std::mem::take(&mut self.to_update);
             changes = true;
             
             for block_id in to_update.iter() {

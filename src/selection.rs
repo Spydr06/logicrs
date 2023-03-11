@@ -8,6 +8,7 @@ pub enum Selection {
     Single(BlockID, Vector2<i32>),
     Many(Vec<BlockID>),
     Area(Vector2<i32>, Vector2<i32>),
+    MouseEvent(BlockID),
     Connection {
         block_id: BlockID,
         output: u8,

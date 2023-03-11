@@ -272,7 +272,11 @@ impl CircuitViewTemplate {
             match plot.get_block_at(position) {
                 Some(index) => {
                     if let Some(block) = plot.get_block_mut(index) {
-                        if let Some(i) = block.position_on_connection(position, false) {
+                        if block.on_mouse_press(position) {
+                            plot.set_selection(Selection::MouseEvent(index));
+                            plot.add_block_to_update(index);
+                        }
+                        else if let Some(i) = block.position_on_connection(position, false) {
                             let start = block.get_connector_pos(Connector::Output(i));
                             plot.set_selection(Selection::Connection {
                                 block_id: index,
@@ -373,6 +377,15 @@ impl CircuitViewTemplate {
             Selection::Area(_, _) => {
                 plot_provider.with_mut(|plot| plot.highlight_area());
                 self.drawing_area.queue_draw()
+            }
+            Selection::MouseEvent(block_id) => {
+                plot_provider.with_mut(|plot| {
+                    plot.set_selection(Selection::None);
+                    plot.get_block_mut(block_id)
+                        .map(|block| block.on_mouse_release());
+                    plot.add_block_to_update(block_id);
+                });
+                self.drawing_area.queue_draw();
             }
             _ => {}
         };

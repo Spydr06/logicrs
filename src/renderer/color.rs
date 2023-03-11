@@ -33,6 +33,10 @@ pub struct Theme {
     pub enabled_fg_color: Color,
     pub suggestion_fg_color: Color,
 
+    // button colors
+    pub button_active_color: Color,
+    pub button_inactive_color: Color,
+
     // decoration color
     pub decoration_fg_color: Color,
 }
@@ -69,6 +73,9 @@ impl Theme {
         enabled_fg_color: hex_to_color(0xff33d17a),
         suggestion_fg_color: hex_to_color(0xfff9f06b),
 
+        button_active_color: hex_to_color(0xffed333b),
+        button_inactive_color: hex_to_color(0xaaa51d2d),
+
         decoration_fg_color: (0.8, 0.8, 0.8, 1.0),
     };
 
@@ -88,6 +95,9 @@ impl Theme {
         enabled_bg_color: hex_to_color(0xff26a269),
         enabled_fg_color: hex_to_color(0xff33d17a),
         suggestion_fg_color: hex_to_color(0xfff9f06b),
+
+        button_active_color: hex_to_color(0xffed333b),
+        button_inactive_color: hex_to_color(0xaaa51d2d),
 
         decoration_fg_color: (0.0, 0.0, 0.0, 1.0),
     };
