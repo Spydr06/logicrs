@@ -86,6 +86,14 @@ impl Copyable<(&Plot, Vec<BlockID>)> for (Vec<Block>, Vec<Connection>) {
                     }
                 }
             });
+
+            block.inputs_mut().iter_mut().for_each(|c| {
+                if let Some(connection) = c.and_then(|id| plot.get_connection(id)) {
+                    if !block_ids.contains(&connection.origin_id()) {
+                        *c = None
+                    }
+                }
+            });
         });
 
         self

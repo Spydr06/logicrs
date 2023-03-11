@@ -19,11 +19,18 @@ impl From<bool> for EditorMode {
 // grid size in pixels at scale 1.0
 pub const GRID_SIZE: i32 = 25;
 
+// defines at which point the grid doesn't get rendered anymore
+const SCALE_CUTOFF: f64 = 0.30; 
+
 impl Renderable for EditorMode {
     fn render<R>(&self, renderer: &R, _data: &crate::simulator::Plot) -> Result<(), R::Error>
         where R: crate::renderer::Renderer {
         match self {
             EditorMode::Grid => {
+                if renderer.scale() < SCALE_CUTOFF {
+                    return Ok(());
+                }
+
                 let Vector2(start, end) = renderer.screen_space();
                 let offset = VectorCast::cast(start) / GRID_SIZE.into() * GRID_SIZE.into();
 
