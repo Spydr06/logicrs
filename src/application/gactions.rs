@@ -1,21 +1,27 @@
 use super::*;
 use crate::{fatal::*, project::Project};
 
-pub(super) type GActionCallbackFn = fn(Application, Option<&glib::Variant>);
+const SYSTEM_PREFERENCE_THEME: u8 = 0;
+const DARK_THEME: u8 = 1;
+const LIGHT_THEME: u8 = 2;
+
+pub(super) type GActionCallbackFn = fn(Application, &gio::SimpleAction, Option<&glib::Variant>);
 
 pub(super) struct GAction<'a> {
     name: &'a str,
     accels: &'a[&'a str],
     parameter_type: Option<&'a glib::VariantTy>,
+    state_type: Option<(&'a glib::VariantTy, glib::Variant)>,
     callback: GActionCallbackFn
 }
 
 impl<'a> GAction<'a> {
-    const fn new(name: &'a str, accels: &'a[&str], parameter_type: Option<&'a glib::VariantTy>, callback: GActionCallbackFn) -> Self {
+    fn new(name: &'a str, accels: &'a[&str], parameter_type: Option<&'a glib::VariantTy>, state_type: Option<(&'a glib::VariantTy, glib::Variant)>, callback: GActionCallbackFn) -> Self {
         Self {
             name,
             accels,
             parameter_type,
+            state_type,
             callback
         }
     }
@@ -35,43 +41,48 @@ impl<'a> GAction<'a> {
 
 impl<'a> From<&GAction<'a>> for gio::SimpleAction {
     fn from(value: &GAction<'a>) -> Self {
-        gio::SimpleAction::new(value.name, value.parameter_type)
+        if let Some((state_type, original)) = &value.state_type {
+            gio::SimpleAction::new_stateful(value.name, Some(state_type), &original)
+        }
+        else {
+            gio::SimpleAction::new(value.name, value.parameter_type)
+        }
     }
 }
 
-pub(super) const ACTIONS: &[GAction] = &[
-    GAction::new("quit", &["<primary>Q", "<primary>W"], None, Application::gaction_quit),
-    GAction::new("about", &["<primary>comma"], None, Application::gaction_about),  
-    GAction::new("save", &["<primary>S"], None, Application::gaction_save),
-    GAction::new("save-as", &["<primary><shift>S"], None, Application::gaction_save_as),
-    GAction::new("open", &["<primary>O"], None, Application::gaction_open),
-    GAction::new("new", &["<primary>N"], None, Application::gaction_new),
-    GAction::new("delete-block", &["Delete"], None, Application::gaction_delete_block),
-    GAction::new("create-new-module", &["<primary><shift>N"], None, Application::gaction_create_new_module),
-    GAction::new("undo", &["<primary>Z"], None, Application::gaction_undo),
-    GAction::new("redo", &["<primary>Y"], None, Application::gaction_redo),
-    GAction::new("copy", &["<primary>C"], None, Application::gaction_copy),
-    GAction::new("cut", &["<primary>X"], None, Application::gaction_cut),
-    GAction::new("paste", &["<primary>V"], None, Application::gaction_paste),
-    GAction::new("select-all", &["<primary>A"], None, Application::gaction_select_all),
-    GAction::new("delete-module", &[], Some(glib::VariantTy::STRING), Application::gaction_delete_module),
-    GAction::new("edit-module", &[], Some(glib::VariantTy::STRING), Application::gaction_edit_module),
-    GAction::new("search-module", &["<primary>F"], None, Application::gaction_search_module),
-    GAction::new("dark-theme", &[], None, Application::gaction_dark_mode),
-    GAction::new("light-theme", &[], None, Application::gaction_light_mode),
-    GAction::new("system-preference-theme", &[], None, Application::gaction_system_preference_mode)
-];
+lazy_static! {
+    pub(super) static ref ACTIONS: [GAction<'static>; 18] = [
+        GAction::new("quit", &["<primary>Q", "<primary>W"], None, None, Application::gaction_quit),
+        GAction::new("about", &["<primary>comma"], None, None, Application::gaction_about),  
+        GAction::new("save", &["<primary>S"], None, None, Application::gaction_save),
+        GAction::new("save-as", &["<primary><shift>S"], None, None, Application::gaction_save_as),
+        GAction::new("open", &["<primary>O"], None, None, Application::gaction_open),
+        GAction::new("new", &["<primary>N"], None, None, Application::gaction_new),
+        GAction::new("delete-block", &["Delete"], None, None, Application::gaction_delete_block),
+        GAction::new("create-new-module", &["<primary><shift>N"], None, None, Application::gaction_create_new_module),
+        GAction::new("undo", &["<primary>Z"], None, None, Application::gaction_undo),
+        GAction::new("redo", &["<primary>Y"], None, None, Application::gaction_redo),
+        GAction::new("copy", &["<primary>C"], None, None, Application::gaction_copy),
+        GAction::new("cut", &["<primary>X"], None, None, Application::gaction_cut),
+        GAction::new("paste", &["<primary>V"], None, None, Application::gaction_paste),
+        GAction::new("select-all", &["<primary>A"], None, None, Application::gaction_select_all),
+        GAction::new("delete-module", &[], Some(glib::VariantTy::STRING), None, Application::gaction_delete_module),
+        GAction::new("edit-module", &[], Some(glib::VariantTy::STRING), None, Application::gaction_edit_module),
+        GAction::new("search-module", &["<primary>F"], None, None, Application::gaction_search_module),
+        GAction::new("change-theme", &[], None, Some((glib::VariantTy::BYTE, SYSTEM_PREFERENCE_THEME.to_variant())), Application::gaction_change_theme),
+    ];
+}
 
 impl Application {
-    fn gaction_quit(self, _: Option<&glib::Variant>) {
+    fn gaction_quit(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
         self.quit();
     }
 
-    fn gaction_about(self, _: Option<&glib::Variant>) {
+    fn gaction_about(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
         self.show_about()
     }
 
-    fn gaction_save(self, _: Option<&glib::Variant>) {
+    fn gaction_save(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
         if let Err(err) = self.imp().save(|_| ()) {
             let message =  format!("Error saving to '{}': {}", self.imp().file_name(), err);
             error!("{}", message);
@@ -81,19 +92,19 @@ impl Application {
         }
     }
 
-    fn gaction_save_as(self, _: Option<&glib::Variant>) {
+    fn gaction_save_as(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
         self.save_as(|_| ());
     }
 
-    fn gaction_open(self, _: Option<&glib::Variant>) {
+    fn gaction_open(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
         self.open();
     }
 
-    fn gaction_new(self, _: Option<&glib::Variant>) {
+    fn gaction_new(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
         self.open_new();
     }
 
-    fn gaction_delete_block(self, _: Option<&glib::Variant>) {
+    fn gaction_delete_block(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
         if let Some(plot_provider) = self.imp().current_plot() {
             let blocks = plot_provider.with_mut(|plot| 
                 plot.selected().iter().map(|id| plot.get_block(*id).unwrap().to_owned()).collect()
@@ -102,39 +113,39 @@ impl Application {
         }
     }
 
-    fn gaction_create_new_module(self, _: Option<&glib::Variant>) {
+    fn gaction_create_new_module(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
         if let Some(window) = self.active_window() {
             dialogs::run(self, window, (), dialogs::new_module); 
         }
     }
 
-    fn gaction_undo(self, _: Option<&glib::Variant>) {
+    fn gaction_undo(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
         self.undo_action();
     }
 
-    fn gaction_redo(self, _: Option<&glib::Variant>) {
+    fn gaction_redo(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
         self.redo_action();
     }
 
 
-    fn gaction_copy(self, _: Option<&glib::Variant>) {
+    fn gaction_copy(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
         self.copy_clipboard(false);
     }
 
-    fn gaction_cut(self, _: Option<&glib::Variant>) {
+    fn gaction_cut(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
         self.copy_clipboard(true);
     }
 
-    fn gaction_paste(self, _: Option<&glib::Variant>) {
+    fn gaction_paste(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
         self.paste_clipboard();
     }
 
-    fn gaction_select_all(self, _: Option<&glib::Variant>) {
+    fn gaction_select_all(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
         self.imp().with_current_plot_mut(|plot| plot.select_all());
         self.imp().rerender_editor();
     }
 
-    fn gaction_delete_module(self, parameter: Option<&glib::Variant>) {
+    fn gaction_delete_module(self, _: &gio::SimpleAction, parameter: Option<&glib::Variant>) {
         let module_name = parameter
                 .expect("Could not get module name target.")
                 .get::<String>().unwrap();
@@ -144,25 +155,37 @@ impl Application {
         }
     }
 
-    fn gaction_edit_module(self, parameter: Option<&glib::Variant>) {
+    fn gaction_edit_module(self, _: &gio::SimpleAction, parameter: Option<&glib::Variant>) {
         let module_name = parameter
             .expect("Could not get module name target.")
             .get::<String>().unwrap();
         self.imp().edit_module(module_name);
     }
 
-    fn gaction_search_module(self, _: Option<&glib::Variant>) {
+    fn gaction_search_module(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
         self.imp().window()
             .borrow().as_ref().unwrap()
             .module_list().show_search();
     }
 
-    fn gaction_dark_mode(self, _: Option<&glib::Variant>) {
+    fn gaction_change_theme(self, action: &gio::SimpleAction, parameter: Option<&glib::Variant>) {
+        let new = parameter
+            .expect("could not get theme parameter")
+            .get::<u8>()
+            .expect("the parameter needs to be of type `u8`");
+
         adw::StyleManager::default()
-            .set_color_scheme(adw::ColorScheme::ForceDark)
+            .set_color_scheme(match new {
+            SYSTEM_PREFERENCE_THEME => adw::ColorScheme::Default,
+            DARK_THEME => adw::ColorScheme::ForceDark,
+            LIGHT_THEME => adw::ColorScheme::ForceLight,
+            _ => panic!()
+        });
+
+        action.set_state(&new.to_variant());
     }
 
-    fn gaction_light_mode(self, _: Option<&glib::Variant>) {
+    /*fn gaction_light_mode(self, _: Option<&glib::Variant>) {
         adw::StyleManager::default()
             .set_color_scheme(adw::ColorScheme::ForceLight)
     }
@@ -170,7 +193,7 @@ impl Application {
     fn gaction_system_preference_mode(self, _: Option<&glib::Variant>) {
         adw::StyleManager::default()
             .set_color_scheme(adw::ColorScheme::Default)
-    }
+    }*/
 
     pub(super) fn close_current_file<F>(&self, after: F)
     where
