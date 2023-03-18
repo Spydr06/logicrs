@@ -29,6 +29,10 @@ impl Clipboard {
         if let Clipboard::Blocks(blocks, connections) = self {
             let mut data = (blocks.to_owned(), connections.to_owned());
             data.prepare_pasting(position);
+            plot_provider.with_mut(|plot| {
+                plot.unhighlight();
+                plot.set_selection(Selection::Many(data.0.iter().map(|block| block.id()).collect()));
+            });
             return Ok(Action::PasteBlocks(plot_provider.to_owned(), data.0, data.1));
         }
         
@@ -122,6 +126,7 @@ impl Pasteable<Vector2<f64>> for (Vec<Block>, Vec<Connection>) {
             let new_id = crate::new_uuid();
             block.set_id(new_id);
             block.set_position(block.position() + offset);
+            block.set_highlighted(true);
 
             self.1.iter_mut().for_each(|connection| {
                 if connection.origin_id() == old_id {
