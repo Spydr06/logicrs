@@ -127,6 +127,36 @@
     </section>
     <section>
       <submenu>
+        <attribute name="label">S_imulation Speed</attribute>
+        <item>
+          <attribute name="label" translatable="yes">Halt</attribute>
+          <attribute name="action">app.change-tick-speed</attribute>
+          <attribute name="target" type="i">0</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">Slow</attribute>
+          <attribute name="action">app.change-tick-speed</attribute>
+          <attribute name="target" type="i">1</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">Default</attribute>
+          <attribute name="action">app.change-tick-speed</attribute>
+          <attribute name="target" type="i">10</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">Fast</attribute>
+          <attribute name="action">app.change-tick-speed</attribute>
+          <attribute name="target" type="i">100</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">Turbo</attribute>
+          <attribute name="action">app.change-tick-speed</attribute>
+          <attribute name="target" type="i">1000</attribute>
+        </item>
+      </submenu>
+    </section>
+    <section>
+      <submenu>
         <attribute name="label">_Theme</attribute>
         <item>
           <attribute name="label" translatable="yes">_Dark</attribute>

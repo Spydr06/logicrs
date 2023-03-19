@@ -8,7 +8,8 @@ pub type ProjectRef = Arc<Mutex<Project>>;
 #[derive(Deserialize)]
 pub struct Project {
     modules: HashMap<String, Module>,
-    main_plot: Plot
+    main_plot: Plot,
+    tps: i32
 }
 
 impl Default for Project {
@@ -43,6 +44,7 @@ impl Project {
         Self {
             modules: modules.iter().map(|module| (module.name().to_owned(), module.clone())).collect(),
             main_plot: Plot::new(),
+            tps: Simulator::DEFAULT_TICKS_PER_SECOND
         }
     }
 
@@ -137,5 +139,13 @@ impl Project {
         self.modules.iter_mut()
             .filter_map(|(_, module)| module.plot_mut())
             .chain(std::iter::once(&mut self.main_plot))
+    }
+
+    pub fn tps(&self) -> i32 {
+        self.tps
+    }
+
+    pub fn set_tps(&mut self, tps: i32) {
+        self.tps = tps
     }
 }

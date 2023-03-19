@@ -1,5 +1,5 @@
 use super::*;
-use crate::{fatal::*, project::Project};
+use crate::{fatal::*, project::Project, simulator::Simulator};
 
 const SYSTEM_PREFERENCE_THEME: u8 = 0;
 const DARK_THEME: u8 = 1;
@@ -51,7 +51,7 @@ impl<'a> From<&GAction<'a>> for gio::SimpleAction {
 }
 
 lazy_static! {
-    pub(super) static ref ACTIONS: [GAction<'static>; 18] = [
+    pub(super) static ref ACTIONS: [GAction<'static>; 19] = [
         GAction::new("quit", &["<primary>Q", "<primary>W"], None, None, Application::gaction_quit),
         GAction::new("about", &["<primary>comma"], None, None, Application::gaction_about),  
         GAction::new("save", &["<primary>S"], None, None, Application::gaction_save),
@@ -70,6 +70,7 @@ lazy_static! {
         GAction::new("edit-module", &[], Some(glib::VariantTy::STRING), None, Application::gaction_edit_module),
         GAction::new("search-module", &["<primary>F"], None, None, Application::gaction_search_module),
         GAction::new("change-theme", &[], None, Some((glib::VariantTy::BYTE, SYSTEM_PREFERENCE_THEME.to_variant())), Application::gaction_change_theme),
+        GAction::new("change-tick-speed", &[], None, Some((glib::VariantTy::INT32, Simulator::DEFAULT_TICKS_PER_SECOND.to_variant())), Application::gaction_change_tps)
     ];
 }
 
@@ -185,15 +186,18 @@ impl Application {
         action.set_state(&new.to_variant());
     }
 
-    /*fn gaction_light_mode(self, _: Option<&glib::Variant>) {
-        adw::StyleManager::default()
-            .set_color_scheme(adw::ColorScheme::ForceLight)
-    }
+    fn gaction_change_tps(self, action: &gio::SimpleAction, parameter: Option<&glib::Variant>) {
+        let new = parameter
+            .expect("could not get theme parameter")
+            .get::<i32>()
+            .expect("the parameter needs to be of type `u8`");
 
-    fn gaction_system_preference_mode(self, _: Option<&glib::Variant>) {
-        adw::StyleManager::default()
-            .set_color_scheme(adw::ColorScheme::Default)
-    }*/
+        self.imp()
+            .project()
+            .lock().unwrap().set_tps(new);
+
+        action.set_state(&new.to_variant());
+    }
 
     pub(super) fn close_current_file<F>(&self, after: F)
     where

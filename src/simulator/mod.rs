@@ -68,7 +68,7 @@ pub struct Simulator {
 }
 
 impl Simulator {
-    const TICKS_PER_SECOND: f64 = 10.0;
+    pub const DEFAULT_TICKS_PER_SECOND: i32 = 10;
 
     pub fn new(project: ProjectRef, window: RefCell<Option<MainWindow>>) -> Self {
         info!("starting simulation...");
@@ -100,11 +100,21 @@ impl Simulator {
     }
 
     fn schedule(running: Arc<AtomicBool>, project: ProjectRef, tx: Sender<UICallback>) {
-        let wait_time = Duration::from_secs_f64(1.0 / Self::TICKS_PER_SECOND);
         while running.load(Ordering::Relaxed) {
             let start = Instant::now();
 
             let mut project = project.lock().unwrap();
+            let tps = project.tps();
+            
+            // if we halt the simulation, check again in 0.5 seconds
+            if tps == 0 {
+                drop(project);
+                thread::sleep(Duration::from_millis(500));
+                continue;
+            }
+
+            let wait_time = Duration::from_secs_f64(1.0 / tps as f64);
+
             Self::simulate(&mut project, &tx);
             drop(project);
 
