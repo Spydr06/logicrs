@@ -1,9 +1,40 @@
 use super::*;
 use crate::{fatal::*, project::Project, simulator::Simulator};
 
-const SYSTEM_PREFERENCE_THEME: u8 = 0;
-const DARK_THEME: u8 = 1;
-const LIGHT_THEME: u8 = 2;
+#[derive(Default, Clone, Copy)]
+enum Theme {
+    #[default]
+    SystemPreference = 0,
+    Dark = 1,
+    Light = 2
+}
+
+impl ToVariant for Theme {
+    fn to_variant(&self) -> glib::Variant {
+        (*self as isize as u8).to_variant()
+    }
+}
+
+impl From<u8> for Theme {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => Self::SystemPreference,
+            1 => Self::Dark,
+            2 => Self::Light,
+            _ => panic!()
+        }
+    }
+}
+
+impl Into<adw::ColorScheme> for Theme {
+    fn into(self) -> adw::ColorScheme {
+        match self {
+            Theme::SystemPreference => adw::ColorScheme::Default,
+            Theme::Dark => adw::ColorScheme::ForceDark,
+            Theme::Light => adw::ColorScheme::ForceLight
+        }
+    }
+}
 
 pub(super) type GActionCallbackFn = fn(Application, &gio::SimpleAction, Option<&glib::Variant>);
 
@@ -69,7 +100,7 @@ lazy_static! {
         GAction::new("delete-module", &[], Some(glib::VariantTy::STRING), None, Application::gaction_delete_module),
         GAction::new("edit-module", &[], Some(glib::VariantTy::STRING), None, Application::gaction_edit_module),
         GAction::new("search-module", &["<primary>F"], None, None, Application::gaction_search_module),
-        GAction::new("change-theme", &[], None, Some((glib::VariantTy::BYTE, SYSTEM_PREFERENCE_THEME.to_variant())), Application::gaction_change_theme),
+        GAction::new("change-theme", &[], None, Some((glib::VariantTy::BYTE, Theme::SystemPreference.to_variant())), Application::gaction_change_theme),
         GAction::new("change-tick-speed", &[], None, Some((glib::VariantTy::INT32, Simulator::DEFAULT_TICKS_PER_SECOND.to_variant())), Application::gaction_change_tps)
     ];
 }
@@ -170,19 +201,13 @@ impl Application {
     }
 
     fn gaction_change_theme(self, action: &gio::SimpleAction, parameter: Option<&glib::Variant>) {
-        let new = parameter
+        let new: Theme = parameter
             .expect("could not get theme parameter")
             .get::<u8>()
-            .expect("the parameter needs to be of type `u8`");
+            .expect("the parameter needs to be of type `u8`")
+            .into();
 
-        adw::StyleManager::default()
-            .set_color_scheme(match new {
-            SYSTEM_PREFERENCE_THEME => adw::ColorScheme::Default,
-            DARK_THEME => adw::ColorScheme::ForceDark,
-            LIGHT_THEME => adw::ColorScheme::ForceLight,
-            _ => panic!()
-        });
-
+        adw::StyleManager::default().set_color_scheme(new.into());
         action.set_state(&new.to_variant());
     }
 
