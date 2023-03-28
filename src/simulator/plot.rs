@@ -39,7 +39,7 @@ impl Into<PlotDescriptor> for PlotProvider {
 
 impl PlotProvider {
     #[inline]
-    pub fn with<T>(&self, func: impl Fn(&Plot) -> T) -> Option<T> {
+    pub fn with<T>(&self, func: impl FnOnce(&Plot) -> T) -> Option<T> {
         match self {
             Self::None => None,
             Self::Main(project) => Some(func(project.lock().unwrap().main_plot())),

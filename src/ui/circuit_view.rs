@@ -71,6 +71,7 @@ pub struct CircuitViewTemplate {
     renderer: RefCell<CairoRenderer>,
     plot_provider: RefCell<PlotProvider>,
     ctrl_down: Cell<bool>,
+    shift_down: Cell<bool>,
     application: RefCell<Application>,
     editor_mode: RefCell<EditorMode>,
     mouse_position: Cell<Vector2<f64>>
@@ -180,16 +181,22 @@ impl CircuitViewTemplate {
     fn init_keyboard(&self) {
         let key_controller = gtk::EventControllerKey::new();
         key_controller.connect_key_pressed(glib::clone!(@weak self as widget => @default-panic, move |_, key, _, _| {
-            if key == gdk::Key::Control_L {
-                widget.ctrl_down.set(true);
+            match key {
+                gdk::Key::Control_L | gdk::Key::Control_R => widget.ctrl_down.set(true),
+                gdk::Key::Shift_L | gdk::Key::Shift_R => widget.shift_down.set(true),
+                _ => ()
             }
             gtk::Inhibit(true)
         }));
 
         key_controller.connect_key_released(glib::clone!(@weak self as widget => @default-panic, move |_, key, _, _| 
-            if key == gdk::Key::Control_L {
-                widget.ctrl_down.set(false);
-                widget.set_left_osd_visible(false);
+            match key {
+                gdk::Key::Control_L | gdk::Key::Control_R => {
+                    widget.set_left_osd_visible(false);
+                    widget.ctrl_down.set(false)
+                },
+                gdk::Key::Shift_L | gdk::Key::Shift_R => widget.shift_down.set(false),
+                _ => ()
             }
         ));
         self.drawing_area.add_controller(&key_controller);
@@ -278,10 +285,50 @@ impl CircuitViewTemplate {
         self.left_osd_label.set_text(label);
     }
 
+    fn selection_shift_click(&self, selected: Vec<BlockID>, position: Vector2<i32>) -> bool {
+        self.plot_provider.borrow().with_mut(move |p| 
+            if let Some(block_id) = p.get_block_at(position) {
+                let mut selected = selected.clone();
+                if selected.contains(&block_id) {
+                    let index = selected.iter().position(|id| *id == block_id).unwrap();
+                    selected.remove(index);
+                    p.get_block_mut(block_id).unwrap().set_highlighted(false);
+                }
+                else {
+                    selected.push(block_id);
+                    p.get_block_mut(block_id).unwrap().set_highlighted(true);
+                }
+                p.set_selection(Selection::Many(selected));
+                
+                true
+            }
+            else {
+                false
+            }
+        ).unwrap_or(false)
+    }
+
     fn drag_begin(&self, position: Vector2<i32>) {
-        if let Some(Selection::MoveBlock(block)) = self.plot_provider.borrow().with(|p| p.selection().clone()) {
-            self.application.borrow()
-                .new_action(Action::NewBlock(self.plot_provider.borrow().clone(), block.clone()));
+        let selection = self.plot_provider.borrow().with(|p| p.selection().clone());
+        match selection {
+            Some(Selection::MoveBlock(block)) =>
+                self.application.borrow()
+                    .new_action(Action::NewBlock(self.plot_provider.borrow().clone(), block.clone())),
+            Some(Selection::Many(block_ids)) => 
+                if self.shift_down.get() {
+                    if self.selection_shift_click(block_ids, position) {
+                        self.drawing_area.queue_draw();
+                        return;
+                    }
+                }
+            Some(Selection::Single(block_id, _)) =>
+                if self.shift_down.get() {
+                    if self.selection_shift_click(vec![block_id], position) {
+                        self.drawing_area.queue_draw();
+                        return;
+                    }
+                }
+            _ => ()   
         }
 
         self.plot_provider.borrow().with_mut(|plot| {
