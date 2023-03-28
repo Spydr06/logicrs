@@ -284,6 +284,10 @@ impl SelectionField for Plot {
         &self.selection
     }
 
+    fn selection_mut(&mut self) -> &mut Selection {
+        &mut self.selection
+    }
+
     fn set_selection(&mut self, selection: Selection) {
         self.selection = selection;
     }

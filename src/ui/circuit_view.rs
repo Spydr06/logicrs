@@ -119,7 +119,7 @@ impl CircuitViewTemplate {
 
     fn init_mouse(&self) {
         let mouse_controller = gtk::EventControllerMotion::new();
-        mouse_controller.connect_motion(glib::clone!(@weak self as widget => move |_, x, y| widget.mouse_position.set(Vector2(x, y))));
+        mouse_controller.connect_motion(glib::clone!(@weak self as widget => move |_, x, y| widget.on_mouse_move(x, y)));
         self.drawing_area.add_controller(&mouse_controller);
 
         let gesture_drag = gtk::GestureDrag::builder().button(gdk::ffi::GDK_BUTTON_PRIMARY as u32).build();
@@ -227,6 +227,18 @@ impl CircuitViewTemplate {
         self.init_context_menu();
     }
 
+    fn on_mouse_move(&self, x: f64, y: f64) {
+        let position = Vector2(x, y);
+        self.mouse_position.set(position);
+
+        self.plot_provider.borrow_mut().with_mut(|plot|
+            if let Selection::MoveBlock(block) = plot.selection_mut() {
+                block.set_position(VectorCast::cast(self.renderer.borrow().screen_to_world(position)));
+                self.drawing_area.queue_draw();
+            }
+        );
+    }
+
     fn context_menu(&self, x: f64, y: f64) {        
         let position = self.renderer.borrow().screen_to_world(Vector2(x, y));
 
@@ -267,6 +279,11 @@ impl CircuitViewTemplate {
     }
 
     fn drag_begin(&self, position: Vector2<i32>) {
+        if let Some(Selection::MoveBlock(block)) = self.plot_provider.borrow().with(|p| p.selection().clone()) {
+            self.application.borrow()
+                .new_action(Action::NewBlock(self.plot_provider.borrow().clone(), block.clone()));
+        }
+
         self.plot_provider.borrow().with_mut(|plot| {
             plot.unhighlight();
             match plot.get_block_at(position) {

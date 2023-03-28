@@ -1,6 +1,6 @@
 use gtk::{prelude::*, subclass::prelude::*, glib, gdk, gio};
 
-use crate::{application::{Application, action::Action}, simulator::*, renderer::vector::Vector2};
+use crate::{application::{Application, selection::*, action::Action}, simulator::*, renderer::vector::Vector2};
 
 macro_rules! add_menu_item {
     ($model: expr, $name: expr, $action: expr, $value: expr) => {
@@ -173,7 +173,7 @@ impl ModuleListTemplate {
             if let Some(module) = project.module(&name) && let Some(plot) = application.imp().current_plot() {
                 let block = Block::new(&module, Vector2(0, 0));
                 drop(project);
-                application.new_action(Action::NewBlock(plot, block));
+                plot.with_mut(move |p| p.set_selection(Selection::MoveBlock(block.clone())));
             }
         }));
         item.add_controller(&left_click_gesture);

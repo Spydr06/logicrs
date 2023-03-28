@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-use crate::{renderer::{Renderable, COLOR_THEME, vector::Vector2}, simulator::{Plot, BlockID}};
+use crate::{renderer::{Renderable, COLOR_THEME, vector::Vector2}, simulator::{Plot, Block, BlockID}};
 use std::cmp;
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -9,6 +9,7 @@ pub enum Selection {
     Many(Vec<BlockID>),
     Area(Vector2<i32>, Vector2<i32>),
     MouseEvent(BlockID),
+    MoveBlock(Block),
     Connection {
         block_id: BlockID,
         output: u8,
@@ -31,7 +32,7 @@ impl Default for Selection {
 }
 
 impl Renderable for Selection {
-    fn render<R>(&self, renderer: &R, _data: &Plot) -> Result<(), R::Error>
+    fn render<R>(&self, renderer: &R, data: &Plot) -> Result<(), R::Error>
         where R: crate::renderer::Renderer {
 
         match self {
@@ -57,6 +58,7 @@ impl Renderable for Selection {
                     .curve_to(offset.0, offset.1, *end)
                     .stroke().map(|_| ())
             }
+            Self::MoveBlock(block) => block.render(renderer, data),
             _ => Ok(())
         }
     }
@@ -64,6 +66,7 @@ impl Renderable for Selection {
 
 pub trait SelectionField {
     fn selection(&self) -> &Selection;
+    fn selection_mut(&mut self) -> &mut Selection;
     fn set_selection(&mut self, selection: Selection);
     fn select_all(&mut self);
 
