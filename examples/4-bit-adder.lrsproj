@@ -1,5 +1,5 @@
 {
-    "tps": 10,
+  "tps": 10,
   "modules": {
     "Half-Adder": {
       "name": "Half-Adder",

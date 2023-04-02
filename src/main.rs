@@ -10,6 +10,7 @@ mod simulator;
 mod config;
 mod fatal;
 mod project;
+mod export;
 
 #[macro_use]
 extern crate log;
@@ -19,6 +20,13 @@ extern crate lazy_static;
 
 use adw::prelude::ApplicationExtManual;
 use application::Application;
+
+trait FileExtension {
+    const FILE_EXTENSION: &'static str;
+    const FILE_PATTERN: &'static str;
+
+    fn file_filter() -> gtk::FileFilter;
+}
 
 fn main() {
     env_logger::init();

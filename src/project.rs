@@ -1,7 +1,7 @@
 use std::{collections::*, sync::*, fs::{OpenOptions, File}, io::{Write, BufReader}};
 use serde::{Serialize, Deserialize, ser::SerializeStruct};
 use gtk::{gio, prelude::FileExt};
-use crate::{simulator::{*, builtin::BUILTINS}, renderer::vector::Vector2};
+use crate::{simulator::{*, builtin::BUILTINS}, renderer::vector::Vector2, FileExtension};
 
 pub type ProjectRef = Arc<Mutex<Project>>;
 
@@ -25,21 +25,24 @@ impl Serialize for Project {
         let mut state = serializer.serialize_struct("Project", 2)?;
         state.serialize_field("modules", &HashMap::<&String, &Module>::from_iter(self.modules.iter().filter(|(_, module)| !module.builtin())))?;
         state.serialize_field("main_plot", &self.main_plot)?;
+        state.serialize_field("tps", &self.tps)?;
         state.end()
     }
 }
 
-impl Project {
-    pub const FILE_EXTENSION: &'static str = "lrsproj";
-    pub const FILE_PATTERN: &'static str = "*.lrsproj";
+impl FileExtension for Project {
+    const FILE_EXTENSION: &'static str = "lrsproj";
+    const FILE_PATTERN: &'static str = "*.lrsproj";
 
-    pub fn file_filter() -> gtk::FileFilter {
+    fn file_filter() -> gtk::FileFilter {
         let filter = gtk::FileFilter::new();
         filter.set_name(Some("LogicRs project files"));
         filter.add_pattern(Self::FILE_PATTERN);
         filter
     }
+}
 
+impl Project {
     pub fn new(modules: Vec<Module>) -> Self {
         Self {
             modules: modules.iter().map(|module| (module.name().to_owned(), module.clone())).collect(),
@@ -91,6 +94,10 @@ impl Project {
 
     pub fn modules_mut(&mut self) -> &mut HashMap<String, Module> {
         &mut self.modules
+    }
+
+    pub fn add_existing_module(&mut self, module: Module) {
+        self.modules.insert(module.name().clone(), module);
     }
 
     pub fn add_module(&mut self, mut module: Module) {
@@ -147,5 +154,19 @@ impl Project {
 
     pub fn set_tps(&mut self, tps: i32) {
         self.tps = tps
+    }
+
+    pub fn collect_dependencies(&self, mod_name: &String, modules: &mut HashMap<String, Module>) {
+        self.modules.get(mod_name)
+            .map(|module| module.plot())
+            .flatten()
+            .map(|plot| plot.blocks()
+            .iter()
+            .for_each(|(_, block)| {
+                if let Some(module) = self.modules.get(block.module_id()).filter(|m| !m.builtin() && !modules.contains_key(m.name())) {
+                    modules.insert(module.name().clone(), module.clone());
+                    self.collect_dependencies(module.name(), modules);
+                }
+            }));
     }
 }

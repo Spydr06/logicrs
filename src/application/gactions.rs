@@ -1,5 +1,5 @@
 use super::*;
-use crate::{fatal::*, project::Project, simulator::Simulator};
+use crate::{fatal::*, project::Project, simulator::Simulator, FileExtension, export::ModuleFile};
 
 #[derive(Default, Clone, Copy)]
 enum Theme {
@@ -82,7 +82,7 @@ impl<'a> From<&GAction<'a>> for gio::SimpleAction {
 }
 
 lazy_static! {
-    pub(super) static ref ACTIONS: [GAction<'static>; 19] = [
+    pub(super) static ref ACTIONS: [GAction<'static>; 21] = [
         GAction::new("quit", &["<primary>Q", "<primary>W"], None, None, Application::gaction_quit),
         GAction::new("about", &["<primary>comma"], None, None, Application::gaction_about),  
         GAction::new("save", &["<primary>S"], None, None, Application::gaction_save),
@@ -101,7 +101,9 @@ lazy_static! {
         GAction::new("edit-module", &[], Some(glib::VariantTy::STRING), None, Application::gaction_edit_module),
         GAction::new("search-module", &["<primary>F"], None, None, Application::gaction_search_module),
         GAction::new("change-theme", &[], None, Some((glib::VariantTy::BYTE, Theme::SystemPreference.to_variant())), Application::gaction_change_theme),
-        GAction::new("change-tick-speed", &[], None, Some((glib::VariantTy::INT32, Simulator::DEFAULT_TICKS_PER_SECOND.to_variant())), Application::gaction_change_tps)
+        GAction::new("change-tick-speed", &[], None, Some((glib::VariantTy::INT32, Simulator::DEFAULT_TICKS_PER_SECOND.to_variant())), Application::gaction_change_tps),
+        GAction::new("export-module", &[], Some(glib::VariantTy::STRING), None, Application::gaction_export_module),
+        GAction::new("import-module", &[], None, None, Application::gaction_import_module)
     ];
 }
 
@@ -224,6 +226,93 @@ impl Application {
         action.set_state(&new.to_variant());
     }
 
+    fn gaction_export_module(self, _: &gio::SimpleAction, parameter: Option<&glib::Variant>) {
+        let module_id = parameter
+            .expect("could not get module paramerter")
+            .get::<String>()
+            .expect("the parameter needs  to be of type `String`");
+
+        let window = self.active_window().unwrap();
+        let export_dialog = gtk::FileChooserNative::builder()
+            .transient_for(&window)
+            .modal(true)
+            .title(&format!("Export `{module_id}` As"))
+            .action(gtk::FileChooserAction::Save)
+            .accept_label("Save")
+            .filter(&ModuleFile::file_filter())
+            .cancel_label("Cancel")
+            .build();
+
+        export_dialog.connect_response({
+            let file_chooser = RefCell::new(Some(export_dialog.clone()));
+            glib::clone!(@weak self as app, @weak window => move |_, response| {
+                if let Some(file_chooser) = file_chooser.take() {
+                    if response != gtk::ResponseType::Accept {
+                        return;
+                    }
+                    if let Some(file) = file_chooser.files().snapshot().into_iter().nth(0) {
+                        let file: gio::File = file
+                            .downcast()
+                            .expect("unexpected type returned from file chooser");
+                        if !file.query_exists(gio::Cancellable::NONE) {
+                            file.create(gio::FileCreateFlags::NONE, gio::Cancellable::NONE).unwrap_or_die();
+                        }
+                        let app_template = app.imp();
+                        let mod_file = ModuleFile::from_existing(&app_template.project().lock().unwrap(), module_id.clone()).unwrap();
+                        if let Err(msg) = mod_file.export(&file) {
+                            dialogs::run(app, window, msg, dialogs::basic_error);
+                        }
+                    }
+                } else {
+                    warn!("got file chooser response more than once");
+                }
+            })
+        });
+
+        export_dialog.show();
+    }
+
+    fn gaction_import_module(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
+        let window = self.active_window().unwrap();
+
+        let open_dialog = gtk::FileChooserNative::builder()
+            .transient_for(&window)
+            .modal(true)
+            .title("Import Module")
+            .action(gtk::FileChooserAction::Open)
+            .accept_label("Open")
+            .cancel_label("Cancel")
+            .filter(&ModuleFile::file_filter())
+            .build();
+        
+        open_dialog.connect_response({
+            let file_chooser = RefCell::new(Some(open_dialog.clone()));
+            glib::clone!(@weak self as app => move |_, response| {
+                if let Some(file_chooser) = file_chooser.take() {
+                    if response != gtk::ResponseType::Accept {
+                        return;
+                    }
+                    for file in file_chooser.files().snapshot().into_iter() {
+                        let file: gio::File = file
+                            .downcast()
+                            .expect("unexpected type returned from file chooser");
+                        let app = app.clone();
+                        if let Err(message) = ModuleFile::import(&file)
+                            .map(|mod_file| mod_file.merge(&app)).flatten() {
+                                let window = app.active_window().unwrap();
+                                dialogs::run(app, window, message, dialogs::basic_error);
+                        }
+                    }
+                }
+                else {
+                    warn!("got file chooser response after window was freed");
+                }
+            })
+        });
+        
+        open_dialog.show();
+    }
+
     pub(super) fn close_current_file<F>(&self, after: F)
     where
         F: Fn(&str) + 'static,
@@ -308,7 +397,7 @@ impl Application {
             
             open_dialog.connect_response({
                 let file_chooser = RefCell::new(Some(open_dialog.clone()));
-                glib::clone!(@weak app => move |_, response| {
+                glib::clone!(@weak app, @weak window => move |_, response| {
                     if let Some(file_chooser) = file_chooser.take() {
                         if response != gtk::ResponseType::Accept {
                             return;
@@ -319,7 +408,10 @@ impl Application {
                                 .expect("unexpected type returned from file chooser");
                             match Project::load_from(&file) {
                                 Ok(project) => app.imp().set_project(project, Some(file)),
-                                _ => error!("Error opening file")
+                                Err(error) => {
+                                    dialogs::run(app, window, format!("Error opening `{}`: {}", file.path().unwrap().to_str().unwrap(), error), dialogs::basic_error);
+                                    break;
+                                }
                             }
                         }
                     }
