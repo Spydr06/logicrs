@@ -5,3 +5,5 @@ vendor/
 gtk4-rs/
 .vs/
 *.zip
+*.AppImage
+*.lrsmod

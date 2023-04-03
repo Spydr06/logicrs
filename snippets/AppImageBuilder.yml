@@ -1,0 +1,14 @@
+version: 1
+
+AppDir:
+  path: ./logicrs.AppDir
+  
+  app_info:
+    id: com.spydr06.logicrs
+    name: logicrs
+    icon: logicrs
+    version: '0.1'
+    exec: usr/bin/logicrs
+
+AppImage:
+  arch: x86_64

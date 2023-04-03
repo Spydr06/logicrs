@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=LogicRs
+GenericName=LogicRs
+Comment=Logic Simulator
+Exec=AppRun
+Icon=logicrs
+Terminal=false
+Categories=X-programming;X-coding;X-education;
+Keywords=math;logic;programming;coding;education;
