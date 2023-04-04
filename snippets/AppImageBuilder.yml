@@ -10,5 +10,12 @@ AppDir:
     version: '0.1'
     exec: usr/bin/logicrs
 
+  runtime:
+    env:
+      APPDIR_LIBRARY_PATH: '$APPDIR/usr/lib/x86_64-linux-gnu:$APPDIR/lib/x86_64-linux-gnu:$APPDIR/usr/lib:$APPDIR/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders'
+      GTK_EXE_PREFIX: $APPDIR/usr
+      GTK_DATA_PREFIX: $APPDIR
+      XDG_DATA_DIRS: $APPDIR/usr/share:$XDG_DATA_DIRS
+
 AppImage:
   arch: x86_64

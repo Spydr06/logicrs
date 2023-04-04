@@ -15,13 +15,13 @@
   </gresource>
   <!-- Icons -->
   <gresource prefix="/com/spydr06/logicrs/icons/scalable/actions/">
-    <file compressed="true" preprocess="xml-stripblanks" alias="zoom-in-symbolic.svg">style/icons/zoom-in-symbolic.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="zoom-out-symbolic.svg">style/icons/zoom-out-symbolic.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="zoom-original-symbolic.svg">style/icons/zoom-original-symbolic.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="right-large-symbolic.svg">style/icons/right-large-symbolic.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="left-large-symbolic.svg">style/icons/left-large-symbolic.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="module-symbolic.svg">style/icons/module-symbolic.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="grid-symbolic.svg">style/icons/grid-symbolic.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="small-x-symbolic.svg">style/icons/small-x-symbolic.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="zoom-in-symbolic.svg">style/icons/Adwaita/scalable/zoom-in-symbolic.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="zoom-out-symbolic.svg">style/icons/Adwaita/scalable/zoom-out-symbolic.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="zoom-original-symbolic.svg">style/icons/Adwaita/scalable/zoom-original-symbolic.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="right-large-symbolic.svg">style/icons/Adwaita/scalable/right-large-symbolic.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="left-large-symbolic.svg">style/icons/Adwaita/scalable/left-large-symbolic.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="module-symbolic.svg">style/icons/Adwaita/scalable/module-symbolic.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="grid-symbolic.svg">style/icons/Adwaita/scalable/grid-symbolic.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="small-x-symbolic.svg">style/icons/Adwaita/scalable/small-x-symbolic.svg</file>
   </gresource>
 </gresources>
