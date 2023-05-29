@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-use crate::{renderer::{Renderable, COLOR_THEME, vector::Vector2}, simulator::{Plot, Block, BlockID}};
+use crate::{renderer::{Renderable, COLOR_THEME, vector::Vector2}, simulator::{Plot, Block, BlockID}, id::Id};
 use std::cmp;
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -71,6 +71,6 @@ pub trait SelectionField {
     fn select_all(&mut self);
 
     fn unhighlight(&mut self);
-    fn selected(&self) -> Vec<uuid::Uuid>;
+    fn selected(&self) -> Vec<Id>;
     fn highlight_area(&mut self);
 }

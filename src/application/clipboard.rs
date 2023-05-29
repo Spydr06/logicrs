@@ -1,4 +1,4 @@
-use crate::{simulator::*, renderer::vector::*};
+use crate::{simulator::*, renderer::vector::*, id::Id};
 use serde::{Serialize, Deserialize};
 
 use super::{action::Action, selection::*};
@@ -123,7 +123,7 @@ impl Pasteable<Vector2<f64>> for (Vec<Block>, Vec<Connection>) {
 
         self.0.iter_mut().for_each(|block| {
             let old_id = block.id();
-            let new_id = crate::new_uuid();
+            let new_id = Id::new();
             block.set_id(new_id);
             block.set_position(block.position() + offset);
             block.set_highlighted(true);
@@ -140,7 +140,7 @@ impl Pasteable<Vector2<f64>> for (Vec<Block>, Vec<Connection>) {
 
         self.1.iter_mut().for_each(|connection| {
             let old_id = connection.id();
-            let new_id = crate::new_uuid();
+            let new_id = Id::new();
             connection.set_id(new_id);
 
             self.0.iter_mut().for_each(|block|

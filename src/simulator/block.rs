@@ -1,6 +1,6 @@
 use std::{f64, cmp, collections::{HashSet, HashMap}};
 
-use crate::{renderer::{*, vector::Vector2}, application::selection::SelectionField};
+use crate::{renderer::{*, vector::Vector2}, application::selection::SelectionField, id::Id};
 use serde::{Serialize, Deserialize};
 
 use super::*;
@@ -10,7 +10,7 @@ pub enum Connector {
     Output(u8)
 }
 
-pub type BlockID = uuid::Uuid;
+pub type BlockID = Id;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Block {
@@ -43,7 +43,7 @@ impl Block {
     pub fn new_sized(module: &&Module, position: Vector2<i32>, unique: bool, num_inputs: u8, num_outputs: u8) -> Self {
         let name = module.name().clone();
         Self {
-            id: crate::new_uuid(),
+            id: Id::new(),
             position,
             size: Vector2(
                 cmp::max(75, (name.len() * 10) as i32),

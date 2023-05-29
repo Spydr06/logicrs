@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::simulator::{*, builtin::BUILTINS};
+use crate::{simulator::{*, builtin::BUILTINS}, id::Id};
 
 use serde::{Serialize, Deserialize};
 
@@ -30,8 +30,8 @@ impl Custom {
     fn new(plot: Plot) -> Self {
         Self {
             plot,
-            input_block: uuid::Uuid::default(),
-            output_block: uuid::Uuid::default(),
+            input_block: Id::default(),
+            output_block: Id::default(),
             cache: HashMap::new()
         }
     }

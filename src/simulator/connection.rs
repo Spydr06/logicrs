@@ -1,9 +1,9 @@
-use crate::renderer::{*, vector::Vector2};
+use crate::{renderer::{*, vector::Vector2}, id::Id};
 use super::*;
 use serde::{Serialize, Deserialize};
 use std::f64;
 
-pub type ConnectionID = uuid::Uuid;
+pub type ConnectionID = Id;
 
 #[derive(Copy, Clone)]
 pub enum Port {
@@ -43,7 +43,7 @@ impl Connection {
 
     pub fn new(from: Linkage, to: Linkage) -> Self {
         Self {
-            id: crate::new_uuid(),
+            id: Id::new(),
             from,
             to,
             active: false
