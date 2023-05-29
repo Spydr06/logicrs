@@ -59,12 +59,12 @@ lazy_static! {
 
         builtins.insert("Or", Builtin::new(
             Module::new_builtin("Or", Category::Gate, 2, 1, Decoration::Label(String::from("≥1"))),
-            |input, _| (input > 0) as u128
+            |input, _| (input != 0b00) as u128
         ));
 
         builtins.insert("Nor", Builtin::new(
             Module::new_builtin("Nor", Category::Gate, 2, 1, Decoration::NotLabel(String::from("≥1"))),
-            |input, _| (input == 0) as u128
+            |input, _| (input == 0b00) as u128
         ));
 
         builtins.insert("Not", Builtin::new(
