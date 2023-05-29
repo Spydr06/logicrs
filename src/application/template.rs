@@ -163,8 +163,6 @@ impl ApplicationTemplate {
         let mut locked = self.project.lock().unwrap();
         if let Some(module) = locked.module(module_name) {
             let owned_module = module.to_owned();
-            drop(module);
-
             let remove_dependencies = |plot: &mut Plot| {
                 let delete = plot
                     .blocks_mut()
@@ -193,7 +191,6 @@ impl ApplicationTemplate {
         if let Some(module) = project.module(&module_name) {
             let module_name = module.name().clone();
             let provider = PlotProvider::Module(self.project.clone(), module_name);
-            drop(module);
             drop(project);
             self.window.borrow().as_ref().unwrap().panel().open_tab(provider);
         }

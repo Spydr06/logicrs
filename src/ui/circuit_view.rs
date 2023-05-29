@@ -240,7 +240,15 @@ impl CircuitViewTemplate {
 
         self.plot_provider.borrow_mut().with_mut(|plot|
             if let Selection::MoveBlock(block) = plot.selection_mut() {
-                block.set_position(VectorCast::cast(self.renderer.borrow().screen_to_world(position)));
+
+                let mut position = VectorCast::cast(self.renderer.borrow().screen_to_world(position));
+                
+                let editor_mode = self.editor_mode.borrow();
+                if matches!(*editor_mode, EditorMode::Grid) {
+                    position = position / GRID_SIZE.into() * GRID_SIZE.into();    
+                }
+                
+                block.set_position(position);
                 self.drawing_area.queue_draw();
             }
         );
@@ -261,7 +269,7 @@ impl CircuitViewTemplate {
                             plot.set_selection(Selection::Single(index, start_position));
                         }
 
-                        drop(plot);
+                        //drop(plot);
 
                         self.context_menu.set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
                         self.context_menu.popup();

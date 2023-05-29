@@ -1,4 +1,4 @@
-use crate::{simulator::Module, project::Project, FileExtension, ui::dialogs, application::Application};
+use crate::{simulator::Module, project::Project, FileExtension, application::Application};
 
 use serde::{Serialize, Deserialize};
 use gtk::{gio, prelude::FileExt, subclass::prelude::ObjectSubclassIsExt};
