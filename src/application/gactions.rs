@@ -242,7 +242,8 @@ impl Application {
             .filter(&ModuleFile::file_filter())
             .cancel_label("Cancel")
             .build();
-
+        
+        export_dialog.set_current_name(&format!("{module_id}.lrsmod"));
         export_dialog.connect_response({
             let file_chooser = RefCell::new(Some(export_dialog.clone()));
             glib::clone!(@weak self as app, @weak window => move |_, response| {
@@ -437,7 +438,8 @@ impl Application {
             .filter(&Project::file_filter())
             .cancel_label("Cancel")
             .build();
-    
+        
+        save_dialog.set_current_name("new-project.lrsproj");
         save_dialog.connect_response({
             let file_chooser = RefCell::new(Some(save_dialog.clone()));
             glib::clone!(@weak self as app => move |_, response| {
