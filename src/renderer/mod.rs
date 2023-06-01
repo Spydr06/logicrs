@@ -38,6 +38,8 @@ pub trait Renderer: Default {
     fn set_color(&self, color: &Color) -> &Self;
     fn set_line_width(&self, width: f64) -> &Self;
     fn set_font_size(&self, size: f64) -> &Self;
+    fn set_editor_mode(&mut self, mode: EditorMode);
+    fn editor_mode(&self) -> EditorMode;
 
     fn screen_space(&self) -> ScreenSpace {
         Vector2(

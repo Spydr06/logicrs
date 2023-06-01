@@ -13,7 +13,8 @@ pub struct CairoRenderer {
     translation: Vector2<f64>,
     original_translation: Vector2<f64>,
     font: FontFace,
-    context: Option<Context>
+    context: Option<Context>,
+    editor_mode: EditorMode
 }
 
 impl CairoRenderer {
@@ -24,6 +25,7 @@ impl CairoRenderer {
             translation: Vector2::default(),
             original_translation: Vector2::default(),
             context: None,
+            editor_mode: EditorMode::default(),
             font: FontFace::toy_create("Cascadia Code", gtk::cairo::FontSlant::Normal, gtk::cairo::FontWeight::Normal).unwrap()
         }
     }
@@ -56,25 +58,28 @@ impl Renderer for CairoRenderer {
 
     fn callback(&mut self, plot: &Plot, mode: EditorMode, _area: &DrawingArea, context: &Self::Context, width: i32, height: i32) -> Result<&mut Self, Self::Error> {
         self.set_size(Vector2(width, height)).set_context(Some(context.clone()));     
+        self.set_editor_mode(mode);
         if width == 0 || height == 0 {
             return Ok(self);
         }
 
-     //   let screen_center = (width as f64 / 2., height as f64 / 2.);
-//
-     //   context.translate(screen_center.0, screen_center.1);
+        // renderer prelude
+        context.set_antialias(Antialias::Default);
         context.translate(self.translation.x(), self.translation.y());
         context.scale(self.scale, self.scale);
+        
+        context.set_font_face(&self.font);
+        context.set_font_size(DEFAULT_FONT_SIZE);
 
-        context.set_antialias(Antialias::Default);
+        // fill background
         let (bg_color_r, bg_color_g, bg_color_b, _) = unsafe { COLOR_THEME.bg_color };
         context.set_source_rgb(bg_color_r, bg_color_g, bg_color_b);
         context.paint()?;
 
-        context.set_font_face(&self.font);
-        context.set_font_size(DEFAULT_FONT_SIZE);
-
+        // draw the editor grid if enabled
         mode.render(self, plot)?;
+        
+        // draw the actual contents of the editor
         plot.render(self, plot)?;
 
         // render selection
@@ -212,5 +217,15 @@ impl Renderer for CairoRenderer {
             context.line_to(position.0 as f64, position.1 as f64);
         }
         self
+    }
+
+    #[inline]
+    fn set_editor_mode(&mut self, mode: EditorMode) {
+        self.editor_mode = mode;
+    }
+
+    #[inline]
+    fn editor_mode(&self) -> EditorMode {
+        self.editor_mode
     }
 }

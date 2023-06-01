@@ -1,4 +1,4 @@
-use crate::{renderer::{*, vector::Vector2}, id::Id};
+use crate::{renderer::{*, vector::Vector2}, id::Id, application::editor::EditorMode};
 use super::*;
 use serde::{Serialize, Deserialize};
 use std::f64;
@@ -126,13 +126,23 @@ impl Renderable for Connection {
         }
         let start = from.unwrap().get_connector_pos(Connector::Output(self.from.port));
         let end = to.unwrap().get_connector_pos(Connector::Input(self.to.port));
-        let offset = (
-            Vector2(start.0 + ((end.0 - start.0) as f32 * 0.7) as i32, start.1),
-            Vector2(end.0 + ((start.0 - end.0) as f32 * 0.7) as i32, end.1),
-        );
-        renderer.move_to(start)
-            .curve_to(offset.0, offset.1, end)
-            .stroke()?;
+
+        match renderer.editor_mode() {
+            EditorMode::Normal => {
+                let offset = (
+                    Vector2(start.0 + ((end.0 - start.0) as f32 * 0.7) as i32, start.1),
+                    Vector2(end.0 + ((start.0 - end.0) as f32 * 0.7) as i32, end.1),
+                );
+                renderer.move_to(start)
+                    .curve_to(offset.0, offset.1, end)
+                    .stroke()?;
+            }
+            EditorMode::Grid => {
+                renderer.move_to(start)
+                    .line_to(end)
+                    .stroke()?;
+            }
+        }
 
         let connector_color = unsafe { if self.active { &COLOR_THEME.enabled_fg_color } else { &COLOR_THEME.disabled_fg_color } };
         let connector = |position, highlighted|
