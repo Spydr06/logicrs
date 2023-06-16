@@ -259,14 +259,14 @@ impl CircuitViewTemplate {
 
         self.plot_provider.borrow_mut().with_mut(|plot| {
             match plot.get_block_at(VectorCast::cast(position)) {
-                Some(index) => {
-                    if let Some(block) = plot.get_block_mut(index) {
+                Some(id) => {
+                    if let Some(block) = plot.get_block_mut(id) {
                         block.set_highlighted(true);
                         let start_position = block.position();
 
                         if let Selection::None = plot.selection() {
                             plot.unhighlight();
-                            plot.set_selection(Selection::Single(index, start_position));
+                            plot.set_selection(Selection::Single(Selectable::Block(id), start_position));
                         }
 
                         //drop(plot);
@@ -293,21 +293,34 @@ impl CircuitViewTemplate {
         self.left_osd_label.set_text(label);
     }
 
-    fn selection_shift_click(&self, selected: Vec<BlockID>, position: Vector2<i32>) -> bool {
+    fn selection_shift_click(&self, selected: Vec<Selectable>, position: Vector2<i32>) -> bool {
         self.plot_provider.borrow().with_mut(move |p| 
             if let Some(block_id) = p.get_block_at(position) {
                 let mut selected = selected.clone();
-                if selected.contains(&block_id) {
-                    let index = selected.iter().position(|id| *id == block_id).unwrap();
+                if let Some(index) = selected.iter().position(|sel| sel == &Selectable::Block(block_id)) {
                     selected.remove(index);
                     p.get_block_mut(block_id).unwrap().set_highlighted(false);
                 }
                 else {
-                    selected.push(block_id);
                     p.get_block_mut(block_id).unwrap().set_highlighted(true);
+                    selected.push(Selectable::Block(block_id));
                 }
                 p.set_selection(Selection::Many(selected));
                 
+                true
+            }
+            else if let Some(waypoint_id) = p.get_waypoint_at(position) {
+                let mut selected = selected.clone();
+                if let Some(index) = selected.iter().position(|sel| sel == &Selectable::Waypoint(waypoint_id.clone())) {
+                    selected.remove(index);
+                    p.get_connection_mut(waypoint_id.connection_id()).unwrap().get_segment_mut(waypoint_id.location()).unwrap().set_highlighted(false);
+                }   
+                else {
+                    p.get_connection_mut(waypoint_id.connection_id()).unwrap().get_segment_mut(waypoint_id.location()).unwrap().set_highlighted(true);
+                    selected.push(Selectable::Waypoint(waypoint_id));
+                }
+                p.set_selection(Selection::Many(selected));
+
                 true
             }
             else {
@@ -341,32 +354,37 @@ impl CircuitViewTemplate {
 
         self.plot_provider.borrow().with_mut(|plot| {
             plot.unhighlight();
-            match plot.get_block_at(position) {
-                Some(index) => {
-                    if let Some(block) = plot.get_block_mut(index) {
-                        if block.on_mouse_press(position) {
-                            plot.set_selection(Selection::MouseEvent(index));
-                            plot.add_block_to_update(index);
-                        }
-                        else if let Some(i) = block.position_on_connection(position, false) {
-                            let start = block.get_connector_pos(Connector::Output(i));
-                            plot.set_selection(Selection::Connection {
-                                block_id: index,
-                                output: i,
-                                start,
-                                position: start
-                            });
-                        }
-                        else {
-                            let start_position = block.position();
-                            block.set_highlighted(true);
-                            plot.set_selection(Selection::Single(index, start_position));
-                        }
-                    }
+            if let Some(id) = plot.get_block_at(position) {
+                let block = plot.get_block_mut(id).unwrap();
+
+                if block.on_mouse_press(position) {
+                    plot.set_selection(Selection::MouseEvent(id));
+                    plot.add_block_to_update(id);
                 }
-                _ => {
-                    plot.set_selection(Selection::Area(position, position));
+                else if let Some(i) = block.position_on_connection(position, false) {
+                    let start = block.get_connector_pos(Connector::Output(i));
+                    plot.set_selection(Selection::Connection(ConnectionSource::Block(id, i), start, start));
                 }
+                else {
+                    let start_position = block.position();
+                    block.set_highlighted(true);
+                    plot.set_selection(Selection::Single(Selectable::Block(id), start_position));
+                }
+            }
+            else if let Some(id) = plot.get_waypoint_at(position) {
+                let waypoint = plot.get_connection_mut(id.connection_id()).and_then(|c| c.get_segment_mut(id.location())).unwrap();
+                let start = *waypoint.position().unwrap();
+
+                if self.shift_down.take() {
+                    waypoint.set_highlighted(true);
+                    plot.set_selection(Selection::Single(Selectable::Waypoint(id), start))
+                }
+                else {
+                    plot.set_selection(Selection::Connection(ConnectionSource::Waypoint(id), start, start))                    
+                }
+            }
+            else {
+                plot.set_selection(Selection::Area(position, position));
             }
         });
     
@@ -376,26 +394,38 @@ impl CircuitViewTemplate {
     fn drag_update(&self, offset: Vector2<i32>) {
         self.plot_provider.borrow().with_mut(|plot|
             match plot.selection().clone() {
-                Selection::Single(index, Vector2(start_x, start_y)) => {
+                Selection::Single(selected, Vector2(start_x, start_y)) => {
                     let editor_mode = self.editor_mode.borrow();
-
-                    let block = plot.get_block_mut(index);
-                    if block.is_none() {
-                        plot.set_selection(Selection::None);
-                        return;
-                    }
-
                     let new_position = if matches!(*editor_mode, EditorMode::Grid) {
                         (Vector2(start_x, start_y) + offset) / GRID_SIZE.into() * GRID_SIZE.into()
                     } else {
                         Vector2(start_x, start_y) + offset
                     };
 
-                    block.unwrap().set_position(new_position);
+                    match selected {
+                        Selectable::Block(id) => {
+                            let block = plot.get_block_mut(id);
+                            if block.is_none() {
+                                plot.set_selection(Selection::None);
+                                return;
+                            }
+                        
+                            block.unwrap().set_position(new_position);
+                        }
+                        Selectable::Waypoint(id) => {
+                            let waypoint = plot.get_connection_mut(id.connection_id()).and_then(|c| c.get_segment_mut(id.location()));
+                            if waypoint.is_none() {
+                                plot.set_selection(Selection::None);
+                                return;
+                            }
+
+                            waypoint.unwrap().set_position(new_position);
+                        }
+                    }
                     self.drawing_area.queue_draw();
                 }
-                Selection::Connection { block_id, output, start, position: _ } => {
-                    plot.set_selection(Selection::Connection { block_id, output, start, position: start + offset});
+                Selection::Connection(source, start, _) => {
+                    plot.set_selection(Selection::Connection(source, start, start + offset));
                     self.drawing_area.queue_draw();
                 }
                 Selection::Area(area_start, _) => {
@@ -411,40 +441,71 @@ impl CircuitViewTemplate {
         let plot_provider = self.plot_provider.borrow();
         let selection = plot_provider.with(|plot| plot.selection().clone()).unwrap();
         match selection {
-            Selection::Single(index, Vector2(start_x, start_y)) => {
+            Selection::Single(selected, Vector2(start_x, start_y)) => {
                 if offset.0 == 0 && offset.1 == 0 {
                     return;
                 }
 
                 let editor_mode = self.editor_mode.borrow();
+                let new_position = if matches!(*editor_mode, EditorMode::Grid) {
+                    (Vector2(start_x, start_y) + offset) / GRID_SIZE.into() * GRID_SIZE.into()
+                } else {
+                    Vector2(start_x, start_y) + offset
+                };
 
-                let action = plot_provider.with(|plot| {
-                    let block = plot.get_block(index).unwrap();
-                    let new_position = if matches!(*editor_mode, EditorMode::Grid) {
-                        (Vector2(start_x, start_y) + offset) / GRID_SIZE.into() * GRID_SIZE.into()
-                    } else {
-                        Vector2(start_x, start_y) + offset
-                    };
+                match selected {
+                    Selectable::Block(block_id) => self.application.borrow().new_action(Action::MoveBlock(plot_provider.clone(), block_id, Vector2(start_x, start_y), new_position)),
+                    Selectable::Waypoint(id) => {
+                        let con_action = plot_provider.with_mut(|plot| {
+                            let block_id = plot.get_block_at(new_position)?;
+                            let port = plot.get_block(block_id)?.position_on_connection(new_position, true)?;
 
-                    Action::MoveBlock(plot_provider.clone(), block.id(), Vector2(start_x, start_y), new_position)
-                });
-
-                if let Some(action) = action {
-                    self.application.borrow().new_action(action);
+                            let segment = plot.get_connection(id.connection_id())?.get_segment(id.location())?;
+                            Some(Action::WaypointToConnection(plot_provider.clone(), id.clone(), segment.clone(), block_id, port))
+                        }).flatten();
+                        
+                        self.application.borrow().new_action(if let Some(con_action) = con_action {
+                            con_action
+                        }
+                        else {
+                            Action::MoveWaypoint(plot_provider.clone(), id, Vector2(start_x, start_y), new_position)
+                        })
+                    }
                 }
             },
-            Selection::Connection { block_id, output, start: _, position } => {
+            Selection::Connection(ConnectionSource::Block(block_id, output), _, position) => {
                 let connection = plot_provider.with_mut(|plot| {
                     plot.set_selection(Selection::None);
                     plot.get_block_at(position)
-                        .and_then(|block| plot.get_block(block).unwrap().position_on_connection(position, true).map(|i| (block, i)))
-                        .map(|(block, i)| Connection::new(Linkage { block_id, port: output }, Linkage { block_id: block, port: i }))
+                        .and_then(|id| plot.get_block(id)
+                            .unwrap().position_on_connection(position, true)
+                            .map(|i| (id, i)))
+                        .map_or_else(
+                            || Connection::new(Port::Output(block_id, output), vec![Segment::Waypoint(vec![], position, false)]),
+                            |(block, i)| Connection::new_basic(block_id, output, block, i )
+                        )
                 });
-
-                if let Some(connection) = connection.flatten() {
+                if let Some(connection) = connection {
                     self.application.borrow().new_action(Action::NewConnection(plot_provider.clone(), connection));
                 }
+
                 self.drawing_area.queue_draw()
+            }
+            Selection::Connection(ConnectionSource::Waypoint(segment_id), _, position) => {
+                let segment = plot_provider.with_mut(|plot| {
+                    plot.set_selection(Selection::None);
+                    if let Some((block_id, i)) = plot.get_block_at(position).and_then(|id| plot.get_block(id).unwrap().position_on_connection(position, true).map(|i| (id, i))) {
+                        Segment::Block(block_id, i)
+                    }   
+                    else {
+                        Segment::Waypoint(vec![], position, false)
+                    }                
+                });
+                if let Some(segment) = segment {
+                    self.application.borrow().new_action(Action::AddSegment(plot_provider.clone(), segment_id, segment, None))
+                }
+
+                self.drawing_area.queue_draw();
             }
             Selection::Area(_, _) => {
                 plot_provider.with_mut(|plot| plot.highlight_area());

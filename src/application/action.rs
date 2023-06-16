@@ -75,7 +75,10 @@ pub enum Action {
     NewBlock(PlotProvider, Block),
     PasteBlocks(PlotProvider, Vec<Block>, Vec<Connection>),
     MoveBlock(PlotProvider, BlockID, Vector2<i32>, Vector2<i32>),
+    MoveWaypoint(PlotProvider, SegmentID, Vector2<i32>, Vector2<i32>),
     NewConnection(PlotProvider, Connection),
+    WaypointToConnection(PlotProvider, SegmentID, Segment, BlockID, u8),
+    AddSegment(PlotProvider, SegmentID, Segment, Option<usize>),
     DeleteSelection(PlotProvider, Vec<Block>, Vec<Connection>),
     CreateModule(ProjectRef, Module),
     DeleteModule(ProjectRef, Module),
@@ -101,10 +104,47 @@ impl Action {
                 });
                 app.imp().rerender_editor();
             }
+            Self::MoveWaypoint(plot_provider, segment_id, _from, to) => {
+                plot_provider.with_mut(|plot| 
+                    if let Some(waypoint) = plot.get_connection_mut(segment_id.connection_id()).and_then(|c| c.get_segment_mut(segment_id.location())) {
+                        waypoint.set_position(*to);
+                    }
+                );
+                app.imp().rerender_editor();
+            }
             Self::NewConnection(plot_provider, connection) => {
                 plot_provider.with_mut(|plot| {
                     plot.add_connection(connection.clone());
                 });
+                app.imp().rerender_editor();
+            }
+            Self::WaypointToConnection(plot_provider, segment_id, _segment, block_id, block_port) => {
+                plot_provider.with_mut(|plot|
+                    if let Some(waypoint) = plot.get_connection_mut(segment_id.connection_id()).and_then(|c| c.get_segment_mut(segment_id.location())) {
+                        waypoint.convert(*block_id, *block_port);
+
+                        if let Some(block) = plot.get_block_mut(*block_id) {
+                            block.set_connection(Connector::Input(*block_port), Some(*segment_id.connection_id()));
+                        }
+                    }
+                );
+                app.imp().rerender_editor();
+            }
+            Self::AddSegment(plot_provider, segment_id, segment, index) => {
+                *index = plot_provider.with_mut(|plot|
+                    if let Some(root) = plot.get_connection_mut(segment_id.connection_id()).and_then(|c| c.get_segment_mut(segment_id.location())) {
+                        let index = root.add_segment(segment.clone());
+
+                        if let Segment::Block(block_id, port) = *segment && let Some(block) = plot.get_block_mut(block_id) {
+                            block.set_connection(Connector::Input(port), Some(*segment_id.connection_id()));
+                        }
+
+                        index
+                    }
+                    else {
+                        None
+                    }
+                ).flatten();
                 app.imp().rerender_editor();
             }
             Self::DeleteSelection(plot_provider, blocks, incoming_connections) => {
@@ -154,14 +194,49 @@ impl Action {
                 app.imp().rerender_editor();
             }
             Self::MoveBlock(plot_provider, block_id, from, _to) => {
-                plot_provider.with_mut(|plot| if let Some(block) = plot.get_block_mut(*block_id) {
-                    block.set_position(*from);
-                });
+                plot_provider.with_mut(|plot| 
+                    if let Some(block) = plot.get_block_mut(*block_id) {
+                        block.set_position(*from);
+                    }
+                );
+                app.imp().rerender_editor();
+            }
+            Self::MoveWaypoint(plot_provider, segment_id, from, _to) => {
+                plot_provider.with_mut(|plot| 
+                    if let Some(waypoint) = plot.get_connection_mut(segment_id.connection_id()).and_then(|c| c.get_segment_mut(segment_id.location())) {
+                        waypoint.set_position(*from);
+                    }
+                );
                 app.imp().rerender_editor();
             }
             Self::NewConnection(plot_provider, connection) => {
                 plot_provider.with_mut(|plot| {
                     plot.remove_connection(connection.id());
+                });
+                app.imp().rerender_editor();
+            }
+            Self::WaypointToConnection(plot_provider, segment_id, segment, block_id, block_port) => {
+                plot_provider.with_mut(|plot| {
+                    if let Some(waypoint) = plot.get_connection_mut(segment_id.connection_id()).and_then(|c| c.get_segment_mut(segment_id.location())) {
+                        *waypoint = segment.clone();
+                    }
+
+                    if let Some(block) = plot.get_block_mut(*block_id) {
+                        block.set_connection(Connector::Input(*block_port), None);
+                    }
+                });
+                app.imp().rerender_editor();
+            }
+            Self::AddSegment(plot_provider, segment_id, segment, index) => {
+                plot_provider.with_mut(|plot| {
+                    if let Some(root) = plot.get_connection_mut(segment_id.connection_id()).and_then(|c| c.get_segment_mut(segment_id.location())) &&
+                        let Some(index) = index {
+                        root.remove_segment(*index);
+                    }
+
+                    if let Segment::Block(block_id, port) = *segment && let Some(block) = plot.get_block_mut(block_id) {
+                        block.set_connection(Connector::Input(port), None);
+                    }
                 });
                 app.imp().rerender_editor();
             }

@@ -84,7 +84,7 @@ impl Block {
         &self.name
     }
 
-    pub fn is_in_area(&self, area: ScreenSpace) -> bool {
+    pub fn is_in_area(&self, area: &Vector2<Vector2<f64>>) -> bool {
         !(
             self.position.0 > area.1.0 as i32 || 
             self.position.1 > area.1.1 as i32 ||
@@ -133,10 +133,10 @@ impl Block {
         }
     }
 
-    pub fn set_connection(&mut self, port: Port, connection: Option<ConnectionID>) -> &mut Self {
-        match port {
-            Port::Input(index) => self.inputs[index as usize] = connection,
-            Port::Output(index) => self.outputs[index as usize] = connection
+    pub fn set_connection(&mut self, connector: Connector, connection: Option<ConnectionID>) -> &mut Self {
+        match connector {
+            Connector::Input(index) => self.inputs[index as usize] = connection,
+            Connector::Output(index) => self.outputs[index as usize] = connection
         }
         self
     }
@@ -244,10 +244,10 @@ impl Block {
             for (i, connection_id) in self.outputs.iter().enumerate() {
                 if let Some(connection) = connection_id.map(|connection_id| connections.get_mut(&connection_id)).flatten() {
                     let active = (outputs >> i as u128) & 1 != 0;
-                    if active != connection.is_active() {
-                        to_update.insert(connection.destination_id());
+                    //if active != connection.is_active() {
+                        to_update.extend(connection.destinations().iter().map(|dest| dest.block_id()));
                         connection.set_active(active);
-                    }
+                    //}
                 }
             }
         }

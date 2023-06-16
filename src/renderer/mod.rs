@@ -7,7 +7,7 @@ pub mod vector;
 pub use {cairo::*, color::*};
 use crate::{simulator::Plot, application::editor::EditorMode};
 
-use self::vector::Vector2;
+use self::vector::*;
 
 pub const DEFAULT_SCALE: f64 = 1.;
 pub const MINIMUM_SCALE: f64 = 0.1;

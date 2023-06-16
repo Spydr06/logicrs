@@ -147,6 +147,15 @@ impl Plot {
         self.blocks.get_mut(&id)
     }
 
+    pub fn get_waypoint_at(&self, position: Vector2<i32>) -> Option<SegmentID> {
+        for connection in self.connections.values() {
+            if let Some(waypoint) = connection.waypoint_at(position) {
+                return Some(waypoint)
+            }
+        }
+        None
+    }
+
     pub fn get_block_at(&self, position: Vector2<i32>) -> Option<BlockID> {
         for (i, block) in self.blocks.iter() {
             if block.touches(position) {
@@ -165,33 +174,42 @@ impl Plot {
         &mut self.connections
     }
 
-    pub fn get_connection(&self, id: ConnectionID) -> Option<&Connection> {
-        self.connections.get(&id)
+    pub fn get_connection(&self, id: &ConnectionID) -> Option<&Connection> {
+        self.connections.get(id)
+    }
+
+    pub fn get_connection_mut(&mut self, id: &ConnectionID) -> Option<&mut Connection> {
+        self.connections.get_mut(id)
     }
 
     pub fn add_connection(&mut self, connection: Connection) {
-        let origin = self.blocks.get_mut(&connection.from().block_id).expect("faulty origin block");
-        origin.set_connection(connection.to_port(), Some(connection.id()));
+        let origin = self.blocks.get_mut(&connection.origin().block_id()).expect("faulty origin block");
+        origin.set_connection(connection.origin().into(), Some(connection.id()));
 
-        let destination = self.blocks.get_mut(&connection.to().block_id).expect("faulty destination block");
-        destination.set_connection(connection.from_port(), Some(connection.id()));
+        for destination in connection.destinations() {
+            let block = self.blocks.get_mut(&destination.block_id()).expect("faulty destination block");
+            block.set_connection(destination.into(), Some(connection.id()));
+        }
 
-        self.to_update.insert(connection.origin_id());
+        self.to_update.insert(connection.origin().block_id());
         self.connections.insert(connection.id(), connection);
     }
 
     pub fn remove_connection(&mut self, id: ConnectionID) -> Option<Connection> {
         if let Some(c) = self.connections.get(&id) {
             let mut connection = c.clone();
-            let refactor = |plot: &mut Plot, id: BlockID, port: Port| {
-                if let Some(block) = plot.get_block_mut(id) {
-                    block.set_connection(port, None);
+            let mut refactor = |port: Port| {
+                if let Some(block) = self.get_block_mut(port.block_id()) {
+                    block.set_connection(port.into(), None);
                 }
-                plot.to_update.insert(id);
+                self.to_update.insert(port.block_id());
             };
 
-            refactor(self, connection.destination_id(), connection.to_port());
-            refactor(self, connection.origin_id(), connection.from_port());
+            refactor(connection.origin());
+
+            for destination in connection.destinations() {
+                refactor(destination);
+            }
 
             self.connections.remove(&id);
             connection.set_active(false);
@@ -266,7 +284,7 @@ impl Renderable for Plot {
         let screen_space = renderer.screen_space();
 
         // render all blocks
-        for (_, block) in self.blocks.iter().filter(|(_, block)| block.is_in_area(screen_space)) {
+        for (_, block) in self.blocks.iter().filter(|(_, block)| block.is_in_area(&screen_space)) {
             block.render(renderer, plot)?;
         }
 
@@ -294,22 +312,39 @@ impl SelectionField for Plot {
 
     fn unhighlight(&mut self) {
         match self.selection.clone() {
-            Selection::Single(id, _) => {
-                self.get_block_mut(id).map(|b| b.set_highlighted(false));
+            Selection::Single(item, _) => {
+                match item {
+                    Selectable::Block(id) if let Some(block) = self.get_block_mut(id) =>  block.set_highlighted(false),
+                    Selectable::Waypoint(id) if let Some(waypoint) = self.get_connection_mut(id.connection_id())
+                                                                                                    .and_then(|c| c.get_segment_mut(id.location())) =>
+                        waypoint.set_highlighted(false),
+                    _ => ()
+                }
             },
             Selection::Many(ids) => {
-                ids.iter().for_each(|id| {
-                    self.get_block_mut(*id).map(|b| b.set_highlighted(false));
+                ids.iter().for_each(|item| {
+                    match item {
+                        Selectable::Block(id) if let Some(block) = self.get_block_mut(*id) => block.set_highlighted(false),
+                        Selectable::Waypoint(id) if let Some(waypoint) = self.get_connection_mut(id.connection_id())
+                                                                                                        .and_then(|c| c.get_segment_mut(id.location())) =>
+                            waypoint.set_highlighted(false),
+                        _ => ()
+                    }
                 });
             },
-            Selection::Area(_, _) => self.blocks_mut().iter_mut().for_each(|(_, v)| v.set_highlighted(false)),
+            Selection::Area(_, _) => {
+                self.blocks_mut().iter_mut().for_each(|(_, v)| v.set_highlighted(false));
+
+                fn unhighlight_segment(segment: &mut Segment) { segment.set_highlighted(false) }
+                self.connections_mut().iter_mut().for_each(|(_, c)| c.for_each_mut_segment(unhighlight_segment))
+            }
             _ => ()
         }
 
         self.selection = Selection::None
     }
 
-    fn selected(&self) -> Vec<BlockID> {
+    fn selected(&self) -> Vec<Selectable> {
         match self.selection.clone() {
             Selection::Single(id, _) => vec![id],
             Selection::Many(ids) => ids,
@@ -321,16 +356,24 @@ impl SelectionField for Plot {
         if let Selection::Area(selection_start, selection_end) = self.selection {
             let mut selected = Vec::new();
 
-            let x1 = cmp::min(selection_start.0, selection_end.0);
-            let y1 = cmp::min(selection_start.1, selection_end.1);
-            let x2 = cmp::max(selection_start.0, selection_end.0);
-            let y2 = cmp::max(selection_start.1, selection_end.1);
+            let min = Vector2::new(cmp::min(selection_start.0, selection_end.0) as f64, cmp::min(selection_start.1, selection_end.1) as f64);
+            let max = Vector2::new(cmp::max(selection_start.0, selection_end.0) as f64, cmp::max(selection_start.1, selection_end.1) as f64);
+            let area = Vector2::new(min, max);
             
             for (_, block) in self.blocks_mut().iter_mut() {
-                if block.is_in_area(((x1 as f64, y1 as f64).into(), (x2 as f64, y2 as f64).into()).into()) {
+                if block.is_in_area(&area) {
                     block.set_highlighted(true);
-                    selected.push(block.id());
+                    selected.push(Selectable::Block(block.id()));
                 }
+            }
+
+            for (_, connection) in self.connections_mut().iter_mut() {
+                connection.for_each_mut_segment_id(|segment, id| {
+                    if segment.is_in_area(&area) {
+                        segment.set_highlighted(true);
+                        selected.push(Selectable::Waypoint(id.clone()))
+                    }
+                })
             }
 
             self.selection = Selection::Many(selected)
@@ -338,7 +381,10 @@ impl SelectionField for Plot {
     }
 
     fn select_all(&mut self) {
-        self.selection = Selection::Many(self.blocks.keys().map(|id| *id).collect());
+        self.selection = Selection::Many(self.blocks.keys().map(|id| Selectable::Block(*id)).collect());
         self.blocks.iter_mut().for_each(|(_, block)| block.set_highlighted(true));
+
+        fn highlight_segment(segment: &mut Segment) { segment.set_highlighted(true) }
+        self.connections.iter_mut().for_each(|(_, connection)| connection.for_each_mut_segment(highlight_segment));
     }
 }

@@ -1,4 +1,4 @@
-use super::*;
+use super::{*, selection::Selectable};
 use crate::{fatal::*, project::Project, simulator::Simulator, FileExtension, export::ModuleFile};
 
 #[derive(Default, Clone, Copy)]
@@ -141,8 +141,12 @@ impl Application {
     fn gaction_delete_block(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
         if let Some(plot_provider) = self.imp().current_plot() {
             let blocks = plot_provider.with_mut(|plot| 
-                plot.selected().iter().map(|id| plot.get_block(*id).unwrap().to_owned()).collect()
-            ).unwrap_or_default();
+                plot.selected().iter().filter_map(|selected| {
+                    match selected {
+                        Selectable::Block(id) => Some(plot.get_block(*id).unwrap().to_owned()),
+                        _ => None
+                    }
+                }).collect()).unwrap_or_default();
             self.new_action(Action::DeleteSelection(plot_provider, blocks, vec![]));
         }
     }

@@ -1,27 +1,43 @@
 use serde::{Serialize, Deserialize};
 
-use crate::{renderer::{Renderable, COLOR_THEME, vector::Vector2}, simulator::{Plot, Block, BlockID}, id::Id};
+use crate::{renderer::{Renderable, COLOR_THEME, vector::Vector2}, simulator::{Plot, Block, BlockID, SegmentID}};
 use std::cmp;
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
+pub enum Selectable {
+    Block(BlockID),
+    Waypoint(SegmentID)
+}
+
+impl Selectable {
+    pub fn block_id(&self) -> Option<BlockID> {
+        match self {
+            Self::Block(block_id) => Some(*block_id),
+            _ => None
+        }
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
+pub enum ConnectionSource {
+    Block(BlockID, u8),
+    Waypoint(SegmentID)
+}
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum Selection {
-    Single(BlockID, Vector2<i32>),
-    Many(Vec<BlockID>),
+    Single(Selectable, Vector2<i32>),
+    Many(Vec<Selectable>),
     Area(Vector2<i32>, Vector2<i32>),
     MouseEvent(BlockID),
     MoveBlock(Block),
-    Connection {
-        block_id: BlockID,
-        output: u8,
-        start: Vector2<i32>,
-        position: Vector2<i32>,
-    },
+    Connection(ConnectionSource, Vector2<i32>, Vector2<i32>),
     None
 }
 
 impl Selection {
     pub fn connecting(&self) -> bool {
-        matches!(self, Self::Connection {..})
+        matches!(self, Self::Connection {..} | Self::Single(Selectable::Waypoint(..), ..))
     }
 }
 
@@ -46,7 +62,7 @@ impl Renderable for Selection {
                     .set_color(unsafe { &COLOR_THEME.accent_fg_color })
                     .stroke().map(|_| ())
             }
-            Self::Connection {start, position: end , ..} => {
+            Self::Connection(_, start, end) => {
                 let offset = Vector2(
                     Vector2(start.0 + ((end.0 - start.0) as f32 * 0.7) as i32, start.1),
                     Vector2(end.0 + ((start.0 - end.0) as f32 * 0.7) as i32, end.1),
@@ -71,6 +87,6 @@ pub trait SelectionField {
     fn select_all(&mut self);
 
     fn unhighlight(&mut self);
-    fn selected(&self) -> Vec<Id>;
+    fn selected(&self) -> Vec<Selectable>;
     fn highlight_area(&mut self);
 }

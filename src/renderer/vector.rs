@@ -31,6 +31,12 @@ impl VectorCast<i32> for Vector2<f64> {
     }
 }
 
+impl VectorCast<f64> for Vector2<i32> {
+    fn cast(value: Self) -> Vector2<f64> {
+        Vector2(value.0 as f64, value.1 as f64)
+    }
+}
+
 impl<T: Copy> From<T> for Vector2<T> {
     fn from(value: T) -> Self {
         Self(value, value)

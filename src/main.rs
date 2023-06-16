@@ -2,6 +2,7 @@
 #![feature(let_chains)]
 #![feature(result_flattening)]
 #![feature(const_trait_impl)]
+#![feature(if_let_guard)]
 
 mod application;
 mod ui;

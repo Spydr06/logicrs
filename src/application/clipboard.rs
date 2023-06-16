@@ -31,7 +31,7 @@ impl Clipboard {
             data.prepare_pasting(position);
             plot_provider.with_mut(|plot| {
                 plot.unhighlight();
-                plot.set_selection(Selection::Many(data.0.iter().map(|block| block.id()).collect()));
+                plot.set_selection(Selection::Many(data.0.iter().map(|block| Selectable::Block(block.id())).collect()));
             });
             return Ok(Action::PasteBlocks(plot_provider.to_owned(), data.0, data.1));
         }
@@ -43,7 +43,7 @@ impl Clipboard {
 impl From<&Plot> for Clipboard {
     fn from(plot: &Plot) -> Self {
         match plot.selection() {
-            Selection::Single(block_id, _) => {
+            Selection::Single(Selectable::Block(block_id), _) => {
                 if let Some(block) = plot.get_block(*block_id) && !block.unique() {
                     let mut block = block.clone();
                     block.prepare_copying(());
@@ -56,7 +56,8 @@ impl From<&Plot> for Clipboard {
             Selection::Many(blocks) => {
                 let selection = blocks
                     .iter()
-                    .filter_map(|block_id| plot.get_block(*block_id).filter(|block| !block.unique()));
+                    .filter_map(|selectable| selectable.block_id())
+                    .filter_map(|block_id| plot.get_block(block_id).filter(|block| !block.unique()));
                 let block_ids = selection.clone().map(|block| block.id()).collect::<Vec<BlockID>>();
                 let blocks = selection.map(|block| block.clone()).collect::<Vec<Block>>();
                 let mut data = (blocks, Vec::new());
@@ -81,19 +82,20 @@ impl Copyable<(&Plot, Vec<BlockID>)> for (Vec<Block>, Vec<Connection>) {
 
         blocks.iter_mut().for_each(|block| {
             block.outputs_mut().iter_mut().for_each(|c| {
-                if let Some(connection) = c.and_then(|id| plot.get_connection(id)) {
-                    if block_ids.contains(&connection.destination_id()) {
-                        connections.push(connection.clone());
+                if let Some(connection) = c.and_then(|id| plot.get_connection(&id)) {
+                    let mut connection = connection.clone();
+                    if connection.remove_unselected_branches(&block_ids) {
+                        *c = None;
                     }
                     else {
-                        *c = None
+                        connections.push(connection);
                     }
                 }
             });
 
             block.inputs_mut().iter_mut().for_each(|c| {
-                if let Some(connection) = c.and_then(|id| plot.get_connection(id)) {
-                    if !block_ids.contains(&connection.origin_id()) {
+                if let Some(connection) = c.and_then(|id| plot.get_connection(&id)) {
+                    if !block_ids.contains(&connection.origin().block_id()) {
                         *c = None
                     }
                 }
@@ -122,20 +124,13 @@ impl Pasteable<Vector2<f64>> for (Vec<Block>, Vec<Connection>) {
         let offset = Vector2::cast(position) - min;
 
         self.0.iter_mut().for_each(|block| {
-            let old_id = block.id();
             let new_id = Id::new();
+            let old_id = block.id();
             block.set_id(new_id);
             block.set_position(block.position() + offset);
             block.set_highlighted(true);
 
-            self.1.iter_mut().for_each(|connection| {
-                if connection.origin_id() == old_id {
-                    connection.set_origin_id(new_id);
-                }
-                if connection.destination_id() == old_id {
-                    connection.set_destination_id(new_id);
-                }
-            });
+            self.1.iter_mut().for_each(|connection| connection.refactor_id(old_id, new_id));
         });
 
         self.1.iter_mut().for_each(|connection| {
