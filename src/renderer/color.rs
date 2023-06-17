@@ -1,12 +1,32 @@
-pub type Color = (f64, f64, f64, f64);
+pub type Color = (f32, f32, f32, f32);
 pub type Hex = u32;
 
-pub const fn hex_to_color(hex: Hex) -> (f64, f64, f64, f64) {
+pub trait IntoColor {
+    fn into_color(self) -> Color;
+}
+
+impl IntoColor for gtk::gdk::RGBA {
+    fn into_color(self) -> Color {
+        (self.red(), self.green(), self.blue(), self.alpha())
+    }
+}
+
+pub trait IntoRGBA {
+    fn into_rgba(&self) -> gtk::gdk::RGBA;
+}
+
+impl IntoRGBA for Color {
+    fn into_rgba(&self) -> gtk::gdk::RGBA {
+        gtk::gdk::RGBA::new(self.0 as f32, self.1 as f32, self.2 as f32, self.3 as f32)
+    }
+}
+
+pub const fn hex_to_color(hex: Hex) -> (f32, f32, f32, f32) {
     (
-        ((hex >> 16) & 0xff) as f64 / 255.0,
-        ((hex >> 8) & 0xff)  as f64 / 255.0,
-        (hex & 0xff)         as f64 / 255.0,
-        ((hex >> 24) & 0xff) as f64 / 255.0
+        ((hex >> 16) & 0xff) as f32 / 255.0,
+        ((hex >> 8) & 0xff)  as f32 / 255.0,
+        (hex & 0xff)         as f32 / 255.0,
+        ((hex >> 24) & 0xff) as f32 / 255.0
     )
 }
 

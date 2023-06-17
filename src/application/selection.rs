@@ -39,6 +39,14 @@ impl Selection {
     pub fn connecting(&self) -> bool {
         matches!(self, Self::Connection {..} | Self::Single(Selectable::Waypoint(..), ..))
     }
+
+    pub fn blocks(&self) -> Vec<BlockID> {
+        match self {
+            Self::Single(Selectable::Block(block_id), _) => vec![*block_id],
+            Self::Many(selected) => selected.iter().filter_map(|s| s.block_id()).collect(),
+            _ => vec![]
+        }
+    }
 }
 
 impl Default for Selection {

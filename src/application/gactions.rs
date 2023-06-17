@@ -82,7 +82,7 @@ impl<'a> From<&GAction<'a>> for gio::SimpleAction {
 }
 
 lazy_static! {
-    pub(super) static ref ACTIONS: [GAction<'static>; 21] = [
+    pub(super) static ref ACTIONS: [GAction<'static>; 22] = [
         GAction::new("quit", &["<primary>Q", "<primary>W"], None, None, Application::gaction_quit),
         GAction::new("about", &["<primary>comma"], None, None, Application::gaction_about),  
         GAction::new("save", &["<primary>S"], None, None, Application::gaction_save),
@@ -97,6 +97,7 @@ lazy_static! {
         GAction::new("cut", &["<primary>X"], None, None, Application::gaction_cut),
         GAction::new("paste", &["<primary>V"], None, None, Application::gaction_paste),
         GAction::new("select-all", &["<primary>A"], None, None, Application::gaction_select_all),
+        GAction::new("set-selection-color", &[], None, None, Application::gaction_set_selection_color),
         GAction::new("delete-module", &[], Some(glib::VariantTy::STRING), None, Application::gaction_delete_module),
         GAction::new("edit-module", &[], Some(glib::VariantTy::STRING), None, Application::gaction_edit_module),
         GAction::new("search-module", &["<primary>F"], None, None, Application::gaction_search_module),
@@ -181,6 +182,12 @@ impl Application {
     fn gaction_select_all(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
         self.imp().with_current_plot_mut(|plot| plot.select_all());
         self.imp().rerender_editor();
+    }
+
+    fn gaction_set_selection_color(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
+        if let Some(window) = self.active_window() {
+            dialogs::run(self, window, (), dialogs::select_border_color);
+        }
     }
 
     fn gaction_delete_module(self, _: &gio::SimpleAction, parameter: Option<&glib::Variant>) {

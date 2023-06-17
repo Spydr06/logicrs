@@ -39,6 +39,10 @@ impl CircuitView {
         let mouse_position = self.imp().mouse_position.get();
         self.imp().renderer.borrow().screen_to_world(mouse_position)
     }
+
+    pub fn fetch_border_color(&self) -> Option<Color> {
+        self.imp().border_color_enabled.is_active().then(|| self.imp().border_color_button.rgba().into_color())
+    }
 }
 
 #[derive(gtk::CompositeTemplate, Default)]
@@ -67,6 +71,12 @@ pub struct CircuitViewTemplate {
 
     #[template_child]
     left_osd_label: TemplateChild<gtk::Label>,
+
+    #[template_child]
+    border_color_enabled: TemplateChild<gtk::CheckButton>,
+
+    #[template_child]
+    border_color_button: TemplateChild<gtk::ColorButton>,
 
     renderer: RefCell<CairoRenderer>,
     plot_provider: RefCell<PlotProvider>,
@@ -232,6 +242,11 @@ impl CircuitViewTemplate {
         self.init_keyboard();
         self.init_scrolling();
         self.init_context_menu();
+
+        self.border_color_enabled.connect_toggled(glib::clone!(@weak self as widget => move |button| {
+            widget.border_color_button.set_sensitive(button.is_active());
+        }));
+        self.border_color_button.set_sensitive(false);
     }
 
     fn on_mouse_move(&self, x: f64, y: f64) {

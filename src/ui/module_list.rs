@@ -171,7 +171,8 @@ impl ModuleListTemplate {
             let project = application.imp().project().clone();
             let project = project.lock().unwrap();
             if let Some(module) = project.module(&name) && let Some(plot) = application.imp().current_plot() {
-                let block = Block::new(&module, Vector2(0, 0));
+                let border_color = application.imp().current_circuit_view().and_then(|view| view.fetch_border_color());
+                let block = Block::new(&module, Vector2(0, 0), border_color);
                 drop(project);
                 plot.with_mut(move |p| {
                     p.unhighlight();

@@ -47,6 +47,37 @@
           </object>
         </child>
         <child type="overlay">
+          <object class="GtkBox" id="color_osd_box">
+            <property name="halign">end</property>
+            <property name="valign">end</property>
+            <property name="orientation">horizontal</property>
+            <property name="spacing">4</property>
+            <style>
+              <class name="osd-box"></class>
+              <class name="color-osd-box"></class>
+              <class name="osd"/>
+            </style>
+            <child>
+              <object class="GtkCheckButton" id="border_color_enabled">
+              <property name="tooltip-text" translatable="yes">Enable custom border color</property>
+              <style>
+                <class name="color-osd-content"></class>
+                <class name="color-osd-start"></class>
+              </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkColorButton" id="border_color_button">
+                <property name="tooltip-text" translatable="yes">Border color</property>
+                <property name="rgba">#3a3a3a</property>
+                <style>
+                  <class name="color-osd-content"></class>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child type="overlay">
           <object class="GtkBox" id="osd_box">
             <property name="halign">end</property>
             <property name="valign">start</property>
@@ -127,6 +158,10 @@
       <item>
         <attribute name="label" translatable="yes">C_ut</attribute>
         <attribute name="action">app.cut</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_Set Color</attribute>
+        <attribute name="action">app.set-selection-color</attribute>
       </item>
     </section>
     <section>

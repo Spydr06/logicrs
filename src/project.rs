@@ -106,10 +106,10 @@ impl Project {
             let num_outputs = module.get_num_outputs();
             
             let input_module = self.modules.get(&*builtin::INPUT_MODULE_NAME).unwrap();
-            let input_block = Block::new_sized(&input_module, Vector2(50, 50), true, num_inputs,  num_inputs);
+            let input_block = Block::new_sized(&input_module, Vector2(50, 50), true, num_inputs,  num_inputs, None);
             
             let output_module = self.modules.get(&*builtin::OUTPUT_MODULE_NAME).unwrap();
-            let output_block = Block::new_sized(&output_module, Vector2(400, 50), true, num_outputs, num_outputs);
+            let output_block = Block::new_sized(&output_module, Vector2(400, 50), true, num_outputs, num_outputs, None);
 
             module.set_io_blocks(input_block.id(), output_block.id());
 

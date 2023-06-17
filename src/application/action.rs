@@ -1,4 +1,4 @@
-use crate::{simulator::*, config, project::ProjectRef, renderer::vector::Vector2};
+use crate::{simulator::*, config, project::ProjectRef, renderer::{vector::Vector2, Color}};
 
 use super::*;
 
@@ -79,6 +79,7 @@ pub enum Action {
     NewConnection(PlotProvider, Connection),
     WaypointToConnection(PlotProvider, SegmentID, Segment, BlockID, u8),
     AddSegment(PlotProvider, SegmentID, Segment, Option<usize>),
+    ChangeBorderColor(PlotProvider, Color, Vec<BlockID>, Vec<Option<Color>>),
     DeleteSelection(PlotProvider, Vec<Block>, Vec<Connection>),
     CreateModule(ProjectRef, Module),
     DeleteModule(ProjectRef, Module),
@@ -145,6 +146,22 @@ impl Action {
                         None
                     }
                 ).flatten();
+                app.imp().rerender_editor();
+            }
+            Self::ChangeBorderColor(plot_provider, new_color, block_ids, old_colors) => {
+                let old = plot_provider.with_mut(|plot| {
+                    block_ids.iter().map(|block_id| {
+                        plot.get_block_mut(*block_id).map(|block| {
+                            let old_color = *block.color();
+                            block.set_color(Some(*new_color));
+                            old_color
+                        })
+                    }).flatten().collect()
+                });
+                if let Some(old) = old {
+                    *old_colors = old;
+                }
+
                 app.imp().rerender_editor();
             }
             Self::DeleteSelection(plot_provider, blocks, incoming_connections) => {
@@ -238,6 +255,17 @@ impl Action {
                         block.set_connection(Connector::Input(port), None);
                     }
                 });
+                app.imp().rerender_editor();
+            }
+            Self::ChangeBorderColor(plot_provider, _new_color, block_ids, old_colors) => {
+                plot_provider.with_mut(|plot| {
+                    block_ids.iter().zip(old_colors).for_each(|(block_id, old_color)| {
+                        if let Some(block) = plot.get_block_mut(*block_id) {
+                            block.set_color(*old_color);
+                        }
+                    });
+                });
+
                 app.imp().rerender_editor();
             }
             Self::DeleteSelection(plot_provider, blocks, incoming_connections) => {

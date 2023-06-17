@@ -2,11 +2,11 @@ use adw::prelude::*;
 use gtk::{
     traits::DialogExt,
     subclass::prelude::ObjectSubclassIsExt,
-    ButtonsType, Entry, MessageDialog, ResponseType, Orientation, Box, 
+    ButtonsType, Entry, MessageDialog, ResponseType, Orientation, Box, ColorButton, Label, Align, 
 };
 
 use std::future::Future;
-use crate::{simulator::Module, application::{Application, action::Action}};
+use crate::{simulator::Module, application::{Application, action::Action, selection::SelectionField}, renderer::{COLOR_THEME, IntoRGBA, IntoColor}};
 
 fn create_new_module(app: Application, name: String, num_inputs: u8, num_outputs: u8) -> Result<(), String> {
     if name.is_empty() {
@@ -52,7 +52,7 @@ pub async fn new_module(app: Application, window: gtk::Window, _data: ()) {
         .max_length(Module::MAX_MODULE_NAME_LEN)
         .overwrite_mode(true)
         .build();
-        content.append(&name_input);
+    content.append(&name_input);
 
     let input_adjustment = gtk::Adjustment::new(2.0, 1.0, 129.0, 1.0, 1.0, 1.0);
     let input_chooser = gtk::SpinButton::builder()
@@ -129,8 +129,39 @@ pub async fn confirm_delete_module(app: Application, window: gtk::Window, module
     let answer = dialog.run_future().await;
     dialog.close();
 
-    if ResponseType::Yes == answer {
+    if answer == ResponseType::Yes  {
         app.imp().delete_module(&module_name);
+    }
+}
+
+pub async fn select_border_color(app: Application, window: gtk::Window, _data: ()) {
+    let dialog = MessageDialog::builder()
+        .transient_for(&window)
+        .modal(true)
+        .resizable(false)
+        .title("Select Border Color")
+        .buttons(ButtonsType::OkCancel)
+        .build();
+
+    let label = Label::builder().label("Border Color:").halign(Align::Start).hexpand(false).build();
+    let color_button = ColorButton::with_rgba(&unsafe { &COLOR_THEME.border_color }.into_rgba());
+
+    let content = dialog.content_area();
+    content.set_orientation(Orientation::Horizontal);
+    content.set_hexpand(true);
+    content.set_margin_start(12);
+    content.set_margin_end(12);
+    content.set_halign(Align::Start);
+    content.append(&label);
+    content.append(&color_button);
+
+    let answer = dialog.run_future().await;
+    dialog.close();
+
+    if answer == ResponseType::Ok && let Some(plot_provider) = app.imp().current_plot() && let Some(block_ids) = plot_provider.with_mut(|plot| plot.selection().blocks()) {
+        let color = color_button.rgba().into_color();
+        println!("here");
+        app.new_action(Action::ChangeBorderColor(plot_provider, color, block_ids, vec![]));
     }
 }
 

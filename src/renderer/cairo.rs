@@ -73,7 +73,7 @@ impl Renderer for CairoRenderer {
 
         // fill background
         let (bg_color_r, bg_color_g, bg_color_b, _) = unsafe { COLOR_THEME.bg_color };
-        context.set_source_rgb(bg_color_r, bg_color_g, bg_color_b);
+        context.set_source_rgb(bg_color_r as f64, bg_color_g as f64, bg_color_b as f64);
         context.paint()?;
 
         // draw the editor grid if enabled
@@ -122,7 +122,7 @@ impl Renderer for CairoRenderer {
     #[inline]
     fn set_color(&self, color: &Color) -> &Self {
         if let Some(context) = &self.context {
-            context.set_source_rgba(color.0, color.1, color.2, color.3);
+            context.set_source_rgba(color.0 as f64, color.1 as f64, color.2 as f64, color.3 as f64);
         }
         self
     }

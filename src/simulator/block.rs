@@ -31,6 +31,7 @@ pub struct Block {
     state: State,
     
     decoration: Decoration,
+    color: Option<Color>
 }
 
 impl Identifiable for Block {
@@ -40,7 +41,7 @@ impl Identifiable for Block {
 impl Block {
     pub const MAX_CONNECTIONS: u8 = 128;
 
-    pub fn new_sized(module: &&Module, position: Vector2<i32>, unique: bool, num_inputs: u8, num_outputs: u8) -> Self {
+    pub fn new_sized(module: &&Module, position: Vector2<i32>, unique: bool, num_inputs: u8, num_outputs: u8, color: Option<Color>) -> Self {
         let name = module.name().clone();
         Self {
             id: Id::new(),
@@ -57,11 +58,24 @@ impl Block {
             name,
             state: if module.builtin() { State::Direct(0) } else { State::Inherit(PlotState::default()) },
             decoration: module.decoration().clone(),
+            color
         }
     }
 
-    pub fn new(module: &&Module, position: Vector2<i32>) -> Self {
-        Self::new_sized(module, position, false, module.get_num_inputs(), module.get_num_outputs())
+    pub fn new(module: &&Module, position: Vector2<i32>, color: Option<Color>) -> Self {
+        Self::new_sized(module, position, false, module.get_num_inputs(), module.get_num_outputs(), color)
+    }
+
+    pub fn set_color(&mut self, mut color: Option<Color>) {
+        if let Some(c) = color && c == unsafe { COLOR_THEME.border_color } {
+            color = None
+        }
+
+        self.color = color;
+    }
+
+    pub fn color(&self) -> &Option<Color> {
+        &self.color
     }
 
     pub fn name(&self) -> &String {
@@ -264,12 +278,14 @@ impl Renderable for Block {
     fn render<R>(&self, renderer: &R, plot: &Plot) -> Result<(), R::Error>
         where R: Renderer 
     {
+        let border_color = self.color.as_ref().unwrap_or(unsafe { &COLOR_THEME.border_color });
+
         renderer.set_line_width(2.);
         renderer.rounded_rect(self.position, self.size, 5)
             .set_color(unsafe { &COLOR_THEME.block_bg_color }).fill()?;
 
         renderer.top_rounded_rect(self.position, Vector2(self.size.0, 25), 5)
-            .set_color(unsafe { &COLOR_THEME.border_color })
+            .set_color(border_color)
             .fill()?;
 
         renderer.move_to(Vector2(self.position.0 + 5, self.position.1 + 18))
@@ -279,7 +295,7 @@ impl Renderable for Block {
         renderer.rounded_rect(self.position, self.size, 5);
         match self.highlighted {
             true => renderer.set_color(unsafe { &COLOR_THEME.accent_fg_color }),
-            false => renderer.set_color(unsafe { &COLOR_THEME.border_color })    
+            false => renderer.set_color(border_color)    
         };
         renderer.stroke()?;
 
@@ -289,7 +305,7 @@ impl Renderable for Block {
                 .arc(position, 6., 0., f64::consts::TAU)
                 .set_color(unsafe {if show_suggestion && is_input { &COLOR_THEME.suggestion_fg_color } else { &COLOR_THEME.disabled_fg_color }} )
                 .fill_preserve()?
-                .set_color(unsafe {if self.highlighted { &COLOR_THEME.accent_fg_color } else { &COLOR_THEME.border_color }}).stroke();
+                .set_color(unsafe {if self.highlighted { &COLOR_THEME.accent_fg_color } else { border_color }}).stroke();
 
         renderer.set_line_width(1.);
         for (i, _) in self.inputs.iter().enumerate().filter(|(_, c)| c.is_none()) {
