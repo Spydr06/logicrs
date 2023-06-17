@@ -137,6 +137,11 @@ impl Pasteable<Vector2<f64>> for (Vec<Block>, Vec<Connection>) {
             let old_id = connection.id();
             let new_id = Id::new();
             connection.set_id(new_id);
+            connection.for_each_mut_segment(|segment| 
+                if let Some(position) = segment.position() {
+                    segment.set_position(*position + offset)
+                }
+            );
 
             self.0.iter_mut().for_each(|block|
                 block.connections_mut()

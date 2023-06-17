@@ -1,6 +1,6 @@
 use super::*;
 use crate::{renderer::{*, vector::Vector2}, application::selection::*, project::{ProjectRef, Project}};
-use std::{collections::{HashMap, HashSet}, cmp};
+use std::{collections::{HashMap, HashSet, BTreeSet}, cmp};
 use serde::{Serialize, Deserialize};
 
 #[derive(Clone, PartialEq, Eq, Hash)]
@@ -95,7 +95,7 @@ pub struct Plot {
     selection: Selection,
 
     #[serde(skip)]
-    to_update: HashSet<BlockID>
+    to_update: Vec<BlockID>
 }
 
 impl Identifiable for Plot {
@@ -109,7 +109,7 @@ impl Plot {
             connections: HashMap::new(),
             states: vec![PlotState::default()],
             selection: Selection::None,
-            to_update: HashSet::new()
+            to_update: Vec::new()
         }
     }
 
@@ -191,7 +191,7 @@ impl Plot {
             block.set_connection(destination.into(), Some(connection.id()));
         }
 
-        self.to_update.insert(connection.origin().block_id());
+        self.to_update.push(connection.origin().block_id());
         self.connections.insert(connection.id(), connection);
     }
 
@@ -202,7 +202,7 @@ impl Plot {
                 if let Some(block) = self.get_block_mut(port.block_id()) {
                     block.set_connection(port.into(), None);
                 }
-                self.to_update.insert(port.block_id());
+                self.to_update.push(port.block_id());
             };
 
             refactor(connection.origin());
@@ -237,19 +237,20 @@ impl Plot {
     }
 
     pub fn add_block_to_update(&mut self, block: BlockID) {
-        self.to_update.insert(block);
+        self.to_update.push(block);
     }
 
-    pub fn to_update(&self) -> &HashSet<BlockID> {
+    pub fn to_update(&self) -> &Vec<BlockID> {
         &self.to_update
     }
 
-    pub fn to_update_mut(&mut self) -> &mut HashSet<BlockID> {
+    pub fn to_update_mut(&mut self) -> &mut Vec<BlockID> {
         &mut self.to_update
     }
 
     pub fn simulate(&mut self, project: &mut Project, call_stack: &mut HashSet<String>) -> SimResult<bool> {
-        let mut updated = HashSet::new();
+        let mut updated = BTreeSet::new();
+        let mut queued = Vec::new();
         let mut changes = false;
 
         loop {
@@ -262,7 +263,8 @@ impl Plot {
             for block_id in to_update.iter() {
                 if updated.contains(block_id) {
                     // recursion detected
-                    // TODO: warn user about recursion
+                    info!("{block_id:?} is recursive!");
+                    queued.push(*block_id);
                     continue;
                 }
 
@@ -272,6 +274,8 @@ impl Plot {
                 }
             }
         }
+
+        self.to_update = queued;
 
         Ok(changes)
     }

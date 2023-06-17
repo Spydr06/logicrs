@@ -148,7 +148,7 @@ impl Application {
                         _ => None
                     }
                 }).collect()).unwrap_or_default();
-            self.new_action(Action::DeleteSelection(plot_provider, blocks, vec![]));
+            self.new_action(Action::DeleteSelection(plot_provider, blocks, vec![], vec![]));
         }
     }
 

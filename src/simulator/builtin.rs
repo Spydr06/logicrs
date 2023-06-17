@@ -41,12 +41,7 @@ lazy_static! {
             Module::new_builtin("High", Category::Basic, 0, 1, Decoration::Label("1".to_string())),
             |_, _| { std::u128::MAX }
         ));
-
-        builtins.insert("Junction", Builtin::new(
-            Module::new_builtin("Junction", Category::Basic, 1, 2, Decoration::None),
-            |input, _| [0, std::u128::MAX][input as usize]
-        ));
-
+        
         builtins.insert("And", Builtin::new(
             Module::new_builtin("And", Category::Gate, 2, 1, Decoration::Label(String::from("&"))),
             |input, _| (input == 0b11) as u128

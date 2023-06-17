@@ -19,6 +19,15 @@ impl From<bool> for EditorMode {
 // grid size in pixels at scale 1.0
 pub const GRID_SIZE: i32 = 25;
 
+impl EditorMode {
+    pub fn align(&self, position: Vector2<i32>) -> Vector2<i32> {
+        match self {
+            Self::Grid => position / GRID_SIZE.into() * GRID_SIZE.into(),
+            _ => position
+        }
+    }  
+}
+
 // defines at which point the grid doesn't get rendered anymore
 const SCALE_CUTOFF: f64 = 0.30; 
 

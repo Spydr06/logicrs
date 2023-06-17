@@ -40,7 +40,7 @@ impl Into<Connector> for Port {
     }
 }
 
-pub type SegmentLocation = Vec<u16>;
+pub type SegmentLocation = Vec<Id>;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct SegmentID {
@@ -49,7 +49,7 @@ pub struct SegmentID {
 }
 
 impl SegmentID {
-    fn new(connection_id: ConnectionID, location: Vec<u16>) -> Self {
+    fn new(connection_id: ConnectionID, location: Vec<Id>) -> Self {
         Self { connection_id, location }
     }
 
@@ -67,7 +67,7 @@ const WAYPOINT_HITBOX_SIZE: i32 = 10;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Segment {
     Block(BlockID, u8),
-    Waypoint(Vec<Segment>, Vector2<i32>, bool)
+    Waypoint(HashMap<Id, Segment>, Vector2<i32>, bool)
 }
 
 impl Segment {
@@ -100,19 +100,20 @@ impl Segment {
         }
     }
 
-    pub fn add_segment(&mut self, segment: Segment) -> Option<usize> {
+    pub fn add_segment(&mut self, segment: Segment) -> Option<Id> {
         if let Self::Waypoint(segments, ..) = self {
-            segments.push(segment);
-            Some(segments.len() - 1)
+            let id = Id::new();
+            segments.insert(id, segment);
+            Some(id)
         }
         else {
             None
         }
     }
 
-    pub fn remove_segment(&mut self, index: usize) {
+    pub fn remove_segment(&mut self, id: &Id) {
         if let Self::Waypoint(segments, ..) = self {
-            segments.remove(index);
+            segments.remove(id);
         }
     }
 
@@ -133,7 +134,7 @@ impl Segment {
             Self::Waypoint(segments, position, highlighted) => {
                 render_line(active, start, *position, renderer)?;
 
-                for segment in segments {
+                for (_, segment) in segments {
                     segment.render(active, *position, renderer, plot)?;
                 }
 
@@ -148,7 +149,7 @@ impl Segment {
                 ports.push(Port::Input(*block_id, *port))
             }
             Self::Waypoint(segments, ..) => {
-                segments.iter().for_each(|segment| segment.destinations(ports))
+                segments.iter().for_each(|(_, segment)| segment.destinations(ports))
             }
         }
     }
@@ -164,7 +165,7 @@ impl Segment {
         match self {
             Self::Block(block_id, ..) => !selection.contains(block_id),
             Self::Waypoint(segments, ..) => {    
-                segments.retain_mut(|segment| !segment.remove_unselected_branches(selection));
+                segments.retain(|_, segment| !segment.remove_unselected_branches(selection));
                 self.is_empty()
             }
         }
@@ -173,19 +174,21 @@ impl Segment {
     fn refactor_id(&mut self, old_id: BlockID, new_id: BlockID) {
         match self {
             Self::Block(block_id, ..) if *block_id == old_id => *block_id = new_id,
-            Self::Waypoint(segments, ..) => segments.iter_mut().for_each(|segment| segment.refactor_id(old_id, new_id)),
+            Self::Waypoint(segments, ..) => segments.iter_mut().for_each(|(_, segment)| segment.refactor_id(old_id, new_id)),
             _ => ()
         }
     }
 
-    fn waypoint_at(&self, position: Vector2<i32>, location: &mut Vec<u16>) -> bool {
+    fn waypoint_at(&self, position: Vector2<i32>, location: &mut SegmentLocation) -> bool {
         let hitbox_sz = Vector2(WAYPOINT_HITBOX_SIZE, WAYPOINT_HITBOX_SIZE);
         match self {
             Self::Waypoint(_, waypoint_pos, _) if position > *waypoint_pos - hitbox_sz && position < *waypoint_pos + hitbox_sz => true,
-            Self::Waypoint(segments, ..) => segments.iter().enumerate().any(|(i, segment)| {
-                location.push(i as u16);
+            Self::Waypoint(segments, ..) => segments.iter().any(|(id, segment)| {
+                location.push(*id);
                 let result = segment.waypoint_at(position, location);
-                location.pop();
+                if !result {
+                    location.pop();
+                }
                 result
             }),
             _ => false
@@ -198,7 +201,7 @@ impl Segment {
             Self::Waypoint(segments, ..) => {
                 *depth += 1;
                 if let Some(next) = location.get(*depth) {
-                    segments[*next as usize].get_segment_mut(location, depth)
+                    segments.get_mut(next).and_then(|segment| segment.get_segment_mut(location, depth))
                 }
                 else {
                     Some(unsafe { &mut *mut_ref_ptr })
@@ -213,7 +216,7 @@ impl Segment {
             Self::Waypoint(segments, ..) => {
                 *depth += 1;
                 if let Some(next) = location.get(*depth) {
-                    segments[*next as usize].get_segment(location, depth)
+                    segments.get(next).and_then(|segment| segment.get_segment(location, depth))
                 }
                 else {
                     Some(self)
@@ -228,7 +231,7 @@ impl Segment {
     {
         func(self);
         if let Self::Waypoint(segments, ..) = self {
-            for segment in segments {
+            for (_, segment) in segments {
                 segment.for_each_mut_segment(func);
             }
         }
@@ -240,8 +243,8 @@ impl Segment {
         let mut_ref_ptr = self as *mut _;
         if let Self::Waypoint(segments, ..) = self {
             func(unsafe { &mut *mut_ref_ptr }, waypoint_id);
-            for (i, segment) in segments.iter_mut().enumerate() {
-                waypoint_id.location.push(i as u16);
+            for (id, segment) in segments.iter_mut() {
+                waypoint_id.location.push(*id);
                 segment.for_each_mut_segment_id(func, waypoint_id);
                 waypoint_id.location.pop();
             }
@@ -254,7 +257,7 @@ pub struct Connection {
     id: ConnectionID,
     active: bool,
     origin: Port,
-    segments: Vec<Segment>
+    segments: HashMap<Id, Segment>
 }
 
 impl Identifiable for Connection {
@@ -269,7 +272,7 @@ impl Connection {
             id: Id::new(),
             active: false,
             origin,
-            segments
+            segments: segments.into_iter().map(|segment| (Id::new(), segment)).collect()
         }
     }
 
@@ -278,9 +281,11 @@ impl Connection {
             id: Id::new(),
             active: false,
             origin: Port::Output(origin_block, origin_port),
-            segments: vec![
-                Segment::Block(destination_block, destination_port)
-            ]
+            segments: {
+                let mut segments = HashMap::new();
+                segments.insert(Id::new(), Segment::Block(destination_block, destination_port));
+                segments
+            }
         }
     }
 
@@ -310,7 +315,7 @@ impl Connection {
 
     pub fn destinations(&self) -> Vec<Port> {
         let mut ports = vec![];
-        self.segments.iter().for_each(|segment| segment.destinations(&mut ports));
+        self.segments.iter().for_each(|(_, segment)| segment.destinations(&mut ports));
         ports
     }
 
@@ -319,8 +324,7 @@ impl Connection {
     }
 
     pub fn remove_unselected_branches(&mut self, selected: &Vec<Id>) -> bool {
-        self.segments.retain_mut(|segment| !segment.remove_unselected_branches(selected));
-
+        self.segments.retain(|_, segment| !segment.remove_unselected_branches(selected));
         self.segments.is_empty()
     }
 
@@ -329,17 +333,19 @@ impl Connection {
             self.origin.set_block_id(new_id)
         }
         else {
-            self.segments.iter_mut().for_each(|segment| segment.refactor_id(old_id, new_id))
+            self.segments.iter_mut().for_each(|(_, segment)| segment.refactor_id(old_id, new_id))
         }
     }
 
     pub fn waypoint_at(&self, position: Vector2<i32>) -> Option<SegmentID> {
-        let mut location = vec![0];
-        if self.segments.iter().enumerate().any(|(i, segment)| {
-            location[0] = i as u16;
+        let mut location = vec![Id::empty()];
+        if self.segments.iter().any(|(id, segment)| {
+            location[0] = *id;
             segment.waypoint_at(position, &mut location)
         }) {
-            Some(SegmentID::new(self.id, location))
+            let id =  SegmentID::new(self.id, location);
+            println!("{id:?}");
+            Some(id)
         }
         else {
             None
@@ -352,7 +358,7 @@ impl Connection {
         }
 
         let mut i = 0;
-        self.segments[location[i] as usize].get_segment(location, &mut i)
+        self.segments.get(&location[i]).and_then(|segment| segment.get_segment(location, &mut i))
     }
 
     pub fn get_segment_mut(&mut self, location: &SegmentLocation) -> Option<&mut Segment> {
@@ -361,13 +367,13 @@ impl Connection {
         }
 
         let mut i = 0;
-        self.segments[location[i] as usize].get_segment_mut(location, &mut i)
+        self.segments.get_mut(&location[i]).and_then(|segment| segment.get_segment_mut(location, &mut i))
     }
 
     pub fn for_each_mut_segment<F>(&mut self, func: F) 
         where F: Fn(&mut Segment)
     {
-        for segment in &mut self.segments {
+        for (_, segment) in &mut self.segments {
             segment.for_each_mut_segment(&func);
         }
     }
@@ -375,9 +381,9 @@ impl Connection {
     pub fn for_each_mut_segment_id<F>(&mut self, mut func: F)
         where F: FnMut(&mut Segment, &SegmentID)
     {
-        let mut waypoint_id = SegmentID::new(self.id, vec![0]);
-        for (i, segment) in self.segments.iter_mut().enumerate() {
-            waypoint_id.location[0] = i as u16;
+        let mut waypoint_id = SegmentID::new(self.id, vec![Id::empty()]);
+        for (id, segment) in self.segments.iter_mut() {
+            waypoint_id.location[0] = *id;
             segment.for_each_mut_segment_id(&mut func, &mut waypoint_id)
         }
     }
@@ -447,7 +453,7 @@ impl Renderable for Connection {
         let origin_block = origin_block.unwrap();
         let origin_pos = origin_block.get_connector_pos(self.origin.into());
 
-        for segment in &self.segments {
+        for (_, segment) in &self.segments {
             segment.render(self.active, origin_pos, renderer, plot)?
         }
 

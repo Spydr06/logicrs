@@ -1,6 +1,6 @@
-use std::cell::{RefCell, Cell};
+use std::{cell::{RefCell, Cell}, collections::HashMap};
 use gtk::{prelude::*, subclass::prelude::*, gio, glib, gdk};
-use crate::{renderer::{*, vector::*}, simulator::*, fatal::FatalResult, application::{selection::*, Application, action::Action, editor::{EditorMode, GRID_SIZE}}};
+use crate::{renderer::{*, vector::*}, simulator::*, fatal::FatalResult, application::{selection::*, Application, action::Action, editor::EditorMode}};
 
 glib::wrapper! {
     pub struct CircuitView(ObjectSubclass<CircuitViewTemplate>)
@@ -82,6 +82,7 @@ pub struct CircuitViewTemplate {
     plot_provider: RefCell<PlotProvider>,
     ctrl_down: Cell<bool>,
     shift_down: Cell<bool>,
+    alt_down: Cell<bool>,
     application: RefCell<Application>,
     editor_mode: RefCell<EditorMode>,
     mouse_position: Cell<Vector2<f64>>
@@ -126,6 +127,11 @@ impl CircuitViewTemplate {
             r.zoom(0.9, None);
             widget.drawing_area.queue_draw();
         }));
+
+        self.border_color_enabled.connect_toggled(glib::clone!(@weak self as widget => move |button| {
+            widget.border_color_button.set_sensitive(button.is_active());
+        }));
+        self.border_color_button.set_sensitive(false);
     }
 
     fn init_mouse(&self) {
@@ -194,6 +200,7 @@ impl CircuitViewTemplate {
             match key {
                 gdk::Key::Control_L | gdk::Key::Control_R => widget.ctrl_down.set(true),
                 gdk::Key::Shift_L | gdk::Key::Shift_R => widget.shift_down.set(true),
+                gdk::Key::Alt_L | gdk::Key::Alt_R => widget.alt_down.set(true),
                 _ => ()
             }
             gtk::Inhibit(true)
@@ -206,6 +213,7 @@ impl CircuitViewTemplate {
                     widget.ctrl_down.set(false)
                 },
                 gdk::Key::Shift_L | gdk::Key::Shift_R => widget.shift_down.set(false),
+                gdk::Key::Alt_L | gdk::Key::Alt_R => widget.alt_down.set(false),
                 _ => ()
             }
         ));
@@ -223,7 +231,7 @@ impl CircuitViewTemplate {
         self.drawing_area.add_controller(&scroll_controller);
     }
 
-    fn initialize(&self) {
+    fn init_drawing_area(&self) {
         self.drawing_area.set_draw_func(glib::clone!(@weak self as widget => move |area, context, width, height|
             widget.plot_provider.borrow().with_mut(|plot| 
                 widget.renderer.borrow_mut()
@@ -237,16 +245,22 @@ impl CircuitViewTemplate {
         self.drawing_area.grab_focus();
         self.drawing_area.set_focus_on_click(true);
 
+        self.drawing_area.connect_has_focus_notify(glib::clone!(@weak self as widget => move |area|
+            if !area.has_focus() {
+                widget.shift_down.set(false);
+                widget.ctrl_down.set(false);
+                widget.alt_down.set(false);   
+            }
+        ));
+    }
+
+    fn initialize(&self) {
+        self.init_drawing_area();
         self.init_buttons();
         self.init_mouse();
         self.init_keyboard();
         self.init_scrolling();
         self.init_context_menu();
-
-        self.border_color_enabled.connect_toggled(glib::clone!(@weak self as widget => move |button| {
-            widget.border_color_button.set_sensitive(button.is_active());
-        }));
-        self.border_color_button.set_sensitive(false);
     }
 
     fn on_mouse_move(&self, x: f64, y: f64) {
@@ -255,13 +269,8 @@ impl CircuitViewTemplate {
 
         self.plot_provider.borrow_mut().with_mut(|plot|
             if let Selection::MoveBlock(block) = plot.selection_mut() {
-
-                let mut position = VectorCast::cast(self.renderer.borrow().screen_to_world(position));
-                
-                let editor_mode = self.editor_mode.borrow();
-                if matches!(*editor_mode, EditorMode::Grid) {
-                    position = position / GRID_SIZE.into() * GRID_SIZE.into();    
-                }
+                let position = self.editor_mode.borrow()
+                    .align(VectorCast::cast(self.renderer.borrow().screen_to_world(position)));
                 
                 block.set_position(position);
                 self.drawing_area.queue_draw();
@@ -390,7 +399,7 @@ impl CircuitViewTemplate {
                 let waypoint = plot.get_connection_mut(id.connection_id()).and_then(|c| c.get_segment_mut(id.location())).unwrap();
                 let start = *waypoint.position().unwrap();
 
-                if self.shift_down.take() {
+                if self.alt_down.take() {
                     waypoint.set_highlighted(true);
                     plot.set_selection(Selection::Single(Selectable::Waypoint(id), start))
                 }
@@ -410,12 +419,7 @@ impl CircuitViewTemplate {
         self.plot_provider.borrow().with_mut(|plot|
             match plot.selection().clone() {
                 Selection::Single(selected, Vector2(start_x, start_y)) => {
-                    let editor_mode = self.editor_mode.borrow();
-                    let new_position = if matches!(*editor_mode, EditorMode::Grid) {
-                        (Vector2(start_x, start_y) + offset) / GRID_SIZE.into() * GRID_SIZE.into()
-                    } else {
-                        Vector2(start_x, start_y) + offset
-                    };
+                    let new_position = self.editor_mode.borrow().align(Vector2(start_x, start_y) + offset);
 
                     match selected {
                         Selectable::Block(id) => {
@@ -440,7 +444,8 @@ impl CircuitViewTemplate {
                     self.drawing_area.queue_draw();
                 }
                 Selection::Connection(source, start, _) => {
-                    plot.set_selection(Selection::Connection(source, start, start + offset));
+                    let new_position = self.editor_mode.borrow().align(start + offset);
+                    plot.set_selection(Selection::Connection(source, start, new_position));
                     self.drawing_area.queue_draw();
                 }
                 Selection::Area(area_start, _) => {
@@ -461,12 +466,7 @@ impl CircuitViewTemplate {
                     return;
                 }
 
-                let editor_mode = self.editor_mode.borrow();
-                let new_position = if matches!(*editor_mode, EditorMode::Grid) {
-                    (Vector2(start_x, start_y) + offset) / GRID_SIZE.into() * GRID_SIZE.into()
-                } else {
-                    Vector2(start_x, start_y) + offset
-                };
+                let new_position = self.editor_mode.borrow().align(Vector2(start_x, start_y) + offset);
 
                 match selected {
                     Selectable::Block(block_id) => self.application.borrow().new_action(Action::MoveBlock(plot_provider.clone(), block_id, Vector2(start_x, start_y), new_position)),
@@ -496,7 +496,7 @@ impl CircuitViewTemplate {
                             .unwrap().position_on_connection(position, true)
                             .map(|i| (id, i)))
                         .map_or_else(
-                            || Connection::new(Port::Output(block_id, output), vec![Segment::Waypoint(vec![], position, false)]),
+                            || Connection::new(Port::Output(block_id, output), vec![Segment::Waypoint(HashMap::new(), position, false)]),
                             |(block, i)| Connection::new_basic(block_id, output, block, i )
                         )
                 });
@@ -513,7 +513,7 @@ impl CircuitViewTemplate {
                         Segment::Block(block_id, i)
                     }   
                     else {
-                        Segment::Waypoint(vec![], position, false)
+                        Segment::Waypoint(HashMap::new(), position, false)
                     }                
                 });
                 if let Some(segment) = segment {

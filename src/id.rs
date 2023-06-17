@@ -16,4 +16,9 @@ impl Id {
         hasher.write(&uuid::Uuid::new_v4().into_bytes());
         Self(hasher.finish())
     }
+
+    #[inline]
+    pub fn empty() -> Self {
+        Self(0)
+    }
 }

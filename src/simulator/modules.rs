@@ -175,7 +175,7 @@ impl Module {
             outputs
         };
 
-        info!("simulate module {} with inputs: {inputs:#b} generates: {outputs:#b}", self.name);
+        //info!("simulate module {} with inputs: {inputs:#b} generates: {outputs:#b}", self.name);
         Ok(outputs)
     }
 }
