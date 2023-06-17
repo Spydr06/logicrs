@@ -343,13 +343,19 @@ impl Connection {
             location[0] = *id;
             segment.waypoint_at(position, &mut location)
         }) {
-            let id =  SegmentID::new(self.id, location);
-            println!("{id:?}");
-            Some(id)
+            Some(SegmentID::new(self.id, location))
         }
         else {
             None
         }
+    }
+
+    pub fn add_segment(&mut self, segment: Segment) {
+        self.segments.insert(Id::new(), segment);
+    }
+
+    pub fn segments(&self) -> &HashMap<Id, Segment> {
+        &self.segments
     }
 
     pub fn get_segment(&self, location: &SegmentLocation) -> Option<&Segment> {
@@ -447,7 +453,6 @@ impl Renderable for Connection {
     {
         let origin_block = plot.get_block(self.origin.block_id());
         if origin_block.is_none() {
-            info!("fuck");
             return Ok(())
         }
         let origin_block = origin_block.unwrap();

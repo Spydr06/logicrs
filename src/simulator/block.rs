@@ -157,6 +157,13 @@ impl Block {
         self
     }
 
+    pub fn connection(&self, connector: Connector) -> Option<ConnectionID> {
+        match connector {
+            Connector::Input(port) => self.inputs[port as usize],
+            Connector::Output(port) => self.outputs[port as usize]
+        }
+    }
+
     pub fn outputs(&self) -> &Vec<Option<ConnectionID>> {
         &self.outputs
     }

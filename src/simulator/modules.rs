@@ -107,6 +107,15 @@ impl Module {
         }
     }
 
+    pub fn has_io_blocks(&self) -> bool {
+        match &self.custom_data {
+            Some(data) => {
+                data.input_block != Id::empty() && data.output_block != Id::empty()
+            }
+            _ => false
+        }
+    }
+
     pub fn builtin(&self) -> bool {
         self.builtin
     }
@@ -156,7 +165,7 @@ impl Module {
                 input.set_passthrough(false);
             }
 
-            plot.add_block_to_update(custom_data.input_block);
+            plot.add_block_to_update_unique(custom_data.input_block);
             let err = plot.simulate(project, call_stack).err();
             
             if let Some(input) = plot.get_block_mut(custom_data.input_block) {
@@ -175,7 +184,7 @@ impl Module {
             outputs
         };
 
-        //info!("simulate module {} with inputs: {inputs:#b} generates: {outputs:#b}", self.name);
+        debug!("simulate module {} with inputs: {inputs:#b} generates: {outputs:#b}", self.name);
         Ok(outputs)
     }
 }

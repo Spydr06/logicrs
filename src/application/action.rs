@@ -167,6 +167,10 @@ impl Action {
             }
             Self::DeleteSelection(plot_provider, blocks, incoming_connections, segments) => {
                 let connections = plot_provider.with_mut(|plot| {
+                    for (id, segment) in &*segments {
+                        
+                    }
+
                     let mut connections = vec![];
                     for block in blocks.iter() {
                         connections.append(&mut plot.delete_block(block.id()))

@@ -141,14 +141,24 @@ impl Application {
 
     fn gaction_delete_block(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
         if let Some(plot_provider) = self.imp().current_plot() {
-            let blocks = plot_provider.with_mut(|plot| 
+            let (blocks, segments) = plot_provider.with_mut(|plot| (
                 plot.selected().iter().filter_map(|selected| {
                     match selected {
                         Selectable::Block(id) => Some(plot.get_block(*id).unwrap().to_owned()),
                         _ => None
                     }
-                }).collect()).unwrap_or_default();
-            self.new_action(Action::DeleteSelection(plot_provider, blocks, vec![], vec![]));
+                }).collect(),
+                plot.selected().iter().filter_map(|selected| {
+                    match selected {
+                        Selectable::Waypoint(id) => Some((
+                            id.clone(), 
+                            plot.get_connection(id.connection_id()).and_then(|c| c.get_segment(id.location())).unwrap().to_owned()
+                        )),
+                        _ => None
+                    }
+                }).collect()
+            )).unwrap_or_default();
+            self.new_action(Action::DeleteSelection(plot_provider, blocks, vec![], segments));
         }
     }
 

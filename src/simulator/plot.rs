@@ -1,6 +1,6 @@
 use super::*;
 use crate::{renderer::{*, vector::Vector2}, application::selection::*, project::{ProjectRef, Project}};
-use std::{collections::{HashMap, HashSet, BTreeSet}, cmp};
+use std::{collections::{HashMap, HashSet}, cmp};
 use serde::{Serialize, Deserialize};
 
 #[derive(Clone, PartialEq, Eq, Hash)]
@@ -183,15 +183,35 @@ impl Plot {
         self.connections.get_mut(id)
     }
 
+    fn patch_destinations(&mut self, destinations: Vec<Port>, connection_id: ConnectionID) {
+        for destination in destinations {
+            let block = self.blocks.get_mut(&destination.block_id()).expect("faulty destination block");
+            block.set_connection(destination.into(), Some(connection_id));
+        }
+    }
+
+    fn add_to_existing_connection(&mut self, existing: ConnectionID, connection: &Connection) {
+        if let Some(existing) = self.connections.get_mut(&existing) {
+            for (_, segment) in connection.segments() {
+                existing.add_segment(segment.clone());
+            }
+            let destinations = existing.destinations();
+            let id = existing.id();
+            self.patch_destinations(destinations, id);
+        }
+    }
+
     pub fn add_connection(&mut self, connection: Connection) {
         let origin = self.blocks.get_mut(&connection.origin().block_id()).expect("faulty origin block");
-        origin.set_connection(connection.origin().into(), Some(connection.id()));
 
-        for destination in connection.destinations() {
-            let block = self.blocks.get_mut(&destination.block_id()).expect("faulty destination block");
-            block.set_connection(destination.into(), Some(connection.id()));
+        if let Some(existing) = origin.connection(connection.origin().into()) {
+            self.add_to_existing_connection(existing, &connection);
+            return;
         }
-
+        
+        origin.set_connection(connection.origin().into(), Some(connection.id()));
+        
+        self.patch_destinations(connection.destinations(), connection.id());
         self.to_update.push(connection.origin().block_id());
         self.connections.insert(connection.id(), connection);
     }
@@ -241,6 +261,12 @@ impl Plot {
         self.to_update.push(block);
     }
 
+    pub fn add_block_to_update_unique(&mut self, block: BlockID) {
+        if !self.to_update.contains(&block) {
+            self.to_update.push(block);
+        }
+    }
+
     pub fn to_update(&self) -> &Vec<BlockID> {
         &self.to_update
     }
@@ -250,14 +276,11 @@ impl Plot {
     }
 
     pub fn simulate(&mut self, project: &mut Project, call_stack: &mut HashSet<String>) -> SimResult<bool> {
-        let mut updated = BTreeSet::new();
+        let mut updated = HashSet::new();
         let mut queued = Vec::new();
         let mut changes = false;
 
-        loop {
-            if self.to_update.is_empty() {
-                break;
-            }
+        while !self.to_update.is_empty() {
             let to_update = std::mem::take(&mut self.to_update);
             changes = true;
             
@@ -275,7 +298,6 @@ impl Plot {
                 }
             }
         }
-
         self.to_update = queued;
 
         Ok(changes)

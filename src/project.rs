@@ -101,7 +101,7 @@ impl Project {
     }
 
     pub fn add_module(&mut self, mut module: Module) {
-        if module.plot().is_some() {
+        if module.plot().is_some() && !module.has_io_blocks() {
             let num_inputs = module.get_num_inputs();
             let num_outputs = module.get_num_outputs();
             
