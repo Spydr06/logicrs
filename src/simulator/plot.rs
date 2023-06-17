@@ -136,6 +136,7 @@ impl Plot {
     }
 
     pub fn add_block(&mut self, block: Block) {
+        self.to_update.push(block.id());
         self.blocks.insert(block.id(), block);
     }
 

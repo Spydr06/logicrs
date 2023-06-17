@@ -29,6 +29,7 @@ pub struct Block {
     outputs: Vec<Option<ConnectionID>>,
 
     state: State,
+    output_state: u128,
     
     decoration: Decoration,
     color: Option<Color>
@@ -58,7 +59,8 @@ impl Block {
             name,
             state: if module.builtin() { State::Direct(0) } else { State::Inherit(PlotState::default()) },
             decoration: module.decoration().clone(),
-            color
+            color,
+            output_state: 0
         }
     }
 
@@ -252,12 +254,12 @@ impl Block {
         let mut_ref_ptr = project as *mut Project;
         if let Some(module) = project.module_mut(&self.name) {
             // simulate the block
-            let outputs = module.simulate(inputs, self, unsafe { &mut *mut_ref_ptr }, call_stack)?;
+            self.output_state = module.simulate(inputs, self, unsafe { &mut *mut_ref_ptr }, call_stack)?;
 
             // dissect output state
             for (i, connection_id) in self.outputs.iter().enumerate() {
                 if let Some(connection) = connection_id.map(|connection_id| connections.get_mut(&connection_id)).flatten() {
-                    let active = (outputs >> i as u128) & 1 != 0;
+                    let active = (self.output_state >> i as u128) & 1 != 0;
                     if active != connection.is_active() {
                         to_update.extend(connection.destinations().iter().map(|dest| dest.block_id()));
                         connection.set_active(active);
@@ -300,20 +302,21 @@ impl Renderable for Block {
         renderer.stroke()?;
 
         let show_suggestion = plot.selection().connecting();
-        let connector = |position, is_input|
+        let connector = |position, is_input, is_active|
             renderer
                 .arc(position, 6., 0., f64::consts::TAU)
-                .set_color(unsafe {if show_suggestion && is_input { &COLOR_THEME.suggestion_fg_color } else { &COLOR_THEME.disabled_fg_color }} )
+                .set_color(unsafe {if show_suggestion && is_input { &COLOR_THEME.suggestion_fg_color } else if is_active { &COLOR_THEME.enabled_fg_color } else { &COLOR_THEME.disabled_fg_color }} )
                 .fill_preserve()?
-                .set_color(unsafe {if self.highlighted { &COLOR_THEME.accent_fg_color } else { border_color }}).stroke();
+                .set_color(unsafe {if self.highlighted { &COLOR_THEME.accent_fg_color } else { border_color }})
+                .stroke();
 
         renderer.set_line_width(1.);
         for (i, _) in self.inputs.iter().enumerate().filter(|(_, c)| c.is_none()) {
-            connector(Vector2(self.position.0, self.position.1 + 25 * i as i32 + 50), true)?;
+            connector(Vector2(self.position.0, self.position.1 + 25 * i as i32 + 50), true, false)?;
         }
 
         for (i, _) in self.outputs.iter().enumerate().filter(|(_, c)| c.is_none()) {
-            connector(Vector2(self.position.0 + self.size.0, self.position.1 + 25 * i as i32 + 50), false)?;
+            connector(Vector2(self.position.0 + self.size.0, self.position.1 + 25 * i as i32 + 50), false, (self.output_state >> i as u128) & 1 != 0)?;
         }
 
         self.decoration.render(renderer, self).map(|_| ())
