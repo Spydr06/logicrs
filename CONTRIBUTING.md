@@ -1,4 +1,10 @@
-# Contributing
+<div align="center">
+
+<img src="./assets/com.spydr06.logicrs.Devel.png" width="200"/>
+
+<h1>Contributing to LogicRs</h1>
+
+</div>
 
 Contributions to LogicRs are very welcome. For major changes, please open an issue first to discuss what you would like to change.
 

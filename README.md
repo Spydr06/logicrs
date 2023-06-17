@@ -1,8 +1,10 @@
 <div align="center">
 
+<img src="./assets/com.spydr06.logicrs.png" width="200"/>
+
 <h1>LogicRs</h1>
 
-[📑 Documentation](https://github.com/spydr06/logicrs/wiki) |
+[📑 Documentation](./DOCS.md) |
 [💾 Installation](./INSTALL.md) |
 [🤝 Contributing](./CONTRIBUTING.md) |
 [📜 License](./LICENSE) |
@@ -24,20 +26,23 @@
 
 This program is meant for students, who want learn about [boolean algebra](https://en.wikipedia.org/wiki/Boolean_algebra) and visualize their equations as well as for developers simulating and debugging conditional expressions found everywhere in programming.
 
-## Current State
-
-> coming soon...
-
 ## Installation
 
-Please refer to [INSTALL.md](./INSTALL.md) for installation instructions and information about compatability
+LogicRs can be downloaded as a prebuilt package from the [releases](https://github.com/Spydr06/logicrs/releases) tab in the following formats:
 
-Prebuilt binaries can be found at the **releases** tab of this repository.
+- `.AppImage` package (Linux)
+- `.zip` portable installation (Windows)
+
+Alternatively, you can download this repository and build LogicRs from source. 
+Please refer to [INSTALL.md](./INSTALL.md) for build instructions and information about compatability
+
+## Documentation
+
+Documentation can be found in the [DOCS.md](./DOCS.md) file.
 
 ## Examples
 
 Examples demonstrating this program can be found in the `examples/` directory.
-> coming soon...
 
 ## Contributing
 
