@@ -26,6 +26,8 @@
 
 This program is meant for students, who want learn about [boolean algebra](https://en.wikipedia.org/wiki/Boolean_algebra) and visualize their equations as well as for developers simulating and debugging conditional expressions found everywhere in programming.
 
+![random screenshot](./assets/random-screenshot.png)
+
 ## Installation
 
 LogicRs can be downloaded as a prebuilt package from the [releases](https://github.com/Spydr06/logicrs/releases) tab in the following formats:
