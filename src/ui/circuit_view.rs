@@ -484,18 +484,23 @@ impl CircuitViewTemplate {
                     }
                 }
             },
-            Selection::Connection(ConnectionSource::Block(block_id, output), _, position) => {
+            Selection::Connection(ConnectionSource::Block(origin_id, output), _, position) => {
                 let connection = plot_provider.with_mut(|plot| {
                     plot.set_selection(Selection::None);
-                    plot.get_block_at(position)
-                        .and_then(|id| plot.get_block(id)
-                            .unwrap().position_on_connection(position, true)
-                            .map(|i| (id, i)))
-                        .map_or_else(
-                            || Connection::new(Port::Output(block_id, output), vec![Segment::Waypoint(HashMap::new(), position, false)]),
-                            |(block, i)| Connection::new_basic(block_id, output, block, i )
+
+                    if let Some(block_id) = plot.get_block_at(position) &&
+                        let Some(block) = plot.get_block(block_id) &&
+                        let Some(i) = block.position_on_connection(position, true) {
+
+                        block.connection(Connector::Input(i)).is_none().then(|| 
+                            Connection::new_basic(origin_id, output, block_id, i )
                         )
-                });
+                    }
+                    else {
+                        Some(Connection::new(Port::Output(origin_id, output), vec![Segment::Waypoint(HashMap::new(), position, false)]))
+                    }
+                }).flatten();
+
                 if let Some(connection) = connection {
                     self.application.borrow().new_action(Action::NewConnection(plot_provider.clone(), connection));
                 }
@@ -505,13 +510,17 @@ impl CircuitViewTemplate {
             Selection::Connection(ConnectionSource::Waypoint(segment_id), _, position) => {
                 let segment = plot_provider.with_mut(|plot| {
                     plot.set_selection(Selection::None);
-                    if let Some((block_id, i)) = plot.get_block_at(position).and_then(|id| plot.get_block(id).unwrap().position_on_connection(position, true).map(|i| (id, i))) {
-                        Segment::Block(block_id, i)
+                    if let Some(block_id) = plot.get_block_at(position) &&
+                        let Some(block) = plot.get_block(block_id) &&
+                        let Some(i) = block.position_on_connection(position, true) {
+                        
+                        block.connection(Connector::Input(i)).is_none().then_some(Segment::Block(block_id, i))
                     }   
                     else {
-                        Segment::Waypoint(HashMap::new(), position, false)
+                        Some(Segment::Waypoint(HashMap::new(), position, false))
                     }                
-                });
+                }).flatten();
+                
                 if let Some(segment) = segment {
                     self.application.borrow().new_action(Action::AddSegment(plot_provider.clone(), segment_id, segment, None))
                 }

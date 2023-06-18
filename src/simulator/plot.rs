@@ -271,6 +271,7 @@ impl Plot {
 
     pub fn simulate(&mut self, project: &mut Project, call_stack: &mut HashSet<String>) -> SimResult<bool> {
         let mut updated = HashSet::new();
+        let mut queued = HashSet::new();
         let mut changes = false;
 
         while !self.to_update.is_empty() {
@@ -279,11 +280,13 @@ impl Plot {
             
             for block_id in to_update.iter() {
                 if let Some(block) = self.blocks.get_mut(block_id) {
-                    block.simulate(&mut self.connections, &mut self.to_update, project, call_stack)?;
+                    block.simulate(&mut self.connections, &mut self.to_update, &mut queued, project, call_stack)?;
                     updated.insert(*block_id);   
                 }
             }
         }
+
+        self.to_update = queued;
 
         Ok(changes)
     }

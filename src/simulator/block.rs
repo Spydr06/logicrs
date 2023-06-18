@@ -254,7 +254,7 @@ impl Block {
         None
     }
 
-    pub fn simulate(&mut self, connections: &mut HashMap<ConnectionID, Connection>, to_update: &mut HashSet<BlockID>, project: &mut Project, call_stack: &mut HashSet<String>) -> SimResult<()> {
+    pub fn simulate(&mut self, connections: &mut HashMap<ConnectionID, Connection>, to_update: &mut HashSet<BlockID>, queued: &mut HashSet<BlockID>, project: &mut Project, call_stack: &mut HashSet<String>) -> SimResult<()> {
         // collect input states
         let inputs = self.inputs.collect(connections);
     
@@ -268,7 +268,14 @@ impl Block {
                 if let Some(connection) = connection_id.map(|connection_id| connections.get_mut(&connection_id)).flatten() {
                     let active = (self.output_state >> i as u128) & 1 != 0;
                     if active != connection.is_active() {
-                        to_update.extend(connection.destinations().iter().map(|dest| dest.block_id()));
+                        for dest_id in connection.destinations().iter().map(|dest| dest.block_id()) {
+                            if dest_id == self.id {
+                                queued.insert(dest_id);
+                            }
+                            else {
+                                to_update.insert(dest_id);
+                            }
+                        }
                         connection.set_active(active);
                     }
                 }
