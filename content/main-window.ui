@@ -4,6 +4,7 @@
     <property name="width-request">800</property>
     <property name="height-request">500</property>
     <property name="title" translatable="no">LogicRs</property>
+    <property name="icon-name">com.spydr06.logicrs</property>
 
     <child>
       <object class="AdwLeaflet" id="leaflet">

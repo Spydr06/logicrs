@@ -1,6 +1,6 @@
-use gtk::{prelude::*, subclass::prelude::*, gio, glib};
-use adw::subclass::prelude::AdwApplicationWindowImpl;
-use crate::{application::*, simulator::*};
+use gtk::{prelude::*, subclass::prelude::*, gio, glib, IconTheme, gdk::Display};
+use adw::{subclass::prelude::AdwApplicationWindowImpl, Window};
+use crate::{application::*, simulator::*, config};
 use super::{circuit_panel::*, module_list::*, circuit_view::*};
 
 glib::wrapper! {
@@ -11,9 +11,16 @@ glib::wrapper! {
 
 impl MainWindow {
     pub fn new(app: &Application) -> Self {
+        let icon_theme = IconTheme::for_display(&Display::default().unwrap());
+        if !icon_theme.has_icon(config::APP_ICON_NAME) {
+            error!("application icon \"{}\" not found!", config::APP_ICON_NAME)
+        }
+
+        gtk::Window::set_default_icon_name(config::APP_ICON_NAME);
+
         let window = glib::Object::new::<Self>(&[
                 ("application", app),
-                ("title", &"LogicRs"),
+                ("title", &"LogicRs")
             ]);
         window.initialize(app);
         window
@@ -47,6 +54,7 @@ impl MainWindow {
         self.imp().set_application(app.clone());
         self.imp().module_list.init_accels(app);
         self.set_subtitle(&app.imp().file_name());
+        self.set_icon_name(Some(config::APP_ICON_NAME));
         
         let panel = &self.imp().circuit_panel;
         panel.new_tab("Main Circuit", PlotProvider::Main(app.imp().project().clone()));

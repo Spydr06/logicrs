@@ -45,7 +45,6 @@ impl ApplicationTemplate {
 
         // build the application window and UI
         let window = MainWindow::new(application);
-        window.set_icon_name(Some(config::APP_ICON_NAME));
         window.show();
         self.window.replace(Some(window));
     }

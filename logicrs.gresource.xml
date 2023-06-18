@@ -7,16 +7,24 @@
     <file preprocess="xml-stripblanks" compressed="true">content/circuit-view.ui</file>
     <file preprocess="xml-stripblanks" compressed="true">content/circuit-panel.ui</file>
   </gresource>
+  
   <!-- CSS Style files -->
   <gresource>
     <file compressed="true">style/style.css</file>
     <file compressed="true">style/overlay.css</file>
     <file compressed="true">style/module-list.css</file>
   </gresource>
+  
   <!-- Application Icon -->
-  <gresource prefix="/com/spydr06/logicrs/icons/64x64/apps/">
+  <!-- svg -->
+  <gresource prefix="/com/spydr06/logicrs/icons/scalable/apps/">
     <file compressed="true" preprocess="xml-stripblanks" alias="com.spydr06.logicrs.svg">style/icons/hicolor/com.spydr06.logicrs.svg</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="com.spydr06.logicrs.Devel.svg">style/icons/hicolor/com.spydr06.logicrs.Devel.svg</file>
+  </gresource>
+  <!-- png -->
+  <gresource prefix="/com/spydr06/logicrs/icons/48x48/apps/">
+    <file compressed="true" alias="com.spydr06.logicrs.png">style/icons/hicolor/48x48/com.spydr06.logicrs.png</file>
+    <file compressed="true" alias="com.spydr06.logicrs.Devel.png">style/icons/hicolor/48x48/com.spydr06.logicrs.Devel.png</file>
   </gresource>
   <!-- Icons -->
   <gresource prefix="/com/spydr06/logicrs/icons/scalable/actions/">
