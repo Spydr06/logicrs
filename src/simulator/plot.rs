@@ -258,10 +258,6 @@ impl Plot {
     }
 
     pub fn add_block_to_update(&mut self, block: BlockID) {
-        self.to_update.push(block);
-    }
-
-    pub fn add_block_to_update_unique(&mut self, block: BlockID) {
         if !self.to_update.contains(&block) {
             self.to_update.push(block);
         }
@@ -277,7 +273,6 @@ impl Plot {
 
     pub fn simulate(&mut self, project: &mut Project, call_stack: &mut HashSet<String>) -> SimResult<bool> {
         let mut updated = HashSet::new();
-        let mut queued = Vec::new();
         let mut changes = false;
 
         while !self.to_update.is_empty() {
@@ -285,20 +280,12 @@ impl Plot {
             changes = true;
             
             for block_id in to_update.iter() {
-                if updated.contains(block_id) {
-                    // recursion detected
-                    info!("{block_id:?} is recursive!");
-                    queued.push(*block_id);
-                    continue;
-                }
-
                 if let Some(block) = self.blocks.get_mut(block_id) {
                     block.simulate(&mut self.connections, &mut self.to_update, project, call_stack)?;
                     updated.insert(*block_id);   
                 }
             }
         }
-        self.to_update = queued;
 
         Ok(changes)
     }

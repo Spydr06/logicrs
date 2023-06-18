@@ -144,7 +144,7 @@ impl Application {
             let (blocks, segments) = plot_provider.with_mut(|plot| (
                 plot.selected().iter().filter_map(|selected| {
                     match selected {
-                        Selectable::Block(id) => Some(plot.get_block(*id).unwrap().to_owned()),
+                        Selectable::Block(id) if let Some(block) = plot.get_block(*id) => Some(block.to_owned()),
                         _ => None
                     }
                 }).collect(),

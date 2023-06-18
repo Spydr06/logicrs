@@ -379,7 +379,7 @@ impl CircuitViewTemplate {
 
                 if block.on_mouse_press(position) {
                     plot.set_selection(Selection::MouseEvent(id));
-                    plot.add_block_to_update_unique(id);
+                    plot.add_block_to_update(id);
                 }
                 else if let Some(i) = block.position_on_connection(position, false) {
                     let start = block.get_connector_pos(Connector::Output(i));
@@ -526,7 +526,7 @@ impl CircuitViewTemplate {
                 plot_provider.with_mut(|plot| {
                     plot.set_selection(Selection::None);
                     if let Some(block) = plot.get_block_mut(block_id) { block.on_mouse_release() }
-                    plot.add_block_to_update_unique(block_id);
+                    plot.add_block_to_update(block_id);
                 });
                 self.drawing_area.queue_draw();
             }

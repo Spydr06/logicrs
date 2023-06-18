@@ -162,7 +162,7 @@ impl Module {
                 input.set_passthrough(false);
             }
 
-            plot.add_block_to_update_unique(custom_data.input_block);
+            plot.add_block_to_update(custom_data.input_block);
             let err = plot.simulate(project, call_stack).err();
             
             if let Some(input) = plot.get_block_mut(custom_data.input_block) {

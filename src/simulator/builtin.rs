@@ -96,12 +96,12 @@ lazy_static! {
         ));
 
         builtins.insert("Input", Builtin::new(
-            Module::new_builtin("Input", Category::Hidden, Block::MAX_CONNECTIONS, Block::MAX_CONNECTIONS, Decoration::None),
+            Module::new_builtin("Input", Category::Hidden, Block::MAX_CONNECTIONS, Block::MAX_CONNECTIONS, Decoration::Label("|>".to_string())),
             |input, instance| if instance.passthrough() { input } else { instance.bytes() }
         ));
 
         builtins.insert("Output", Builtin::new(
-            Module::new_builtin("Output", Category::Hidden, Block::MAX_CONNECTIONS, Block::MAX_CONNECTIONS, Decoration::None),
+            Module::new_builtin("Output", Category::Hidden, Block::MAX_CONNECTIONS, Block::MAX_CONNECTIONS, Decoration::Label(">|".to_string())),
             |input, instance| { instance.set_bytes(input); input }
         ));
 
