@@ -254,7 +254,7 @@ impl Block {
         None
     }
 
-    pub fn simulate(&mut self, connections: &mut HashMap<ConnectionID, Connection>, to_update: &mut Vec<BlockID>, project: &mut Project, call_stack: &mut HashSet<String>) -> SimResult<()> {
+    pub fn simulate(&mut self, connections: &mut HashMap<ConnectionID, Connection>, to_update: &mut HashSet<BlockID>, project: &mut Project, call_stack: &mut HashSet<String>) -> SimResult<()> {
         // collect input states
         let inputs = self.inputs.collect(connections);
     

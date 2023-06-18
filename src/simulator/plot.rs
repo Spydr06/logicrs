@@ -95,7 +95,7 @@ pub struct Plot {
     selection: Selection,
 
     #[serde(skip)]
-    to_update: Vec<BlockID>
+    to_update: HashSet<BlockID>
 }
 
 impl Identifiable for Plot {
@@ -109,7 +109,7 @@ impl Plot {
             connections: HashMap::new(),
             states: vec![PlotState::default()],
             selection: Selection::None,
-            to_update: Vec::new()
+            to_update: HashSet::new()
         }
     }
 
@@ -136,7 +136,7 @@ impl Plot {
     }
 
     pub fn add_block(&mut self, block: Block) {
-        self.to_update.push(block.id());
+        self.to_update.insert(block.id());
         self.blocks.insert(block.id(), block);
     }
 
@@ -212,7 +212,7 @@ impl Plot {
         origin.set_connection(connection.origin().into(), Some(connection.id()));
         
         self.patch_destinations(connection.destinations(), connection.id());
-        self.to_update.push(connection.origin().block_id());
+        self.to_update.insert(connection.origin().block_id());
         self.connections.insert(connection.id(), connection);
     }
 
@@ -223,7 +223,7 @@ impl Plot {
                 if let Some(block) = self.get_block_mut(port.block_id()) {
                     block.set_connection(port.into(), None);
                 }
-                self.to_update.push(port.block_id());
+                self.to_update.insert(port.block_id());
             };
 
             refactor(connection.origin());
@@ -258,16 +258,14 @@ impl Plot {
     }
 
     pub fn add_block_to_update(&mut self, block: BlockID) {
-        if !self.to_update.contains(&block) {
-            self.to_update.push(block);
-        }
+        self.to_update.insert(block);
     }
 
-    pub fn to_update(&self) -> &Vec<BlockID> {
+    pub fn to_update(&self) -> &HashSet<BlockID> {
         &self.to_update
     }
 
-    pub fn to_update_mut(&mut self) -> &mut Vec<BlockID> {
+    pub fn to_update_mut(&mut self) -> &mut HashSet<BlockID> {
         &mut self.to_update
     }
 
