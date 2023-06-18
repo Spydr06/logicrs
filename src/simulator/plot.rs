@@ -27,12 +27,12 @@ pub enum PlotProvider {
     Module(ProjectRef, String),
 }
 
-impl Into<PlotDescriptor> for PlotProvider {
-    fn into(self) -> PlotDescriptor {
-        match self {
-            Self::None => panic!(),
-            Self::Main(_) => PlotDescriptor::Main(),
-            Self::Module(_, name) => PlotDescriptor::Module(name)
+impl From<PlotProvider> for PlotDescriptor {
+    fn from(value: PlotProvider) -> Self {
+        match value {
+            PlotProvider::None => panic!(),
+            PlotProvider::Main(_) => PlotDescriptor::Main(),
+            PlotProvider::Module(_, name) => PlotDescriptor::Module(name)
         }
     }
 }
@@ -47,7 +47,7 @@ impl PlotProvider {
                 .lock()
                 .unwrap()
                 .plot(module)
-                .map(|plot| func(plot))
+                .map(func)
         }
     }
 
@@ -60,7 +60,7 @@ impl PlotProvider {
                 .lock()
                 .unwrap()
                 .plot_mut(module)
-                .map(|plot| func(plot)),
+                .map(func),
         }
     }
 
@@ -192,7 +192,7 @@ impl Plot {
 
     fn add_to_existing_connection(&mut self, existing: ConnectionID, connection: &Connection) {
         if let Some(existing) = self.connections.get_mut(&existing) {
-            for (_, segment) in connection.segments() {
+            for segment in connection.segments().values() {
                 existing.add_segment(segment.clone());
             }
             let destinations = existing.destinations();
@@ -316,7 +316,7 @@ impl Renderable for Plot {
         }
 
         // render all connections
-        for (_, connection) in &self.connections {
+        for connection in self.connections.values() {
             connection.render(renderer, plot)?;
         }
 

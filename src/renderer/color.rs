@@ -17,7 +17,7 @@ pub trait IntoRGBA {
 
 impl IntoRGBA for Color {
     fn into_rgba(&self) -> gtk::gdk::RGBA {
-        gtk::gdk::RGBA::new(self.0 as f32, self.1 as f32, self.2 as f32, self.3 as f32)
+        gtk::gdk::RGBA::new(self.0, self.1, self.2, self.3)
     }
 }
 

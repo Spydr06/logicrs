@@ -157,16 +157,15 @@ impl Project {
     }
 
     pub fn collect_dependencies(&self, mod_name: &String, modules: &mut HashMap<String, Module>) {
-        self.modules.get(mod_name)
-            .map(|module| module.plot())
-            .flatten()
-            .map(|plot| plot.blocks()
-            .iter()
-            .for_each(|(_, block)| {
-                if let Some(module) = self.modules.get(block.module_id()).filter(|m| !m.builtin() && !modules.contains_key(m.name())) {
-                    modules.insert(module.name().clone(), module.clone());
-                    self.collect_dependencies(module.name(), modules);
-                }
-            }));
+        if let Some(plot) = self.modules.get(mod_name).and_then(|module| module.plot()) {
+            plot.blocks()
+                .iter()
+                .for_each(|(_, block)| {
+                    if let Some(module) = self.modules.get(block.module_id()).filter(|m| !m.builtin() && !modules.contains_key(m.name())) {
+                        modules.insert(module.name().clone(), module.clone());
+                        self.collect_dependencies(module.name(), modules);
+                    }
+                })
+        }
     }
 }

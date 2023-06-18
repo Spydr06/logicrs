@@ -145,7 +145,7 @@ impl ModuleListTemplate {
 
         b.append(&gtk::Image::builder().icon_name("module-symbolic").margin_end(12).build());
         b.append(&gtk::Label::builder()
-            .label(&module.name())
+            .label(module.name())
             .xalign(0.0)
             .build()
         );
@@ -231,10 +231,9 @@ impl ModuleListTemplate {
 
     fn filter(&self, search_text: Option<String>) {
         if let Some(search_text) = search_text {
-            let search_text_copy = search_text.clone();
             self.lists().iter().for_each(move |list| {
-                let search_text_copy = search_text_copy.clone();
-                list.set_filter_func(move |item| Self::filter_func(item, &search_text_copy));
+                let search_text = search_text.clone();
+                list.set_filter_func(move |item| Self::filter_func(item, &search_text));
             });
         }
         else {

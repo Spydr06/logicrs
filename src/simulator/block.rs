@@ -238,7 +238,7 @@ impl Block {
         if is_input {
             for i in 0..self.inputs.len() {
                 let connector_pos = (self.position.0, self.position.1 + 25 * i as i32 + 50);
-                if (position.0 - connector_pos.0).abs() < Connection::HITBOX_SIZE && (position.1 - connector_pos.1).abs() < Connection::HITBOX_SIZE {
+                if (position.0 - connector_pos.0).abs() < Segment::HITBOX_SIZE && (position.1 - connector_pos.1).abs() < Segment::HITBOX_SIZE {
                     return Some(i as u8);
                 }
             }
@@ -246,7 +246,7 @@ impl Block {
         else {
             for i in 0..self.outputs.len() {
                 let connector_pos = (self.position.0 + self.size.0, self.position.1 + 25 * i as i32 + 50);
-                if (position.0 - connector_pos.0).abs() < Connection::HITBOX_SIZE && (position.1 - connector_pos.1).abs() < Connection::HITBOX_SIZE {
+                if (position.0 - connector_pos.0).abs() < Segment::HITBOX_SIZE && (position.1 - connector_pos.1).abs() < Segment::HITBOX_SIZE {
                     return Some(i as u8);
                 }
             }

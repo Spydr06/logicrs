@@ -80,7 +80,7 @@ pub trait Renderer: Default {
     fn fill(&self) -> Result<&Self, Self::Error>;
     fn fill_preserve(&self) -> Result<&Self, Self::Error>;
     fn stroke(&self) -> Result<&Self, Self::Error>;
-    fn show_text<'a>(&self, text: &'a str) -> Result<&Self, Self::Error>;
+    fn show_text(&self, text: &str) -> Result<&Self, Self::Error>;
 
     //
     // more complex shapes building on the backend-specific basic functions

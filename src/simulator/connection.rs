@@ -31,11 +31,11 @@ impl Port {
     }
 }
 
-impl Into<Connector> for Port {
-    fn into(self) -> Connector {
-        match self {
-            Self::Input(_, port) => Connector::Input(port),
-            Self::Output(_, port) => Connector::Output(port)
+impl From<Port> for Connector {
+    fn from(value: Port) -> Self {
+        match value {
+            Port::Input(_, port) => Self::Input(port),
+            Port::Output(_, port) => Self::Output(port)
         }
     }
 }
@@ -62,8 +62,6 @@ impl SegmentID {
     }
 }
 
-const WAYPOINT_HITBOX_SIZE: i32 = 10;
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Segment {
     Block(BlockID, u8),
@@ -71,6 +69,8 @@ pub enum Segment {
 }
 
 impl Segment {
+    pub const HITBOX_SIZE: i32 = 6;
+
     pub fn position(&self) -> Option<&Vector2<i32>> {
         match self {
             Self::Waypoint(_, position, _) => Some(position),
@@ -92,7 +92,7 @@ impl Segment {
 
     pub fn is_in_area(&mut self, area: &ScreenSpace) -> bool {
         if let Self::Waypoint(_, position, _) = self {
-            let hs = Vector2::new(WAYPOINT_HITBOX_SIZE, WAYPOINT_HITBOX_SIZE);
+            let hs = Vector2::new(Self::HITBOX_SIZE, Self::HITBOX_SIZE);
             !(Vector2::cast(*position - hs) > area.1 || Vector2::cast(*position + hs) < area.0)
         }
         else {
@@ -134,7 +134,7 @@ impl Segment {
             Self::Waypoint(segments, position, highlighted) => {
                 render_line(active, start, *position, renderer)?;
 
-                for (_, segment) in segments {
+                for segment in segments.values() {
                     segment.render(active, *position, renderer, plot)?;
                 }
 
@@ -179,13 +179,22 @@ impl Segment {
         }
     }
 
-    fn waypoint_at(&self, position: Vector2<i32>, location: &mut SegmentLocation) -> bool {
-        let hitbox_sz = Vector2(WAYPOINT_HITBOX_SIZE, WAYPOINT_HITBOX_SIZE);
+    fn touches(&self, point: Vector2<i32>) -> bool {
         match self {
-            Self::Waypoint(_, waypoint_pos, _) if position > *waypoint_pos - hitbox_sz && position < *waypoint_pos + hitbox_sz => true,
+            Self::Waypoint(_, position, _) => {
+                point.0 > position.0 - Self::HITBOX_SIZE && point.0 < position.0 + Self::HITBOX_SIZE &&
+                point.1 > position.1 - Self::HITBOX_SIZE && point.1 < position.1 + Self::HITBOX_SIZE
+            },
+            _ => false
+        }
+    }
+
+    fn waypoint_at(&self, point: Vector2<i32>, location: &mut SegmentLocation) -> bool {
+        match self {
+            Self::Waypoint(..) if self.touches(point) => true,
             Self::Waypoint(segments, ..) => segments.iter().any(|(id, segment)| {
                 location.push(*id);
-                let result = segment.waypoint_at(position, location);
+                let result = segment.waypoint_at(point, location);
                 if !result {
                     location.pop();
                 }
@@ -231,7 +240,7 @@ impl Segment {
     {
         func(self);
         if let Self::Waypoint(segments, ..) = self {
-            for (_, segment) in segments {
+            for segment in segments.values_mut() {
                 segment.for_each_mut_segment(func);
             }
         }
@@ -265,8 +274,6 @@ impl Identifiable for Connection {
 }
 
 impl Connection {
-    pub const HITBOX_SIZE: i32 = 8;
-
     pub fn new(origin: Port, segments: Vec<Segment>) -> Self {
         Self {
             id: Id::new(),
@@ -339,15 +346,10 @@ impl Connection {
 
     pub fn waypoint_at(&self, position: Vector2<i32>) -> Option<SegmentID> {
         let mut location = vec![Id::empty()];
-        if self.segments.iter().any(|(id, segment)| {
+        self.segments.iter().any(|(id, segment)| {
             location[0] = *id;
             segment.waypoint_at(position, &mut location)
-        }) {
-            Some(SegmentID::new(self.id, location))
-        }
-        else {
-            None
-        }
+        }).then_some(SegmentID::new(self.id, location))
     }
 
     pub fn add_segment(&mut self, segment: Segment) {
@@ -379,7 +381,7 @@ impl Connection {
     pub fn for_each_mut_segment<F>(&mut self, func: F) 
         where F: Fn(&mut Segment)
     {
-        for (_, segment) in &mut self.segments {
+        for segment in self.segments.values_mut() {
             segment.for_each_mut_segment(&func);
         }
     }
@@ -458,7 +460,7 @@ impl Renderable for Connection {
         let origin_block = origin_block.unwrap();
         let origin_pos = origin_block.get_connector_pos(self.origin.into());
 
-        for (_, segment) in &self.segments {
+        for segment in self.segments.values() {
             segment.render(self.active, origin_pos, renderer, plot)?
         }
 

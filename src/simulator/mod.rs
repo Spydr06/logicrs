@@ -20,8 +20,10 @@ pub trait Identifiable {
     type ID;
 }
 
+type UICallbackStore = RefCell<Option<(RefCell<Option<MainWindow>>, Receiver<UICallback>)>>;
+
 thread_local! {
-    static UI_CALLBACK: RefCell<Option<(RefCell<Option<MainWindow>>, Receiver<UICallback>)>> = RefCell::new(None);
+    static UI_CALLBACK: UICallbackStore = RefCell::new(None);
 }
 
 pub enum UICallback {

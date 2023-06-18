@@ -111,16 +111,12 @@ impl Decoration {
     }
 
     pub fn on_mouse_release(&mut self) {
-        match self {
-            Self::Button(active) => *active = false,
-            _ => ()
+        if let Self::Button(active) = self {
+            *active = false
         }
     }
 
     pub fn clickable(&self) -> bool {
-        match self {
-            Self::Switch(_) | Self::Button(_) => true,
-            _ => false
-        }
+        matches!(self, Self::Switch(_) | Self::Button(_))
     }
 }

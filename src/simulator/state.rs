@@ -45,9 +45,8 @@ pub enum State {
 
 impl State {
     pub fn apply(&self, plot: &mut Plot) {
-        match self {
-            Self::Inherit(state) => state.apply(plot),
-            _ => ()
+        if let Self::Inherit(state) = self {
+             state.apply(plot)
         }
     }
 }

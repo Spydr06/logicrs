@@ -9,7 +9,7 @@ where E: std::fmt::Display {
     }
 }
 
-pub fn die<'a>(reason: &'a str) -> ! {
+pub fn die(reason: &str) -> ! {
     error!("[FATAL] {reason}");
     panic!()
 }

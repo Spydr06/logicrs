@@ -71,7 +71,7 @@ impl Module {
         }
     }
 
-    pub fn new_builtin<'a>(name: &'a str, category: Category, num_inputs: u8, num_outputs: u8, decoration: Decoration) -> Self {
+    pub fn new_builtin(name: &str, category: Category, num_inputs: u8, num_outputs: u8, decoration: Decoration) -> Self {
         Self {
             name: name.to_string(),
             category,
@@ -98,12 +98,9 @@ impl Module {
     }
 
     pub fn set_io_blocks(&mut self, input_block: BlockID, output_block: BlockID) {
-        match &mut self.custom_data {
-            Some(data) => {
-                data.input_block = input_block;
-                data.output_block = output_block
-            }
-            _ => ()
+        if let Some(data) = &mut self.custom_data {
+            data.input_block = input_block;
+            data.output_block = output_block
         }
     }
 
@@ -191,7 +188,7 @@ impl Module {
 
 impl Ord for Module {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.name.chars().nth(0).unwrap().cmp(&other.name().chars().nth(0).unwrap())
+        self.name.chars().next().unwrap().cmp(&other.name().chars().next().unwrap())
     }
 }
 

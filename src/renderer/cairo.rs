@@ -168,7 +168,7 @@ impl Renderer for CairoRenderer {
     }
 
     #[inline]
-    fn show_text<'a>(&self, text: &'a str) -> Result<&Self, Error> {
+    fn show_text(&self, text: &str) -> Result<&Self, Error> {
         match &self.context {
             Some(context) => context.show_text(text).map(|_| self),
             None => Ok(self)

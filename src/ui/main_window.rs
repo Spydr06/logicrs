@@ -79,7 +79,7 @@ impl MainWindow {
         self.initialize(app);
     }
 
-    pub fn set_subtitle(&self, text: &String) {
+    pub fn set_subtitle(&self, text: &str) {
         let panel = &self.imp().circuit_panel;
         panel.set_title(text);
     }

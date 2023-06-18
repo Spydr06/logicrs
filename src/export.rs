@@ -63,8 +63,8 @@ impl ModuleFile {
     }
 
     fn check_compat(&self, project: &mut Project) -> Vec<String> {
-        self.modules.iter()
-            .map(|(name, _)| name.clone())
+        self.modules.keys()
+            .cloned()
             .filter(|name| project.module(name).is_some())
             .collect::<Vec<_>>()
     }

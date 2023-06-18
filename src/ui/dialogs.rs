@@ -169,5 +169,5 @@ pub fn run<F, T>(application: Application, window: gtk::Window, data: T, dialog:
 where
     F: Future<Output = ()> + 'static,
 {
-    gtk::glib::MainContext::default().spawn_local(dialog(application, window.clone(), data));
+    gtk::glib::MainContext::default().spawn_local(dialog(application, window, data));
 }

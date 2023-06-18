@@ -11,13 +11,17 @@ pub struct ActionStack {
 
 impl ActionStack {
     pub fn undo(&mut self, app: &Application) {
-        if self.next > 0 && let Some(action) = self.actions.get(self.next - 1) {
+        if self.next > 0 {
+            let action = self.actions.get(self.next - 1);
+            if action.is_none() {
+                println!("{} {} {}", self.actions.len(), self.next, self.dirty);
+            }
             self.next -= 1;
             self.dirty = true;
             self.update_buttons(&app.imp().undo_button(), &app.imp().redo_button());
 
             info!("Un-doing action {}", self.next);
-            action.undo(app);
+            action.unwrap().undo(app);
         }
     }
 
@@ -51,6 +55,7 @@ impl ActionStack {
         self.update_buttons(&app.imp().undo_button(), &app.imp().redo_button());
 
         while self.actions.len() > config::MAX_ACTION_STACK_SIZE {
+            self.next -= 1;
             self.actions.remove(0); // shorten the action stack to prevent memory leaks
         }
     }
