@@ -82,7 +82,7 @@ impl Application {
 
     pub fn cut_clipboard(&self, clipboard: Clipboard) {
         match clipboard {
-            Clipboard::Blocks(blocks, _) => self.new_action(Action::DeleteSelection(self.imp().current_plot().unwrap(), blocks, vec![], vec![])),
+            Clipboard::Blocks(blocks, connections) => self.new_action(Action::DeleteSelection(self.imp().current_plot().unwrap(), blocks, connections, vec![])),
             Clipboard::Module(_) => todo!(),
             Clipboard::Empty => {}
         }

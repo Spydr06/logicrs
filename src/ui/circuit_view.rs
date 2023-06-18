@@ -396,11 +396,11 @@ impl CircuitViewTemplate {
                 let start = *waypoint.position().unwrap();
 
                 if self.alt_down.take() {
-                    waypoint.set_highlighted(true);
-                    plot.set_selection(Selection::Single(Selectable::Waypoint(id), start))
+                    plot.set_selection(Selection::Connection(ConnectionSource::Waypoint(id), start, start))                    
                 }
                 else {
-                    plot.set_selection(Selection::Connection(ConnectionSource::Waypoint(id), start, start))                    
+                    waypoint.set_highlighted(true);
+                    plot.set_selection(Selection::Single(Selectable::Waypoint(id), start))
                 }
             }
             else {

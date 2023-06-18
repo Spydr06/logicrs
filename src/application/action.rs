@@ -84,7 +84,7 @@ pub enum Action {
     WaypointToConnection(PlotProvider, SegmentID, Segment, BlockID, u8),
     AddSegment(PlotProvider, SegmentID, Segment, Option<Id>),
     ChangeBorderColor(PlotProvider, Color, Vec<BlockID>, Vec<Option<Color>>),
-    DeleteSelection(PlotProvider, Vec<Block>, Vec<Connection>, Vec<(SegmentID, Segment)>),
+    DeleteSelection(PlotProvider, Vec<Block>, Vec<Connection>, Vec<Connection>),
     CreateModule(ProjectRef, Module),
     DeleteModule(ProjectRef, Module),
 }
@@ -99,7 +99,7 @@ impl Action {
             Self::PasteBlocks(plot_provier, blocks, connections) => {
                 plot_provier.with_mut(|plot| {
                     blocks.iter().for_each(|block| plot.add_block(block.clone()));
-                    connections.iter().for_each(|connection| plot.add_connection(connection.clone()));
+                    connections.iter().for_each(|connection| unsafe { plot.add_connection_unsafe(connection.clone()) });
                 });
                 app.imp().rerender_editor();
             }
@@ -170,22 +170,21 @@ impl Action {
 
                 app.imp().rerender_editor();
             }
-            Self::DeleteSelection(plot_provider, blocks, incoming_connections, segments) => {
-                let connections = plot_provider.with_mut(|plot| {
-                    for (_id, _segment) in &*segments {
-                        
+            Self::DeleteSelection(plot_provider, blocks, connections, incoming) => {
+                println!("delete connections: {connections:?} incoming: {incoming:?}");
+                *incoming = plot_provider.with_mut(|plot| {
+                    for connection in &*connections {
+                        plot.remove_connection(connection.id());
                     }
 
-                    let mut connections = vec![];
+                    let mut incoming = vec![];
                     for block in blocks.iter() {
-                        connections.append(&mut plot.delete_block(block.id()))
+                        incoming.append(&mut plot.delete_block(block.id()))
                     }
-                    connections
+                    incoming
                 }).unwrap_or_default();
 
                 blocks.iter_mut().for_each(|block| block.set_highlighted(false));
-
-                *incoming_connections = connections;
                 app.imp().rerender_editor();
             }
             Self::CreateModule(project, module) => {
@@ -280,10 +279,11 @@ impl Action {
 
                 app.imp().rerender_editor();
             }
-            Self::DeleteSelection(plot_provider, blocks, incoming_connections, _segments) => {
+            Self::DeleteSelection(plot_provider, blocks, connections, incoming) => {
+                println!("restore connections: {connections:?} incoming: {incoming:?}");
                 plot_provider.with_mut(|plot| {
                     blocks.iter().for_each(|block| plot.add_block(block.clone()));
-                    incoming_connections.iter().for_each(|connection| plot.add_connection(connection.clone()));
+                    connections.iter().chain(incoming.iter()).for_each(|connection| unsafe { plot.add_connection_unsafe(connection.clone()) });
                 });
                 app.imp().rerender_editor();
             }

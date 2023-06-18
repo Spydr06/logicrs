@@ -201,6 +201,11 @@ impl Plot {
         }
     }
 
+    pub unsafe fn add_connection_unsafe(&mut self, connection: Connection) {
+        self.to_update.insert(connection.origin().block_id());
+        self.connections.insert(connection.id(), connection);
+    }
+
     pub fn add_connection(&mut self, connection: Connection) {
         let origin = self.blocks.get_mut(&connection.origin().block_id()).expect("faulty origin block");
 
@@ -241,16 +246,17 @@ impl Plot {
     }
 
     pub fn delete_block(&mut self, id: BlockID) -> Vec<Connection> {
-        if let Some(block) = self.blocks.get(&id) && block.unique() {
-            return vec![];
-        }
-
         let mut deleted_connections = vec![];
+        let mut unique = false;
         if let Some(block) = self.blocks.get(&id) {
+            unique = block.unique();
             deleted_connections = block.connected_to()
                 .iter()
                 .filter_map(|id| self.remove_connection(*id))
                 .collect();
+        }
+
+        if !unique {
             self.blocks.remove(&id);
         }
 
@@ -268,9 +274,17 @@ impl Plot {
     pub fn to_update_mut(&mut self) -> &mut HashSet<BlockID> {
         &mut self.to_update
     }
+    
+    pub fn update_all_blocks(&mut self) {
+        for block_id in self.blocks.keys().copied() {
+            self.to_update.insert(block_id);
+        }
+    }
+
+    const RECURSION_CAP: u8 = 100;
 
     pub fn simulate(&mut self, project: &mut Project, call_stack: &mut HashSet<String>) -> SimResult<bool> {
-        let mut updated = HashSet::new();
+        let mut updated = HashMap::new();
         let mut queued = HashSet::new();
         let mut changes = false;
 
@@ -279,9 +293,21 @@ impl Plot {
             changes = true;
             
             for block_id in to_update.iter() {
+                if updated.contains_key(block_id) {
+                    let occurrences = updated.get_mut(block_id).unwrap();
+                    if *occurrences >= Self::RECURSION_CAP {
+                        queued.insert(*block_id);
+                        continue;
+                    }
+                    *occurrences += 1;
+                }
+
                 if let Some(block) = self.blocks.get_mut(block_id) {
                     block.simulate(&mut self.connections, &mut self.to_update, &mut queued, project, call_stack)?;
-                    updated.insert(*block_id);   
+
+                    if !updated.contains_key(block_id) {
+                        updated.insert(*block_id, 0);   
+                    }
                 }
             }
         }
@@ -349,9 +375,7 @@ impl SelectionField for Plot {
             },
             Selection::Area(_, _) => {
                 self.blocks_mut().iter_mut().for_each(|(_, v)| v.set_highlighted(false));
-
-                fn unhighlight_segment(segment: &mut Segment) { segment.set_highlighted(false) }
-                self.connections_mut().iter_mut().for_each(|(_, c)| c.for_each_mut_segment(unhighlight_segment))
+                self.connections_mut().iter_mut().for_each(|(_, c)| c.for_each_mut_segment(|segment| segment.set_highlighted(false)))
             }
             _ => ()
         }

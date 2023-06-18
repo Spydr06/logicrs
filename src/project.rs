@@ -60,6 +60,8 @@ impl Project {
         BUILTINS.iter().for_each(|(_, builtin)| project.add_module(builtin.module().clone()));
 
         info!("Loaded from file `{}`", file.path().unwrap().to_str().unwrap());
+
+        project.iter_plots_mut().for_each(|plot| plot.update_all_blocks());
         Ok(project)
     }
 

@@ -51,11 +51,11 @@ The file format used for LogicRs projects is `.lrsproj`.
 - `mouse drag`:
   - in empty space: select all items in an area
   - on a block: move that block
-  - on an output connector or waypoint: draw a new connection between two blocks
-  - with `alt`: select and move a connection waypoint
+  - on a waypoint: move that waypoint
+  - on an output connector: draw a new connection between two blocks
+  - with `alt`: draw a new connection from a waypoint
   - with `ctrl`: move the editor view
 - `mouse wheel`: zoom in or out of the editor
-
 
 ### Keyboard Shortcuts
 
