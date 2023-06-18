@@ -18,6 +18,7 @@ function Create-Shortcut {
     param (
         [string]$SourceExe,
         [string]$Arguments,
+        [string]$IconFile,
         [string]$DestinationPath
     )
 
@@ -26,6 +27,7 @@ function Create-Shortcut {
     $Shortcut = $WshShell.CreateShortcut($DestinationPath)
     $Shortcut.TargetPath = $SourceExe
     $Shortcut.Arguments = $Arguments
+    $Shortcut.IconLocation = $IconFile
     $Shortcut.Save()
 }
 
@@ -80,7 +82,12 @@ Push-Location $dir
         Create-Shortcut                             `
             "%windir%\explorer.exe"                 `
             ".\bin\$executable"                     `
+            "share\logicrs.ico"                   `
             "$(Resolve-Path -Path ".")\logicrs.lnk"
+
+        # New-Item -ItemType SymbolicLink -Path ".\$executable" -Target ".\bin\$executable"
+
+        rcedit ".\bin\$executable" --set-icon ".\share\logicrs.ico"
     Pop-Location # dist directory
 
     # create the distributable zip archive
