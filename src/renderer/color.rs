@@ -12,11 +12,11 @@ impl IntoColor for gtk::gdk::RGBA {
 }
 
 pub trait IntoRGBA {
-    fn into_rgba(&self) -> gtk::gdk::RGBA;
+    fn into_rgba(self) -> gtk::gdk::RGBA;
 }
 
 impl IntoRGBA for Color {
-    fn into_rgba(&self) -> gtk::gdk::RGBA {
+    fn into_rgba(self) -> gtk::gdk::RGBA {
         gtk::gdk::RGBA::new(self.0, self.1, self.2, self.3)
     }
 }

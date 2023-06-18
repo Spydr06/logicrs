@@ -44,23 +44,20 @@ impl CircuitPanel {
     }
 
     pub fn open_tab(&self, plot_provider: PlotProvider) {
-        match &plot_provider {
-            PlotProvider::Module(_, module_name) => {
-                let mut i = 0;
-                let view = &self.imp().view;
-                while i < view.n_pages() {
-                    let page = view.nth_page(i);
-                    if page.title().eq(module_name) {
-                        self.imp().view.set_selected_page(&page);
-                        return;
-                    }
-                    i += 1;
+        if let PlotProvider::Module(_, module_name) = &plot_provider {
+            let mut i = 0;
+            let view = &self.imp().view;
+            while i < view.n_pages() {
+                let page = view.nth_page(i);
+                if page.title().eq(module_name) {
+                    self.imp().view.set_selected_page(&page);
+                    return;
                 }
-
-                // page not found, create new
-                self.imp().new_tab(&module_name, plot_provider.clone());
+                i += 1;
             }
-            _ => {}
+            
+            // page not found, create new
+            self.imp().new_tab(module_name, plot_provider.clone());
         }
     }
 
@@ -68,11 +65,11 @@ impl CircuitPanel {
         self.imp().application.replace(app);
     }
 
-    pub fn new_tab<'a>(&self, title: &'a str, plot_provider: PlotProvider) {
+    pub fn new_tab(&self, title: &str, plot_provider: PlotProvider) {
         self.imp().new_tab(title, plot_provider)
     }
 
-    pub fn set_title<'a>(&self, title: &'a str) {
+    pub fn set_title(&self, title: &str) {
         self.imp().set_title(title)
     }
 
@@ -135,14 +132,14 @@ pub struct CircuitPanelTemplate {
 }
 
 impl CircuitPanelTemplate {
-    fn add_page<'a>(&self, content: &CircuitView, title: &'a str) -> adw::TabPage {
+    fn add_page(&self, content: &CircuitView, title: &str) -> adw::TabPage {
         let page = self.view.add_page(content, None);
         page.set_indicator_activatable(true);
         page.set_title(title);
         page
     }
 
-    fn new_tab<'a>(&self, title: &'a str, plot_provider: PlotProvider) {
+    fn new_tab(&self, title: &str, plot_provider: PlotProvider) {
         let content = CircuitView::new(self.application.borrow().clone(), plot_provider);
         if self.toggle_grid_button.is_active() {
             content.set_editor_mode(EditorMode::Grid);
@@ -159,7 +156,7 @@ impl CircuitPanelTemplate {
         }
     }
 
-    fn set_title<'a>(&self, title: &'a str) {
+    fn set_title(&self, title: &str) {
         (self.header_bar.title_widget().unwrap().downcast_ref().unwrap() as &adw::WindowTitle).set_subtitle(title);
     }
 

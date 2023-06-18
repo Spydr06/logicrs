@@ -3,7 +3,7 @@ use adw::subclass::prelude::*;
 use std::cell::RefCell;
 use crate::{
     ui::{main_window::MainWindow, circuit_view::CircuitView, dialogs},
-    fatal::*, project::*, simulator::*, renderer::Theme, config,
+    fatal::*, project::*, simulator::*, renderer::Theme,
 };
 
 use super::{action::*, clipboard::Clipboard, Application, selection::*};
@@ -56,7 +56,7 @@ impl ApplicationTemplate {
             if let Some(window) = self.window.borrow().as_ref() {
                 window.set_subtitle(&self.file_name());
             }
-            then(&*self.instance());
+            then(&self.instance());
         }
         else {
             self.instance().save_as(then);
@@ -219,7 +219,7 @@ impl ApplicationImpl for ApplicationTemplate {
     }
 
     fn open(&self, files: &[gio::File], _hint: &str) {
-        assert!(files.len() != 0);
+        assert!(!files.is_empty());
 
         let file = &files[0];
         if file.path().is_none() {

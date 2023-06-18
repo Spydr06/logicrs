@@ -313,7 +313,7 @@ impl CircuitViewTemplate {
         self.left_osd_box.set_visible(visible);
     }
 
-    fn set_left_osd_label<'a>(&self, label: &'a str) {
+    fn set_left_osd_label(&self, label: &str) {
         self.left_osd_label.set_text(label);
     }
 
@@ -358,20 +358,16 @@ impl CircuitViewTemplate {
         match selection {
             Some(Selection::MoveBlock(block)) =>
                 self.application.borrow()
-                    .new_action(Action::NewBlock(self.plot_provider.borrow().clone(), block.clone())),
+                    .new_action(Action::NewBlock(self.plot_provider.borrow().clone(), *block)),
             Some(Selection::Many(block_ids)) => 
-                if self.shift_down.get() {
-                    if self.selection_shift_click(block_ids, position) {
-                        self.drawing_area.queue_draw();
-                        return;
-                    }
+                if self.shift_down.get() && self.selection_shift_click(block_ids, position) {
+                    self.drawing_area.queue_draw();
+                    return;
                 }
             Some(Selection::Single(block_id, _)) =>
-                if self.shift_down.get() {
-                    if self.selection_shift_click(vec![block_id], position) {
-                        self.drawing_area.queue_draw();
-                        return;
-                    }
+                if self.shift_down.get() && self.selection_shift_click(vec![block_id], position) {
+                    self.drawing_area.queue_draw();
+                    return;
                 }
             _ => ()   
         }
@@ -529,8 +525,7 @@ impl CircuitViewTemplate {
             Selection::MouseEvent(block_id) => {
                 plot_provider.with_mut(|plot| {
                     plot.set_selection(Selection::None);
-                    plot.get_block_mut(block_id)
-                        .map(|block| block.on_mouse_release());
+                    if let Some(block) = plot.get_block_mut(block_id) { block.on_mouse_release() }
                     plot.add_block_to_update_unique(block_id);
                 });
                 self.drawing_area.queue_draw();

@@ -26,9 +26,9 @@ impl From<u8> for Theme {
     }
 }
 
-impl Into<adw::ColorScheme> for Theme {
-    fn into(self) -> adw::ColorScheme {
-        match self {
+impl From<Theme> for adw::ColorScheme {
+    fn from(val: Theme) -> Self {
+        match val {
             Theme::SystemPreference => adw::ColorScheme::Default,
             Theme::Dark => adw::ColorScheme::ForceDark,
             Theme::Light => adw::ColorScheme::ForceLight
@@ -73,7 +73,7 @@ impl<'a> GAction<'a> {
 impl<'a> From<&GAction<'a>> for gio::SimpleAction {
     fn from(value: &GAction<'a>) -> Self {
         if let Some((state_type, original)) = &value.state_type {
-            gio::SimpleAction::new_stateful(value.name, Some(state_type), &original)
+            gio::SimpleAction::new_stateful(value.name, Some(state_type), original)
         }
         else {
             gio::SimpleAction::new(value.name, value.parameter_type)
@@ -272,7 +272,7 @@ impl Application {
                     if response != gtk::ResponseType::Accept {
                         return;
                     }
-                    if let Some(file) = file_chooser.files().snapshot().into_iter().nth(0) {
+                    if let Some(file) = file_chooser.files().snapshot().into_iter().next() {
                         let file: gio::File = file
                             .downcast()
                             .expect("unexpected type returned from file chooser");
@@ -320,7 +320,7 @@ impl Application {
                             .expect("unexpected type returned from file chooser");
                         let app = app.clone();
                         if let Err(message) = ModuleFile::import(&file)
-                            .map(|mod_file| mod_file.merge(&app)).flatten() {
+                            .and_then(|mod_file| mod_file.merge(&app)) {
                                 let window = app.active_window().unwrap();
                                 dialogs::run(app, window, message, dialogs::basic_error);
                         }

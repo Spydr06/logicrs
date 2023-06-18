@@ -1,5 +1,5 @@
 use gtk::{prelude::*, subclass::prelude::*, gio, glib, IconTheme, gdk::Display};
-use adw::{subclass::prelude::AdwApplicationWindowImpl, Window};
+use adw::{subclass::prelude::AdwApplicationWindowImpl};
 use crate::{application::*, simulator::*, config};
 use super::{circuit_panel::*, module_list::*, circuit_view::*};
 

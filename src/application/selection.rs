@@ -30,7 +30,7 @@ pub enum Selection {
     Many(Vec<Selectable>),
     Area(Vector2<i32>, Vector2<i32>),
     MouseEvent(BlockID),
-    MoveBlock(Block),
+    MoveBlock(Box<Block>),
     Connection(ConnectionSource, Vector2<i32>, Vector2<i32>),
     None
 }

@@ -156,13 +156,13 @@ impl Action {
             }
             Self::ChangeBorderColor(plot_provider, new_color, block_ids, old_colors) => {
                 let old = plot_provider.with_mut(|plot| {
-                    block_ids.iter().map(|block_id| {
+                    block_ids.iter().filter_map(|block_id| {
                         plot.get_block_mut(*block_id).map(|block| {
                             let old_color = *block.color();
                             block.set_color(Some(*new_color));
                             old_color
                         })
-                    }).flatten().collect()
+                    }).collect()
                 });
                 if let Some(old) = old {
                     *old_colors = old;
@@ -172,7 +172,7 @@ impl Action {
             }
             Self::DeleteSelection(plot_provider, blocks, incoming_connections, segments) => {
                 let connections = plot_provider.with_mut(|plot| {
-                    for (id, segment) in &*segments {
+                    for (_id, _segment) in &*segments {
                         
                     }
 
@@ -190,7 +190,7 @@ impl Action {
             }
             Self::CreateModule(project, module) => {
                 if let Some(window) = app.imp().window().borrow().as_ref() {
-                    window.add_module_to_ui(app, &module);
+                    window.add_module_to_ui(app, module);
                 }
                 project.lock().unwrap().add_module(module.clone());
             }
@@ -280,7 +280,7 @@ impl Action {
 
                 app.imp().rerender_editor();
             }
-            Self::DeleteSelection(plot_provider, blocks, incoming_connections, segments) => {
+            Self::DeleteSelection(plot_provider, blocks, incoming_connections, _segments) => {
                 plot_provider.with_mut(|plot| {
                     blocks.iter().for_each(|block| plot.add_block(block.clone()));
                     incoming_connections.iter().for_each(|connection| plot.add_connection(connection.clone()));
@@ -295,7 +295,7 @@ impl Action {
             }
             Self::DeleteModule(project, module) => {
                 if let Some(window) = app.imp().window().borrow().as_ref() {
-                    window.add_module_to_ui(app, &module);
+                    window.add_module_to_ui(app, module);
                 }
                 project.lock().unwrap().add_module(module.clone());
             }

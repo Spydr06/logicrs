@@ -7,7 +7,7 @@ use super::{action::Action, selection::*};
 pub enum Clipboard {
     Empty,
     Blocks(Vec<Block>, Vec<Connection>),
-    Module(Module)
+    Module(Box<Module>)
 }
 
 impl Default for Clipboard {
@@ -21,7 +21,7 @@ impl Clipboard {
         serde_json::to_string(self).map_err(|err| err.to_string())
     }
 
-    pub fn deserialize<'a>(data: &'a str) -> Result<Self, String> {
+    pub fn deserialize(data: &str) -> Result<Self, String> {
         serde_json::from_str(data).map_err(|err| err.to_string())
     }
 
@@ -33,7 +33,7 @@ impl Clipboard {
                 plot.unhighlight();
                 plot.set_selection(Selection::Many(data.0.iter().map(|block| Selectable::Block(block.id())).collect()));
             });
-            return Ok(Action::PasteBlocks(plot_provider.to_owned(), data.0, data.1));
+            return Ok(Action::PasteBlocks(plot_provider, data.0, data.1));
         }
         
         panic!("called `paste_to()` on clipboard != Clipboard::Blocks")
@@ -59,7 +59,7 @@ impl From<&Plot> for Clipboard {
                     .filter_map(|selectable| selectable.block_id())
                     .filter_map(|block_id| plot.get_block(block_id).filter(|block| !block.unique()));
                 let block_ids = selection.clone().map(|block| block.id()).collect::<Vec<BlockID>>();
-                let blocks = selection.map(|block| block.clone()).collect::<Vec<Block>>();
+                let blocks = selection.cloned().collect::<Vec<Block>>();
                 let mut data = (blocks, Vec::new());
                 data.prepare_copying((plot, block_ids));
                 Self::Blocks(data.0, data.1)
@@ -145,8 +145,7 @@ impl Pasteable<Vector2<f64>> for (Vec<Block>, Vec<Connection>) {
 
             self.0.iter_mut().for_each(|block|
                 block.connections_mut()
-                    .filter(|c| c.is_some())
-                    .map(|c| c.as_mut().unwrap())
+                    .filter_map(|c| c.as_mut())
                     .for_each(|c|
                         if *c == old_id {
                             *c = new_id;

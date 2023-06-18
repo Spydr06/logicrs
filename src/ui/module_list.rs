@@ -176,7 +176,7 @@ impl ModuleListTemplate {
                 drop(project);
                 plot.with_mut(move |p| {
                     p.unhighlight();
-                    p.set_selection(Selection::MoveBlock(block.clone()))
+                    p.set_selection(Selection::MoveBlock(Box::new(block.clone())))
                 });
             }
         }));

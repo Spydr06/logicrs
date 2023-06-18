@@ -27,12 +27,12 @@ impl Default for Application {
 impl Application {
     pub fn new() -> Self {
         gio::resources_register_include!("logicrs.gresource").expect("Failed to register resources.");
-        let app = glib::Object::new::<Self>(&[
+        
+
+        glib::Object::new::<Self>(&[
             ("application-id", &"com.spydr06.logicrs"),
             ("flags", &gio::ApplicationFlags::HANDLES_OPEN),
-        ]);
-
-        app
+        ])
     }
 
     pub fn new_action(&self, action: Action) {
@@ -107,7 +107,6 @@ impl Application {
         self.close_current_file(glib::clone!(@weak self as app => move |response| {
             match response {
                 "Cancel" => {
-                    return;
                 },
                 "No" =>  {
                     app.imp().shutdown();
@@ -119,11 +118,10 @@ impl Application {
                         if let Some(window) = app.active_window() {
                             dialogs::run(app, window, message, dialogs::basic_error);
                         }
-                        return;
                     }
                 }
                 _ => panic!("unexpected response \"{}\"", response)
-            };
+            }
         }));
     }
 
