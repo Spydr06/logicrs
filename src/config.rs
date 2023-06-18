@@ -5,4 +5,10 @@ pub const AUTHORS:     &'static str = env!("CARGO_PKG_AUTHORS");
 pub const COPYRIGHT:   &'static str = "© 2022 - 2023 Spydr06";
 pub const REPOSITORY:  &'static str = env!("CARGO_PKG_REPOSITORY");
 
+#[cfg(debug_assertions)]
+pub const APP_ICON_NAME: &'static str = "com.spydr06.logicrs.Devel";
+
+#[cfg(not(debug_assertions))]
+pub const APP_ICON_NAME: &'static str = "com.spydr06.logicrs";
+
 pub const MAX_ACTION_STACK_SIZE: usize = 100;

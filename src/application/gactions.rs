@@ -493,6 +493,7 @@ impl Application {
             .transient_for(&window)
             .modal(true)
             .application_name(config::APP_ID)
+            .application_icon(config::APP_ICON_NAME)
             .version(config::VERSION)
             .comments(config::DESCRIPTION)
             .copyright(config::COPYRIGHT)

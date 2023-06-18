@@ -3,7 +3,7 @@ use adw::subclass::prelude::*;
 use std::cell::RefCell;
 use crate::{
     ui::{main_window::MainWindow, circuit_view::CircuitView, dialogs},
-    fatal::*, project::*, simulator::*, renderer::Theme,
+    fatal::*, project::*, simulator::*, renderer::Theme, config,
 };
 
 use super::{action::*, clipboard::Clipboard, Application, selection::*};
@@ -45,6 +45,7 @@ impl ApplicationTemplate {
 
         // build the application window and UI
         let window = MainWindow::new(application);
+        window.set_icon_name(Some(config::APP_ICON_NAME));
         window.show();
         self.window.replace(Some(window));
     }

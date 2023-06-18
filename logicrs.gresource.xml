@@ -13,6 +13,11 @@
     <file compressed="true">style/overlay.css</file>
     <file compressed="true">style/module-list.css</file>
   </gresource>
+  <!-- Application Icon -->
+  <gresource prefix="/com/spydr06/logicrs/icons/64x64/apps/">
+    <file compressed="true" preprocess="xml-stripblanks" alias="com.spydr06.logicrs.svg">style/icons/hicolor/com.spydr06.logicrs.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="com.spydr06.logicrs.Devel.svg">style/icons/hicolor/com.spydr06.logicrs.Devel.svg</file>
+  </gresource>
   <!-- Icons -->
   <gresource prefix="/com/spydr06/logicrs/icons/scalable/actions/">
     <file compressed="true" preprocess="xml-stripblanks" alias="zoom-in-symbolic.svg">style/icons/zoom-in-symbolic.svg</file>
