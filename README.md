@@ -7,8 +7,7 @@
 [📑 Documentation](./DOCS.md) |
 [💾 Installation](./INSTALL.md) |
 [🤝 Contributing](./CONTRIBUTING.md) |
-[📜 License](./LICENSE) |
-[❓ State](#current-state)
+[📜 License](./LICENSE)
 
 ![license_shield](https://img.shields.io/github/license/spydr06/logicrs?style=flat-square)
 ![issues_shield](https://img.shields.io/github/issues/spydr06/logicrs?style=flat-square)
