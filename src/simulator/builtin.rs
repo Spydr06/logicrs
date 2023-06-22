@@ -74,7 +74,7 @@ lazy_static! {
 
         builtins.insert("Xnor", Builtin::new(
             Module::new_builtin("Xnor", Category::Gate, 2, 1, Decoration::NotLabel(String::from("=1"))),
-            |input, _| (input == 0b00 || input == 0b10) as u128
+            |input, _| (input == 0b00 || input == 0b11) as u128
         ));
 
         builtins.insert("Button", Builtin::new(
