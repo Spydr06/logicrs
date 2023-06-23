@@ -49,7 +49,7 @@ lazy_static! {
 
         builtins.insert("Nand", Builtin::new(
             Module::new_builtin("Nand", Category::Gate, 2, 1, Decoration::NotLabel(String::from("&"))),
-            |input, _| (input & 0b10 != 0b10) as u128
+            |input, _| (input != 0b11) as u128
         ));
 
         builtins.insert("Or", Builtin::new(
