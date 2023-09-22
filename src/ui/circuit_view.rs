@@ -288,9 +288,16 @@ impl CircuitViewTemplate {
                         block.set_highlighted(true);
                         let start_position = block.position();
 
-                        if let Selection::None = plot.selection() {
-                            plot.unhighlight();
-                            plot.set_selection(Selection::Single(Selectable::Block(id), start_position));
+                        match plot.selection() {
+                            Selection::None => {
+                                plot.unhighlight();
+                                plot.set_selection(Selection::Single(Selectable::Block(id), start_position));
+                            }
+                            Selection::Many(sel) if sel.is_empty() => {
+                                plot.unhighlight();
+                                plot.set_selection(Selection::Single(Selectable::Block(id), start_position));
+                            }
+                            _ => {}
                         }
 
                         //drop(plot);

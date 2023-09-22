@@ -171,7 +171,7 @@ impl Action {
                 app.imp().rerender_editor();
             }
             Self::DeleteSelection(plot_provider, blocks, connections, incoming) => {
-                println!("delete connections: {connections:?} incoming: {incoming:?}");
+                //println!("delete connections: {connections:?} incoming: {incoming:?}");
                 *incoming = plot_provider.with_mut(|plot| {
                     for connection in &*connections {
                         plot.remove_connection(connection.id());
