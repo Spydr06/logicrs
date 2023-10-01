@@ -21,63 +21,110 @@ env:
 jobs:
   check:
     name: Check code compiles
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install apt dependencies
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: build-essential gettext git libcairo2-dev libgtk-4-dev meson ninja-build sassc valac
+          version: latest
+      - name: Clone libadwaita git repo
+        run: git clone https://gitlab.gnome.org/GNOME/libadwaita.git -b libadwaita-1-2 --depth=1
+      - name: Build libadwaita with Meson
+        run: |
+          cd libadwaita
+          meson . _build -Dgtk_doc=false -Dtests=false -Dexamples=false
+      - name: Install libadwaita with Ninja
+        run: |
+          cd libadwaita
+          sudo ninja -C _build install
+
       - uses: dtolnay/rust-toolchain@nightly
-      - uses: Swatinem/rust-cache@v2
       - name: Run cargo check
         run: cargo check
 
   test:
     name: Run tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install apt dependencies
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: build-essential gettext git libcairo2-dev libgtk-4-dev meson ninja-build sassc valac
+          version: latest
+      - name: Clone libadwaita git repo
+        run: git clone https://gitlab.gnome.org/GNOME/libadwaita.git -b libadwaita-1-2 --depth=1
+      - name: Build libadwaita with Meson
+        run: |
+          cd libadwaita
+          meson . _build -Dgtk_doc=false -Dtests=false -Dexamples=false
+      - name: Install libadwaita with Ninja
+        run: |
+          cd libadwaita
+          sudo ninja -C _build install
+
       - uses: dtolnay/rust-toolchain@nightly
-      - uses: Swatinem/rust-cache@v2
-      - name: Run tests
+      - name: Run cargo test
         run: cargo test
 
   fmt:
-    name: Lint with rmstfmt
-    runs-on: ubuntu-latest
+    name: Lint with rustfmt
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
         with:
           components: rustfmt
-      - uses: Swatinem/rust-cache@v2
-      - name: Enforce formatting
+      - name: Run rustfmt checks
         run: cargo fmt --check
 
   clippy:
     name: Lint with clippy
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install apt dependencies
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: build-essential gettext git libcairo2-dev libgtk-4-dev meson ninja-build sassc valac
+          version: latest
+      - name: Clone libadwaita git repo
+        run: git clone https://gitlab.gnome.org/GNOME/libadwaita.git -b libadwaita-1-2 --depth=1
+      - name: Build libadwaita with Meson
+        run: |
+          cd libadwaita
+          meson . _build -Dgtk_doc=false -Dtests=false -Dexamples=false
+      - name: Install libadwaita with Ninja
+        run: |
+          cd libadwaita
+          sudo ninja -C _build install
+
       - uses: dtolnay/rust-toolchain@nightly
         with:
           components: clippy
-      - uses: Swatinem/rust-cache@v2
-      - name: Linting
+      - name: Run cargo clippy checks
         run: cargo clippy -- -D warnings
 
   cargo-deny:
-    name: cargo deny
-    runs-on: ubuntu-latest
+    name: Security scan with cargo deny
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - uses: EmbarkStudios/cargo-deny-action@v1
+      - name: Run "cargo deny" to check for vulnerabilities
+        uses: EmbarkStudios/cargo-deny-action@v1
 
   cargo-audit:
-    name: cargo audit
-    runs-on: ubuntu-latest
+    name: Security scan with cargo audit
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
-      - uses: Swatinem/rust-cache@v2
       - name: Install cargo audit
         run: cargo install cargo-audit
       - name: Run "cargo audit" to check for vulnerabilities
-        run: cargo audit --color=always --deny=warnings
+        run: cargo audit --deny=warnings
