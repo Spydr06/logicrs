@@ -62,14 +62,12 @@ jobs:
       - name: Linting
         run: cargo clippy -- -D warnings
 
-  cargo_deny:
+  cargo-deny:
     name: cargo deny
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: taiki-e/install-action@cargo-deny
-      - name: Scan for vulnerabilities
-        run: cargo deny check advisories
+      - uses: EmbarkStudios/cargo-deny-action@v1
 
   cargo-audit:
     name: cargo audit
