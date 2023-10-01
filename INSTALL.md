@@ -35,6 +35,14 @@ Prebuilt Binaries can be found on the `releases` section of this repository.
 On UNIX, these dependencies mostly will be taken care of by Cargo and your distribution's package manager.
 On Windows, you will need to install an unix-like environment like MSYS64/MINGW64 and take care of the dependencies yourself.
 
+**Linux**
+
+For rpm-based distributions (Fedora, Red Hat, etc.), use the following to install the dependencies:
+
+```
+sudo dnf install gtk4-devel cairo-devel libadwaita-devel
+```
+
 ## Building
 
 Building LogicRs is very easy by just running one command in the main directory of this repository:
