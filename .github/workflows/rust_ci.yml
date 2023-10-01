@@ -1,0 +1,83 @@
+# This CI (Continuous Integration) file will automatically check your Rust code for errors.
+# It runs using GitHub Actions: https://docs.github.com/en/actions
+# It will check the code compiles, run tests, run lints, and check for security issues.
+# CI will help you standardise your code style and to detect issues with your code easily and early.
+# It makes it easier to integrate different branches once they're finished.
+# adapted from https://github.com/actions-rs/meta/blob/master/recipes/quickstart.md and https://gist.github.com/LukeMathWalker/5ae1107432ce283310c3e601fac915f3
+
+name: Rust CI
+
+on:
+  push:
+  #     branches:
+  #       - main
+  release:
+    types: [published]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: Check code compiles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+      - name: Run cargo check
+        run: cargo check
+
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+      - name: Run tests
+        run: cargo test
+
+  fmt:
+    name: Lint with rmstfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - name: Enforce formatting
+        run: cargo fmt --check
+
+  clippy:
+    name: Lint with clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Linting
+        run: cargo clippy -- -D warnings
+
+  cargo-deny:
+    name: cargo deny
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EmbarkStudios/cargo-deny-action@v1
+
+  cargo-audit:
+    name: cargo audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+      - name: Install cargo audit
+        run: cargo install cargo-audit
+      - name: Run "cargo audit" to check for vulnerabilities
+        run: cargo audit --color=always --deny=warnings
