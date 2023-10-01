@@ -1,6 +1,6 @@
 [package]
 name = "logicrs"
-version = "0.1.3"
+version = "0.1.2"
 edition = "2021"
 description = "An easy-to-use simulator for logical circuits"
 readme = "./README.md"
