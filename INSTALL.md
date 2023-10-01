@@ -37,10 +37,16 @@ On Windows, you will need to install an unix-like environment like MSYS64/MINGW6
 
 **Linux**
 
-For rpm-based distributions (Fedora, Red Hat, etc.), use the following to install the dependencies:
+For rpm-based distributions (Fedora, Red Hat, etc.):
 
 ```
 sudo dnf install gtk4-devel cairo-devel libadwaita-devel
+```
+
+For Ubuntu/Debian-based distributions (requires Ubuntu 23.04 or newer):
+
+```
+sudo apt install build-essential libadwaita-1-dev libcairo2-dev libgtk-4-dev
 ```
 
 ## Building
