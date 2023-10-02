@@ -15,7 +15,7 @@ Building is and installation is done via Cargo from source.
 **Supported Operating Systems:**
 - [x] Linux
 - [x] Windows 10/11
-- [ ] MacOS (untested)
+- [x] MacOS
 
 ## Obtaining LogicRs
 
@@ -47,6 +47,16 @@ For Ubuntu/Debian-based distributions (requires Ubuntu 23.04 or newer):
 
 ```
 sudo apt install build-essential libadwaita-1-dev libcairo2-dev libgtk-4-dev
+```
+
+**MacOS**
+
+On MacOS, use brew to install these dependencies.
+
+```
+brew install cairo
+brew install gtk4
+brew install libadwaita
 ```
 
 ## Building
