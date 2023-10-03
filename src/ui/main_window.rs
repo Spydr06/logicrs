@@ -1,7 +1,7 @@
-use gtk::{prelude::*, subclass::prelude::*, gio, glib, IconTheme, gdk::Display};
-use adw::{subclass::prelude::AdwApplicationWindowImpl};
-use crate::{application::*, simulator::*, config};
-use super::{circuit_panel::*, module_list::*, circuit_view::*};
+use super::{circuit_panel::*, circuit_view::*, module_list::*};
+use crate::{application::*, config, simulator::*};
+use adw::subclass::prelude::AdwApplicationWindowImpl;
+use gtk::{gdk::Display, gio, glib, prelude::*, subclass::prelude::*, IconTheme};
 
 glib::wrapper! {
     pub struct MainWindow(ObjectSubclass<MainWindowTemplate>)
@@ -18,10 +18,7 @@ impl MainWindow {
 
         gtk::Window::set_default_icon_name(config::APP_ICON_NAME);
 
-        let window = glib::Object::new::<Self>(&[
-                ("application", app),
-                ("title", &"LogicRs")
-            ]);
+        let window = glib::Object::new::<Self>(&[("application", app), ("title", &"LogicRs")]);
         window.initialize(app);
         window
     }
@@ -30,7 +27,10 @@ impl MainWindow {
         let panel = &self.imp().circuit_panel;
         let module_list = &self.imp().module_list;
         if !module.builtin() {
-            panel.new_tab(module.name(), PlotProvider::Module(app.imp().project().clone(), module.name().clone()));
+            panel.new_tab(
+                module.name(),
+                PlotProvider::Module(app.imp().project().clone(), module.name().clone()),
+            );
         }
         module_list.add_module_to_ui(app, module);
     }
@@ -55,13 +55,20 @@ impl MainWindow {
         self.imp().module_list.init_accels(app);
         self.set_subtitle(&app.imp().file_name());
         self.set_icon_name(Some(config::APP_ICON_NAME));
-        
+
         let panel = &self.imp().circuit_panel;
-        panel.new_tab("Main Circuit", PlotProvider::Main(app.imp().project().clone()));
+        panel.new_tab(
+            "Main Circuit",
+            PlotProvider::Main(app.imp().project().clone()),
+        );
 
         let project = app.imp().project();
         let project = project.lock().unwrap();
-        project.modules().iter().filter(|(_, module)| !module.hidden()).for_each(|(_, module)| self.add_module_to_ui(app, module));
+        project
+            .modules()
+            .iter()
+            .filter(|(_, module)| !module.hidden())
+            .for_each(|(_, module)| self.add_module_to_ui(app, module));
 
         self.connect_close_request(glib::clone!(@weak app => @default-panic, move |_| {
                 app.quit();
@@ -137,8 +144,9 @@ impl ObjectImpl for MainWindowTemplate {
         let circuit_panel = self.circuit_panel.get();
         let circuit_panel_template = CircuitPanelTemplate::from_instance(&circuit_panel);
 
-        self.leaflet.set_fold_threshold_policy(adw::FoldThresholdPolicy::Minimum);
-        
+        self.leaflet
+            .set_fold_threshold_policy(adw::FoldThresholdPolicy::Minimum);
+
         self.leaflet.property_expression("folded").bind(
             &module_list_template.header_bar.get(),
             "show-end-title-buttons",

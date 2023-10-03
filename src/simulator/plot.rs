@@ -1,12 +1,19 @@
 use super::*;
-use crate::{renderer::{*, vector::Vector2}, application::selection::*, project::{ProjectRef, Project}};
-use std::{collections::{HashMap, HashSet}, cmp};
-use serde::{Serialize, Deserialize};
+use crate::{
+    application::selection::*,
+    project::{Project, ProjectRef},
+    renderer::{vector::Vector2, *},
+};
+use serde::{Deserialize, Serialize};
+use std::{
+    cmp,
+    collections::{HashMap, HashSet},
+};
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub enum PlotDescriptor {
     Main(),
-    Module(String)
+    Module(String),
 }
 
 impl From<&PlotProvider> for PlotDescriptor {
@@ -14,7 +21,7 @@ impl From<&PlotProvider> for PlotDescriptor {
         match value {
             PlotProvider::Main(_) => Self::Main(),
             PlotProvider::Module(_, name) => Self::Module(name.clone()),
-            _ => panic!()
+            _ => panic!(),
         }
     }
 }
@@ -32,7 +39,7 @@ impl From<PlotProvider> for PlotDescriptor {
         match value {
             PlotProvider::None => panic!(),
             PlotProvider::Main(_) => PlotDescriptor::Main(),
-            PlotProvider::Module(_, name) => PlotDescriptor::Module(name)
+            PlotProvider::Module(_, name) => PlotDescriptor::Module(name),
         }
     }
 }
@@ -43,11 +50,7 @@ impl PlotProvider {
         match self {
             Self::None => None,
             Self::Main(project) => Some(func(project.lock().unwrap().main_plot())),
-            Self::Module(project, module) => project
-                .lock()
-                .unwrap()
-                .plot(module)
-                .map(func)
+            Self::Module(project, module) => project.lock().unwrap().plot(module).map(func),
         }
     }
 
@@ -56,19 +59,14 @@ impl PlotProvider {
         match self {
             Self::None => None,
             Self::Main(project) => Some(func(project.lock().unwrap().main_plot_mut())),
-            Self::Module(project, module) => project
-                .lock()
-                .unwrap()
-                .plot_mut(module)
-                .map(func),
+            Self::Module(project, module) => project.lock().unwrap().plot_mut(module).map(func),
         }
     }
 
     pub fn project(&self) -> Option<ProjectRef> {
         match self {
-            Self::Main(project) | 
-            Self::Module(project, _) => Some(project.clone()),
-            _ => None
+            Self::Main(project) | Self::Module(project, _) => Some(project.clone()),
+            _ => None,
         }
     }
 
@@ -79,7 +77,7 @@ impl PlotProvider {
     pub fn is_module(&self) -> Option<&String> {
         match self {
             Self::Module(_, name) => Some(name),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -95,7 +93,7 @@ pub struct Plot {
     selection: Selection,
 
     #[serde(skip)]
-    to_update: HashSet<BlockID>
+    to_update: HashSet<BlockID>,
 }
 
 impl Identifiable for Plot {
@@ -109,7 +107,7 @@ impl Plot {
             connections: HashMap::new(),
             states: vec![PlotState::default()],
             selection: Selection::None,
-            to_update: HashSet::new()
+            to_update: HashSet::new(),
         }
     }
 
@@ -121,8 +119,7 @@ impl Plot {
     pub fn pop_state(&mut self) {
         if let Some(state) = self.states.pop() {
             state.apply(self);
-        }
-        else {
+        } else {
             error!("Plot::pop_state() failed: stack is empty.")
         }
     }
@@ -151,7 +148,7 @@ impl Plot {
     pub fn get_waypoint_at(&self, position: Vector2<i32>) -> Option<SegmentID> {
         for connection in self.connections.values() {
             if let Some(waypoint) = connection.waypoint_at(position) {
-                return Some(waypoint)
+                return Some(waypoint);
             }
         }
         None
@@ -185,7 +182,10 @@ impl Plot {
 
     fn patch_destinations(&mut self, destinations: Vec<Port>, connection_id: ConnectionID) {
         for destination in destinations {
-            let block = self.blocks.get_mut(&destination.block_id()).expect("faulty destination block");
+            let block = self
+                .blocks
+                .get_mut(&destination.block_id())
+                .expect("faulty destination block");
             block.set_connection(destination.into(), Some(connection_id));
         }
     }
@@ -207,15 +207,18 @@ impl Plot {
     }
 
     pub fn add_connection(&mut self, connection: Connection) {
-        let origin = self.blocks.get_mut(&connection.origin().block_id()).expect("faulty origin block");
+        let origin = self
+            .blocks
+            .get_mut(&connection.origin().block_id())
+            .expect("faulty origin block");
 
         if let Some(existing) = origin.connection(connection.origin().into()) {
             self.add_to_existing_connection(existing, &connection);
             return;
         }
-        
+
         origin.set_connection(connection.origin().into(), Some(connection.id()));
-        
+
         self.patch_destinations(connection.destinations(), connection.id());
         self.to_update.insert(connection.origin().block_id());
         self.connections.insert(connection.id(), connection);
@@ -250,7 +253,8 @@ impl Plot {
         let mut unique = false;
         if let Some(block) = self.blocks.get(&id) {
             unique = block.unique();
-            deleted_connections = block.connected_to()
+            deleted_connections = block
+                .connected_to()
                 .iter()
                 .filter_map(|id| self.remove_connection(*id))
                 .collect();
@@ -274,7 +278,7 @@ impl Plot {
     pub fn to_update_mut(&mut self) -> &mut HashSet<BlockID> {
         &mut self.to_update
     }
-    
+
     pub fn update_all_blocks(&mut self) {
         for block_id in self.blocks.keys().copied() {
             self.to_update.insert(block_id);
@@ -283,7 +287,11 @@ impl Plot {
 
     const RECURSION_CAP: u8 = 100;
 
-    pub fn simulate(&mut self, project: &mut Project, call_stack: &mut HashSet<String>) -> SimResult<bool> {
+    pub fn simulate(
+        &mut self,
+        project: &mut Project,
+        call_stack: &mut HashSet<String>,
+    ) -> SimResult<bool> {
         let mut updated = HashMap::new();
         let mut queued = HashSet::new();
         let mut changes = false;
@@ -291,7 +299,7 @@ impl Plot {
         while !self.to_update.is_empty() {
             let to_update = std::mem::take(&mut self.to_update);
             changes = true;
-            
+
             for block_id in to_update.iter() {
                 if updated.contains_key(block_id) {
                     let occurrences = updated.get_mut(block_id).unwrap();
@@ -303,10 +311,16 @@ impl Plot {
                 }
 
                 if let Some(block) = self.blocks.get_mut(block_id) {
-                    block.simulate(&mut self.connections, &mut self.to_update, &mut queued, project, call_stack)?;
+                    block.simulate(
+                        &mut self.connections,
+                        &mut self.to_update,
+                        &mut queued,
+                        project,
+                        call_stack,
+                    )?;
 
                     if !updated.contains_key(block_id) {
-                        updated.insert(*block_id, 0);   
+                        updated.insert(*block_id, 0);
                     }
                 }
             }
@@ -320,12 +334,17 @@ impl Plot {
 
 impl Renderable for Plot {
     fn render<R>(&self, renderer: &R, plot: &Plot) -> Result<(), R::Error>
-        where R: Renderer
+    where
+        R: Renderer,
     {
         let screen_space = renderer.screen_space();
 
         // render all blocks
-        for (_, block) in self.blocks.iter().filter(|(_, block)| block.is_in_area(&screen_space)) {
+        for (_, block) in self
+            .blocks
+            .iter()
+            .filter(|(_, block)| block.is_in_area(&screen_space))
+        {
             block.render(renderer, plot)?;
         }
 
@@ -387,7 +406,7 @@ impl SelectionField for Plot {
         match self.selection.clone() {
             Selection::Single(id, _) => vec![id],
             Selection::Many(ids) => ids,
-            _ => vec![]
+            _ => vec![],
         }
     }
 
@@ -395,10 +414,16 @@ impl SelectionField for Plot {
         if let Selection::Area(selection_start, selection_end) = self.selection {
             let mut selected = Vec::new();
 
-            let min = Vector2::new(cmp::min(selection_start.0, selection_end.0) as f64, cmp::min(selection_start.1, selection_end.1) as f64);
-            let max = Vector2::new(cmp::max(selection_start.0, selection_end.0) as f64, cmp::max(selection_start.1, selection_end.1) as f64);
+            let min = Vector2::new(
+                cmp::min(selection_start.0, selection_end.0) as f64,
+                cmp::min(selection_start.1, selection_end.1) as f64,
+            );
+            let max = Vector2::new(
+                cmp::max(selection_start.0, selection_end.0) as f64,
+                cmp::max(selection_start.1, selection_end.1) as f64,
+            );
             let area = Vector2::new(min, max);
-            
+
             for (_, block) in self.blocks_mut().iter_mut() {
                 if block.is_in_area(&area) {
                     block.set_highlighted(true);
@@ -420,10 +445,21 @@ impl SelectionField for Plot {
     }
 
     fn select_all(&mut self) {
-        self.selection = Selection::Many(self.blocks.keys().map(|id| Selectable::Block(*id)).collect());
-        self.blocks.iter_mut().for_each(|(_, block)| block.set_highlighted(true));
+        self.selection = Selection::Many(
+            self.blocks
+                .keys()
+                .map(|id| Selectable::Block(*id))
+                .collect(),
+        );
+        self.blocks
+            .iter_mut()
+            .for_each(|(_, block)| block.set_highlighted(true));
 
-        fn highlight_segment(segment: &mut Segment) { segment.set_highlighted(true) }
-        self.connections.iter_mut().for_each(|(_, connection)| connection.for_each_mut_segment(highlight_segment));
+        fn highlight_segment(segment: &mut Segment) {
+            segment.set_highlighted(true)
+        }
+        self.connections
+            .iter_mut()
+            .for_each(|(_, connection)| connection.for_each_mut_segment(highlight_segment));
     }
 }

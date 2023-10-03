@@ -1,4 +1,10 @@
-use crate::{simulator::*, config, project::ProjectRef, renderer::{vector::Vector2, Color}, id::Id};
+use crate::{
+    config,
+    id::Id,
+    project::ProjectRef,
+    renderer::{vector::Vector2, Color},
+    simulator::*,
+};
 
 use super::*;
 
@@ -6,7 +12,7 @@ use super::*;
 pub struct ActionStack {
     actions: Vec<Action>,
     next: usize,
-    dirty: bool
+    dirty: bool,
 }
 
 impl ActionStack {
@@ -29,7 +35,7 @@ impl ActionStack {
         if let Some(action) = self.actions.get_mut(self.next) {
             self.next += 1;
             self.dirty = true;
-            
+
             info!("Re-doing action {}", self.next - 1);
             action.exec(app);
 
@@ -48,7 +54,7 @@ impl ActionStack {
         }
 
         action.exec(app);
-        
+
         self.next += 1;
         self.dirty = true;
         self.actions.push(action);
@@ -92,29 +98,39 @@ pub enum Action {
 impl Action {
     fn exec(&mut self, app: &Application) {
         match self {
-            Self::NewBlock(plot_provider, block) => { // place a new block
+            Self::NewBlock(plot_provider, block) => {
+                // place a new block
                 plot_provider.with_mut(|plot| plot.add_block(block.clone()));
                 app.imp().rerender_editor();
             }
             Self::PasteBlocks(plot_provier, blocks, connections) => {
                 plot_provier.with_mut(|plot| {
-                    blocks.iter().for_each(|block| plot.add_block(block.clone()));
-                    connections.iter().for_each(|connection| unsafe { plot.add_connection_unsafe(connection.clone()) });
+                    blocks
+                        .iter()
+                        .for_each(|block| plot.add_block(block.clone()));
+                    connections.iter().for_each(|connection| unsafe {
+                        plot.add_connection_unsafe(connection.clone())
+                    });
                 });
                 app.imp().rerender_editor();
             }
             Self::MoveBlock(plot_provider, block_id, _from, to) => {
-                plot_provider.with_mut(|plot| if let Some(block) = plot.get_block_mut(*block_id) {
-                    block.set_position(*to);
+                plot_provider.with_mut(|plot| {
+                    if let Some(block) = plot.get_block_mut(*block_id) {
+                        block.set_position(*to);
+                    }
                 });
                 app.imp().rerender_editor();
             }
             Self::MoveWaypoint(plot_provider, segment_id, _from, to) => {
-                plot_provider.with_mut(|plot| 
-                    if let Some(waypoint) = plot.get_connection_mut(segment_id.connection_id()).and_then(|c| c.get_segment_mut(segment_id.location())) {
+                plot_provider.with_mut(|plot| {
+                    if let Some(waypoint) = plot
+                        .get_connection_mut(segment_id.connection_id())
+                        .and_then(|c| c.get_segment_mut(segment_id.location()))
+                    {
                         waypoint.set_position(*to);
                     }
-                );
+                });
                 app.imp().rerender_editor();
             }
             Self::NewConnection(plot_provider, connection) => {
@@ -123,17 +139,29 @@ impl Action {
                 });
                 app.imp().rerender_editor();
             }
-            Self::WaypointToConnection(plot_provider, segment_id, _segment, block_id, block_port) => {
-                plot_provider.with_mut(|plot|
-                    if let Some(waypoint) = plot.get_connection_mut(segment_id.connection_id()).and_then(|c| c.get_segment_mut(segment_id.location())) {
+            Self::WaypointToConnection(
+                plot_provider,
+                segment_id,
+                _segment,
+                block_id,
+                block_port,
+            ) => {
+                plot_provider.with_mut(|plot| {
+                    if let Some(waypoint) = plot
+                        .get_connection_mut(segment_id.connection_id())
+                        .and_then(|c| c.get_segment_mut(segment_id.location()))
+                    {
                         waypoint.convert(*block_id, *block_port);
 
                         if let Some(block) = plot.get_block_mut(*block_id) {
-                            block.set_connection(Connector::Input(*block_port), Some(*segment_id.connection_id()));
+                            block.set_connection(
+                                Connector::Input(*block_port),
+                                Some(*segment_id.connection_id()),
+                            );
                             plot.add_block_to_update(*block_id);
                         }
                     }
-                );
+                });
                 app.imp().rerender_editor();
             }
             Self::AddSegment(plot_provider, segment_id, segment, index) => {
@@ -156,13 +184,16 @@ impl Action {
             }
             Self::ChangeBorderColor(plot_provider, new_color, block_ids, old_colors) => {
                 let old = plot_provider.with_mut(|plot| {
-                    block_ids.iter().filter_map(|block_id| {
-                        plot.get_block_mut(*block_id).map(|block| {
-                            let old_color = *block.color();
-                            block.set_color(Some(*new_color));
-                            old_color
+                    block_ids
+                        .iter()
+                        .filter_map(|block_id| {
+                            plot.get_block_mut(*block_id).map(|block| {
+                                let old_color = *block.color();
+                                block.set_color(Some(*new_color));
+                                old_color
+                            })
                         })
-                    }).collect()
+                        .collect()
                 });
                 if let Some(old) = old {
                     *old_colors = old;
@@ -172,19 +203,23 @@ impl Action {
             }
             Self::DeleteSelection(plot_provider, blocks, connections, incoming) => {
                 //println!("delete connections: {connections:?} incoming: {incoming:?}");
-                *incoming = plot_provider.with_mut(|plot| {
-                    for connection in &*connections {
-                        plot.remove_connection(connection.id());
-                    }
+                *incoming = plot_provider
+                    .with_mut(|plot| {
+                        for connection in &*connections {
+                            plot.remove_connection(connection.id());
+                        }
 
-                    let mut incoming = vec![];
-                    for block in blocks.iter() {
-                        incoming.append(&mut plot.delete_block(block.id()))
-                    }
-                    incoming
-                }).unwrap_or_default();
+                        let mut incoming = vec![];
+                        for block in blocks.iter() {
+                            incoming.append(&mut plot.delete_block(block.id()))
+                        }
+                        incoming
+                    })
+                    .unwrap_or_default();
 
-                blocks.iter_mut().for_each(|block| block.set_highlighted(false));
+                blocks
+                    .iter_mut()
+                    .for_each(|block| block.set_highlighted(false));
                 app.imp().rerender_editor();
             }
             Self::CreateModule(project, module) => {
@@ -204,13 +239,14 @@ impl Action {
 
     fn undo(&self, app: &Application) {
         match self {
-            Self::NewBlock(plot_provider, block) => { // remove a block
+            Self::NewBlock(plot_provider, block) => {
+                // remove a block
                 plot_provider.with_mut(|plot| plot.delete_block(block.id()));
                 app.imp().rerender_editor();
             }
             Self::PasteBlocks(plot_provier, blocks, connections) => {
-                plot_provier.with_mut(|plot|  {
-                    blocks.iter().for_each(|block| { 
+                plot_provier.with_mut(|plot| {
+                    blocks.iter().for_each(|block| {
                         plot.delete_block(block.id());
                     });
                     connections.iter().for_each(|connection| {
@@ -220,19 +256,22 @@ impl Action {
                 app.imp().rerender_editor();
             }
             Self::MoveBlock(plot_provider, block_id, from, _to) => {
-                plot_provider.with_mut(|plot| 
+                plot_provider.with_mut(|plot| {
                     if let Some(block) = plot.get_block_mut(*block_id) {
                         block.set_position(*from);
                     }
-                );
+                });
                 app.imp().rerender_editor();
             }
             Self::MoveWaypoint(plot_provider, segment_id, from, _to) => {
-                plot_provider.with_mut(|plot| 
-                    if let Some(waypoint) = plot.get_connection_mut(segment_id.connection_id()).and_then(|c| c.get_segment_mut(segment_id.location())) {
+                plot_provider.with_mut(|plot| {
+                    if let Some(waypoint) = plot
+                        .get_connection_mut(segment_id.connection_id())
+                        .and_then(|c| c.get_segment_mut(segment_id.location()))
+                    {
                         waypoint.set_position(*from);
                     }
-                );
+                });
                 app.imp().rerender_editor();
             }
             Self::NewConnection(plot_provider, connection) => {
@@ -241,9 +280,18 @@ impl Action {
                 });
                 app.imp().rerender_editor();
             }
-            Self::WaypointToConnection(plot_provider, segment_id, segment, block_id, block_port) => {
+            Self::WaypointToConnection(
+                plot_provider,
+                segment_id,
+                segment,
+                block_id,
+                block_port,
+            ) => {
                 plot_provider.with_mut(|plot| {
-                    if let Some(waypoint) = plot.get_connection_mut(segment_id.connection_id()).and_then(|c| c.get_segment_mut(segment_id.location())) {
+                    if let Some(waypoint) = plot
+                        .get_connection_mut(segment_id.connection_id())
+                        .and_then(|c| c.get_segment_mut(segment_id.location()))
+                    {
                         *waypoint = segment.clone();
                     }
 
@@ -270,11 +318,14 @@ impl Action {
             }
             Self::ChangeBorderColor(plot_provider, _new_color, block_ids, old_colors) => {
                 plot_provider.with_mut(|plot| {
-                    block_ids.iter().zip(old_colors).for_each(|(block_id, old_color)| {
-                        if let Some(block) = plot.get_block_mut(*block_id) {
-                            block.set_color(*old_color);
-                        }
-                    });
+                    block_ids
+                        .iter()
+                        .zip(old_colors)
+                        .for_each(|(block_id, old_color)| {
+                            if let Some(block) = plot.get_block_mut(*block_id) {
+                                block.set_color(*old_color);
+                            }
+                        });
                 });
 
                 app.imp().rerender_editor();
@@ -282,8 +333,15 @@ impl Action {
             Self::DeleteSelection(plot_provider, blocks, connections, incoming) => {
                 println!("restore connections: {connections:?} incoming: {incoming:?}");
                 plot_provider.with_mut(|plot| {
-                    blocks.iter().for_each(|block| plot.add_block(block.clone()));
-                    connections.iter().chain(incoming.iter()).for_each(|connection| unsafe { plot.add_connection_unsafe(connection.clone()) });
+                    blocks
+                        .iter()
+                        .for_each(|block| plot.add_block(block.clone()));
+                    connections
+                        .iter()
+                        .chain(incoming.iter())
+                        .for_each(|connection| unsafe {
+                            plot.add_connection_unsafe(connection.clone())
+                        });
                 });
                 app.imp().rerender_editor();
             }

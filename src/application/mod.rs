@@ -1,20 +1,20 @@
-pub mod template;
-pub mod gactions;
 pub mod action;
 pub mod clipboard;
 pub mod editor;
+pub mod gactions;
 pub mod selection;
+pub mod template;
 
+use crate::{application::clipboard::Clipboard, config, ui::dialogs};
 use action::*;
-use std::cell::RefCell;
 use adw::traits::MessageDialogExt;
-use gtk::{prelude::*, subclass::prelude::*, gio, glib};
+use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 use selection::SelectionField;
-use crate::{config, ui::dialogs, application::clipboard::Clipboard};
+use std::cell::RefCell;
 
 glib::wrapper! {
     pub struct Application(ObjectSubclass<template::ApplicationTemplate>)
-    @extends gio::Application, gtk::Application, 
+    @extends gio::Application, gtk::Application,
     @implements gio::ActionGroup, gio::ActionMap;
 }
 
@@ -26,8 +26,8 @@ impl Default for Application {
 
 impl Application {
     pub fn new() -> Self {
-        gio::resources_register_include!("logicrs.gresource").expect("Failed to register resources.");
-        
+        gio::resources_register_include!("logicrs.gresource")
+            .expect("Failed to register resources.");
 
         glib::Object::new::<Self>(&[
             ("application-id", &"com.spydr06.logicrs"),
@@ -50,39 +50,52 @@ impl Application {
     pub fn apply_clipboard(&self, clipboard: Clipboard) {
         match clipboard {
             Clipboard::Blocks(..) => {
-                let position = self.imp()
+                let position = self
+                    .imp()
                     .current_circuit_view()
                     .map(|view| view.mouse_world_position())
                     .unwrap_or_default();
-                
-                match clipboard.paste_to(self.imp().current_plot().unwrap(), position)
-                {
+
+                match clipboard.paste_to(self.imp().current_plot().unwrap(), position) {
                     Ok(action) => self.new_action(action),
-                    Err(err) => dialogs::run(self.to_owned(), self.active_window().unwrap(), err, dialogs::basic_error)
+                    Err(err) => dialogs::run(
+                        self.to_owned(),
+                        self.active_window().unwrap(),
+                        err,
+                        dialogs::basic_error,
+                    ),
                 }
             }
             Clipboard::Module(_) => todo!(),
-            Clipboard::Empty => {},
+            Clipboard::Empty => {}
         }
     }
 
     pub fn paste_clipboard(&self) {
         let display = RootExt::display(&self.active_window().unwrap());
-        display.clipboard().read_text_async(None as Option<&gio::Cancellable>, glib::clone!(@weak self as app => move |pasted| {
-            match pasted
-                .map_err(|err| err.to_string())
-                .and_then(|text| text.ok_or(String::new()))
-                .and_then(|text| Clipboard::deserialize(text.as_str()))
-            {
-                Ok(clipboard) => app.apply_clipboard(clipboard),
-                Err(err) => warn!("Error pasting from clipboard: {err}")
-            }
-        }));
+        display.clipboard().read_text_async(
+            None as Option<&gio::Cancellable>,
+            glib::clone!(@weak self as app => move |pasted| {
+                match pasted
+                    .map_err(|err| err.to_string())
+                    .and_then(|text| text.ok_or(String::new()))
+                    .and_then(|text| Clipboard::deserialize(text.as_str()))
+                {
+                    Ok(clipboard) => app.apply_clipboard(clipboard),
+                    Err(err) => warn!("Error pasting from clipboard: {err}")
+                }
+            }),
+        );
     }
 
     pub fn cut_clipboard(&self, clipboard: Clipboard) {
         match clipboard {
-            Clipboard::Blocks(blocks, connections) => self.new_action(Action::DeleteSelection(self.imp().current_plot().unwrap(), blocks, connections, vec![])),
+            Clipboard::Blocks(blocks, connections) => self.new_action(Action::DeleteSelection(
+                self.imp().current_plot().unwrap(),
+                blocks,
+                connections,
+                vec![],
+            )),
             Clipboard::Module(_) => todo!(),
             Clipboard::Empty => {}
         }
@@ -99,7 +112,7 @@ impl Application {
                     self.cut_clipboard(clipboard);
                 }
             }
-            Err(err) => warn!("Error serializing clipboard: {err}")
+            Err(err) => warn!("Error serializing clipboard: {err}"),
         }
     }
 

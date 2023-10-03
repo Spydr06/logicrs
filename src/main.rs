@@ -5,14 +5,14 @@
 #![feature(if_let_guard)]
 
 mod application;
-mod ui;
+mod config;
+mod export;
+mod fatal;
+mod id;
+mod project;
 mod renderer;
 mod simulator;
-mod config;
-mod fatal;
-mod project;
-mod export;
-mod id;
+mod ui;
 
 #[macro_use]
 extern crate log;
@@ -32,8 +32,8 @@ trait FileExtension {
 
 fn main() {
     env_logger::init();
-    info!("Starting up LogicRs...");    
-    
+    info!("Starting up LogicRs...");
+
     let application = Application::new();
     std::process::exit(application.run());
 }
