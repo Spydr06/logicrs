@@ -12,6 +12,7 @@ pub enum Category {
     Basic,
     InputOutput,
     Gate,
+    Combinational,
     Latch,
     FlipFlop,
     Hidden,

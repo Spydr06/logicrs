@@ -105,6 +105,16 @@ lazy_static! {
             |input, instance| { instance.set_bytes(input); input }
         ));
 
+        builtins.insert("Mux", Builtin::new(
+            Module::new_builtin("Mux", Category::Combinational, 3, 1, Decoration::Label(String::from("Mux"))),
+            |input, _| (input & 0b101 == 0b001 || input & 0b110 == 0b110) as u128
+        ));
+
+        builtins.insert("Demux", Builtin::new(
+            Module::new_builtin("Demux", Category::Combinational, 2, 2, Decoration::Label(String::from("Demux"))),
+            |input, _| ((((input == 0b11) as u128) << 1) | (input == 0b01) as u128) as u128
+        ));
+
         builtins.insert("SR Nand Latch", Builtin::new(
             Module::new_builtin("SR Nand Latch", Category::Latch, 2, 2, Decoration::NotLabel("SR".to_string())),
             sr_nand_latch
