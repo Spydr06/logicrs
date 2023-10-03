@@ -1,5 +1,5 @@
-use crate::renderer::{*, vector::Vector2};
-use serde::{Serialize, Deserialize};
+use crate::renderer::{vector::Vector2, *};
+use serde::{Deserialize, Serialize};
 use std::f64;
 
 use super::Block;
@@ -11,7 +11,7 @@ pub enum Decoration {
     NotLabel(String),
     Button(bool),
     Switch(bool),
-    Lamp(bool)
+    Lamp(bool),
 }
 
 impl Default for Decoration {
@@ -22,56 +22,86 @@ impl Default for Decoration {
 
 impl Decoration {
     pub(super) fn render<R>(&self, renderer: &R, block: &Block) -> Result<(), R::Error>
-        where R: Renderer
+    where
+        R: Renderer,
     {
         match self {
             Self::Label(label) => {
                 renderer
-                .set_font_size(26.0)    
-                .move_to(Vector2(block.position().0 + (block.size().0 / 2 - 7 * label.chars().count() as i32), block.position().1 + (block.size().1 / 2 + 20)))
-                .set_color(unsafe { &COLOR_THEME.decoration_fg_color })
-                .show_text(label)?
-                .set_font_size(DEFAULT_FONT_SIZE);
+                    .set_font_size(26.0)
+                    .move_to(Vector2(
+                        block.position().0
+                            + (block.size().0 / 2 - 7 * label.chars().count() as i32),
+                        block.position().1 + (block.size().1 / 2 + 20),
+                    ))
+                    .set_color(unsafe { &COLOR_THEME.decoration_fg_color })
+                    .show_text(label)?
+                    .set_font_size(DEFAULT_FONT_SIZE);
                 Ok(())
-            },
+            }
             Self::NotLabel(label) => {
                 let offset = Vector2(
                     7 * label.chars().count() as i32,
-                    block.position().1 + block.size().1 / 2 - 2
+                    block.position().1 + block.size().1 / 2 - 2,
                 );
-                let position = block.position() + (block.size() / 2.into() + Vector2(-offset.0, 20));
+                let position =
+                    block.position() + (block.size() / 2.into() + Vector2(-offset.0, 20));
                 renderer
-                .set_font_size(26.0)    
-                .move_to(position)
-                .set_color(unsafe { &COLOR_THEME.decoration_fg_color })
-                .show_text(label)?
-                .set_font_size(DEFAULT_FONT_SIZE)
-                .move_to(Vector2(position.0, offset.1))
-                .set_line_width(2.5)
-                .line_to(Vector2(position.0 + 2 * offset.0, offset.1))
-                .stroke()
-                .map(|_| ())
+                    .set_font_size(26.0)
+                    .move_to(position)
+                    .set_color(unsafe { &COLOR_THEME.decoration_fg_color })
+                    .show_text(label)?
+                    .set_font_size(DEFAULT_FONT_SIZE)
+                    .move_to(Vector2(position.0, offset.1))
+                    .set_line_width(2.5)
+                    .line_to(Vector2(position.0 + 2 * offset.0, offset.1))
+                    .stroke()
+                    .map(|_| ())
             }
-            Self::Lamp(active) => {
-                renderer
-                .arc(Vector2(block.position().0 + block.size().0 / 2, block.position().1 + 50), 12., 0., f64::consts::TAU)
-                .set_color(unsafe { if *active { &COLOR_THEME.suggestion_fg_color } else { &COLOR_THEME.border_color }})
+            Self::Lamp(active) => renderer
+                .arc(
+                    Vector2(
+                        block.position().0 + block.size().0 / 2,
+                        block.position().1 + 50,
+                    ),
+                    12.,
+                    0.,
+                    f64::consts::TAU,
+                )
+                .set_color(unsafe {
+                    if *active {
+                        &COLOR_THEME.suggestion_fg_color
+                    } else {
+                        &COLOR_THEME.border_color
+                    }
+                })
                 .fill_preserve()?
                 .set_line_width(1.5)
                 .set_color(unsafe { &COLOR_THEME.border_color })
                 .stroke()
-                .map(|_| ())
-            }
-            Self::Button(active) | Self::Switch(active) => {
-                renderer
-                .arc(Vector2(block.position().0 + block.size().0 / 2, block.position().1 + 50), 12., 0., f64::consts::TAU)
-                .set_color(unsafe { if *active { &COLOR_THEME.button_active_color } else { &COLOR_THEME.button_inactive_color }})
+                .map(|_| ()),
+            Self::Button(active) | Self::Switch(active) => renderer
+                .arc(
+                    Vector2(
+                        block.position().0 + block.size().0 / 2,
+                        block.position().1 + 50,
+                    ),
+                    12.,
+                    0.,
+                    f64::consts::TAU,
+                )
+                .set_color(unsafe {
+                    if *active {
+                        &COLOR_THEME.button_active_color
+                    } else {
+                        &COLOR_THEME.button_inactive_color
+                    }
+                })
                 .fill_preserve()?
                 .set_line_width(1.5)
                 .set_color(unsafe { &COLOR_THEME.border_color })
                 .stroke()
-                .map(|_| ())
-            }
+                .map(|_| ()),
             _ => Ok(()),
         }
     }
@@ -80,19 +110,15 @@ impl Decoration {
 impl Decoration {
     pub fn set_active(&mut self, is_active: bool) {
         match self {
-            Self::Button(active) |
-            Self::Switch(active) |
-            Self::Lamp(active) => *active = is_active,
+            Self::Button(active) | Self::Switch(active) | Self::Lamp(active) => *active = is_active,
             _ => {}
         }
     }
 
     pub fn is_active(&self) -> bool {
         match self {
-            Self::Button(active) |
-            Self::Switch(active) |
-            Self::Lamp(active) => *active,
-            _ => false
+            Self::Button(active) | Self::Switch(active) | Self::Lamp(active) => *active,
+            _ => false,
         }
     }
 
@@ -101,11 +127,11 @@ impl Decoration {
             Self::Switch(active) => {
                 *active = !*active;
                 true
-            },
+            }
             Self::Button(active) => {
                 *active = true;
                 true
-            },
+            }
             _ => false,
         }
     }

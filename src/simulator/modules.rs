@@ -1,8 +1,11 @@
 use std::collections::HashSet;
 
-use crate::{simulator::{*, builtin::BUILTINS}, id::Id};
+use crate::{
+    id::Id,
+    simulator::{builtin::BUILTINS, *},
+};
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 pub type SimulatorFn = fn(u128, &mut Block) -> u128;
 
@@ -16,7 +19,7 @@ pub enum Category {
     Latch,
     FlipFlop,
     Hidden,
-    Custom
+    Custom,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -24,7 +27,7 @@ pub struct Custom {
     plot: Plot,
     input_block: BlockID,
     output_block: BlockID,
-    cache: HashMap<u128, u128>
+    cache: HashMap<u128, u128>,
 }
 
 impl Custom {
@@ -33,7 +36,7 @@ impl Custom {
             plot,
             input_block: Id::default(),
             output_block: Id::default(),
-            cache: HashMap::new()
+            cache: HashMap::new(),
         }
     }
 
@@ -68,11 +71,17 @@ impl Module {
             custom_data: Some(Custom::new(Plot::new())),
             num_inputs,
             num_outputs,
-            decoration: Decoration::None
+            decoration: Decoration::None,
         }
     }
 
-    pub fn new_builtin(name: &str, category: Category, num_inputs: u8, num_outputs: u8, decoration: Decoration) -> Self {
+    pub fn new_builtin(
+        name: &str,
+        category: Category,
+        num_inputs: u8,
+        num_outputs: u8,
+        decoration: Decoration,
+    ) -> Self {
         Self {
             name: name.to_string(),
             category,
@@ -80,21 +89,21 @@ impl Module {
             custom_data: None,
             num_inputs,
             num_outputs,
-            decoration
+            decoration,
         }
     }
 
     pub fn plot(&self) -> Option<&Plot> {
         match &self.custom_data {
             Some(data) => Some(data.plot()),
-            None => None
+            None => None,
         }
     }
 
     pub fn plot_mut(&mut self) -> Option<&mut Plot> {
         match &mut self.custom_data {
             Some(data) => Some(data.plot_mut()),
-            None => None
+            None => None,
         }
     }
 
@@ -107,10 +116,8 @@ impl Module {
 
     pub fn has_io_blocks(&self) -> bool {
         match &self.custom_data {
-            Some(data) => {
-                data.input_block != Id::empty() && data.output_block != Id::empty()
-            }
-            _ => false
+            Some(data) => data.input_block != Id::empty() && data.output_block != Id::empty(),
+            _ => false,
         }
     }
 
@@ -142,8 +149,14 @@ impl Module {
         &self.decoration
     }
 
-    pub fn simulate(&mut self, inputs: u128, instance: &mut Block, project: &mut Project, call_stack: &mut HashSet<String>) -> SimResult<u128> {
-        let outputs = 
+    pub fn simulate(
+        &mut self,
+        inputs: u128,
+        instance: &mut Block,
+        project: &mut Project,
+        call_stack: &mut HashSet<String>,
+    ) -> SimResult<u128> {
+        let outputs =
         if self.builtin && let Some(builtin) = BUILTINS.get(self.name.as_str()) {
             builtin.simulate(inputs, instance)
         }
@@ -165,7 +178,7 @@ impl Module {
 
             plot.add_block_to_update(custom_data.input_block);
             let err = plot.simulate(project, call_stack).err();
-            
+
             if let Some(input) = plot.get_block_mut(custom_data.input_block) {
                 input.set_bytes(0);
                 input.set_passthrough(true);
@@ -182,14 +195,21 @@ impl Module {
             outputs
         };
 
-        debug!("simulate module {} with inputs: {inputs:#b} generates: {outputs:#b}", self.name);
+        debug!(
+            "simulate module {} with inputs: {inputs:#b} generates: {outputs:#b}",
+            self.name
+        );
         Ok(outputs)
     }
 }
 
 impl Ord for Module {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.name.chars().next().unwrap().cmp(&other.name().chars().next().unwrap())
+        self.name
+            .chars()
+            .next()
+            .unwrap()
+            .cmp(&other.name().chars().next().unwrap())
     }
 }
 

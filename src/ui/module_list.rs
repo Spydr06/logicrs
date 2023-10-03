@@ -1,6 +1,10 @@
-use gtk::{prelude::*, subclass::prelude::*, glib, gdk, gio};
+use gtk::{gdk, gio, glib, prelude::*, subclass::prelude::*};
 
-use crate::{application::{Application, selection::*}, simulator::*, renderer::vector::Vector2};
+use crate::{
+    application::{selection::*, Application},
+    renderer::vector::Vector2,
+    simulator::*,
+};
 
 macro_rules! add_menu_item {
     ($model: expr, $name: expr, $action: expr, $value: expr) => {
@@ -78,7 +82,8 @@ impl ModuleList {
     #[template_callback]
     fn search_entry_changed(&self, entry: &gtk::SearchEntry) {
         let search_text = entry.text().to_ascii_lowercase();
-        self.imp().filter((!search_text.is_empty()).then_some(search_text));
+        self.imp()
+            .filter((!search_text.is_empty()).then_some(search_text));
     }
 
     #[template_callback]
@@ -121,7 +126,7 @@ pub struct ModuleListTemplate {
     search_bar: TemplateChild<gtk::SearchBar>,
 
     #[template_child]
-    search_button: TemplateChild<gtk::ToggleButton>
+    search_button: TemplateChild<gtk::ToggleButton>,
 }
 
 impl ModuleListTemplate {
@@ -134,24 +139,37 @@ impl ModuleListTemplate {
             Category::Latch => &self.latch_list_box,
             Category::FlipFlop => &self.flip_flop_list_box,
             Category::Custom => &self.custom_list_box,
-            Category::Hidden => panic!("no list for hidden modules")
+            Category::Hidden => panic!("no list for hidden modules"),
         }
     }
 
     fn lists(&self) -> [&gtk::ListBox; 6] {
-        [&self.basic_list_box, &self.input_output_list_box, &self.gate_list_box, &self.latch_list_box, &self.flip_flop_list_box, &self.custom_list_box]
+        [
+            &self.basic_list_box,
+            &self.input_output_list_box,
+            &self.gate_list_box,
+            &self.latch_list_box,
+            &self.flip_flop_list_box,
+            &self.custom_list_box,
+        ]
     }
 
-    fn module_item_content(&self, module: &Module) -> gtk::Box {        
+    fn module_item_content(&self, module: &Module) -> gtk::Box {
         let b = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
             .build();
 
-        b.append(&gtk::Image::builder().icon_name("module-symbolic").margin_end(12).build());
-        b.append(&gtk::Label::builder()
-            .label(module.name())
-            .xalign(0.0)
-            .build()
+        b.append(
+            &gtk::Image::builder()
+                .icon_name("module-symbolic")
+                .margin_end(12)
+                .build(),
+        );
+        b.append(
+            &gtk::Label::builder()
+                .label(module.name())
+                .xalign(0.0)
+                .build(),
         );
 
         b
@@ -162,14 +180,13 @@ impl ModuleListTemplate {
             .child(&self.module_item_content(module))
             .css_classes(vec![String::from("module_list_item")])
             .build();
-        
-        self.list_for(module.category())
-            .append(&item);
-            
+
+        self.list_for(module.category()).append(&item);
+
         let left_click_gesture = gtk::GestureClick::builder()
             .button(gdk::ffi::GDK_BUTTON_PRIMARY as u32)
             .build();
-        
+
         let name = module.name().to_owned();
         left_click_gesture.connect_pressed(glib::clone!(@weak application => move |_, _, _, _| {
             let project = application.imp().project().clone();
@@ -193,17 +210,28 @@ impl ModuleListTemplate {
 
         let name = module.name().to_owned();
         let is_builtin = module.builtin();
-        right_click_gesture.connect_pressed(glib::clone!(@weak self as widget => move |_, _, _, _| {
-            if !is_builtin {
-                widget.custom_module_context(&item, &name);
-            }
-        }));
+        right_click_gesture.connect_pressed(
+            glib::clone!(@weak self as widget => move |_, _, _, _| {
+                if !is_builtin {
+                    widget.custom_module_context(&item, &name);
+                }
+            }),
+        );
     }
 
     fn remove_module_from_ui(&self, module_name: &String) {
         let mut i = 0;
         while let Some(row) = self.custom_list_box.row_at_index(i) {
-            if row.child().and_downcast::<gtk::Box>().unwrap().last_child().and_downcast::<gtk::Label>().unwrap().label().eq(module_name) {
+            if row
+                .child()
+                .and_downcast::<gtk::Box>()
+                .unwrap()
+                .last_child()
+                .and_downcast::<gtk::Label>()
+                .unwrap()
+                .label()
+                .eq(module_name)
+            {
                 self.custom_list_box.remove(&row);
             }
             i += 1;
@@ -211,18 +239,23 @@ impl ModuleListTemplate {
     }
 
     fn clear_list(&self) {
-        self.lists().iter().for_each(|list| 
+        self.lists().iter().for_each(|list| {
             while let Some(row) = list.row_at_index(0) {
                 list.remove(&row);
             }
-        );
+        });
     }
 
     fn custom_module_context(&self, item: &gtk::ListBoxRow, name: &String) {
         let model = gio::Menu::new();
-        add_menu_item!(model, "_Edit Contents", "app.edit-module",   &name.to_variant());
-        add_menu_item!(model, "E_xport",        "app.export-module", &name.to_variant());
-        add_menu_item!(model, "_Delete",        "app.delete-module", &name.to_variant());
+        add_menu_item!(
+            model,
+            "_Edit Contents",
+            "app.edit-module",
+            &name.to_variant()
+        );
+        add_menu_item!(model, "E_xport", "app.export-module", &name.to_variant());
+        add_menu_item!(model, "_Delete", "app.delete-module", &name.to_variant());
 
         let popover = gtk::PopoverMenu::from_model(Some(&model));
         popover.set_parent(item);
@@ -239,16 +272,23 @@ impl ModuleListTemplate {
                 let search_text = search_text.clone();
                 list.set_filter_func(move |item| Self::filter_func(item, &search_text));
             });
-        }
-        else {
-            self.lists().iter().for_each(|list| list.unset_filter_func());
+        } else {
+            self.lists()
+                .iter()
+                .for_each(|list| list.unset_filter_func());
         }
 
-        self.stack.set_visible_child_name(if self.n_visible() == 0 { "empty" } else { "modules" });
+        self.stack.set_visible_child_name(if self.n_visible() == 0 {
+            "empty"
+        } else {
+            "modules"
+        });
     }
 
     fn filter_func(item: &gtk::ListBoxRow, search_text: &String) -> bool {
-        let label = item.label().expect("could not get label from ModuleListItem");
+        let label = item
+            .label()
+            .expect("could not get label from ModuleListItem");
         label.to_ascii_lowercase().contains(search_text)
     }
 }
@@ -273,19 +313,27 @@ impl ObjectImpl for ModuleListTemplate {
     fn constructed(&self) {
         self.parent_constructed();
 
-        self.search_bar.connect_search_mode_enabled_notify(glib::clone!(@weak self as widget => move |search_bar|
-            widget.search_button.set_active(search_bar.is_search_mode());
-        ));
-
-        self.search_button.connect_toggled(glib::clone!(@weak self as widget => move |button|
-            widget.search_bar.set_search_mode(button.is_active());
-        ));
-
-        let order_alphabetically = |a: &gtk::ListBoxRow, b: &gtk::ListBoxRow| gtk::Ordering::from(
-            a.label().expect("could not get label from ModuleListItem")
-            .cmp(&b.label().expect("could not get label from ModuleListItem"))
+        self.search_bar.connect_search_mode_enabled_notify(
+            glib::clone!(@weak self as widget => move |search_bar|
+                widget.search_button.set_active(search_bar.is_search_mode());
+            ),
         );
-        self.lists().iter().for_each(|list| list.set_sort_func(order_alphabetically));
+
+        self.search_button
+            .connect_toggled(glib::clone!(@weak self as widget => move |button|
+                widget.search_bar.set_search_mode(button.is_active());
+            ));
+
+        let order_alphabetically = |a: &gtk::ListBoxRow, b: &gtk::ListBoxRow| {
+            gtk::Ordering::from(
+                a.label()
+                    .expect("could not get label from ModuleListItem")
+                    .cmp(&b.label().expect("could not get label from ModuleListItem")),
+            )
+        };
+        self.lists()
+            .iter()
+            .for_each(|list| list.set_sort_func(order_alphabetically));
     }
 }
 

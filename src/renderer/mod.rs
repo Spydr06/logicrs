@@ -4,8 +4,8 @@ pub mod cairo;
 pub mod color;
 pub mod vector;
 
+use crate::{application::editor::EditorMode, simulator::Plot};
 pub use {cairo::*, color::*};
-use crate::{simulator::Plot, application::editor::EditorMode};
 
 use self::vector::*;
 
@@ -18,7 +18,8 @@ pub type ScreenSpace = Vector2<Vector2<f64>>;
 
 pub trait Renderable {
     fn render<R>(&self, renderer: &R, data: &Plot) -> Result<(), R::Error>
-        where R: Renderer;
+    where
+        R: Renderer;
 }
 
 pub trait Renderer: Default {
@@ -26,7 +27,15 @@ pub trait Renderer: Default {
     type Error;
 
     // render callback
-    fn callback(&mut self, data: &Plot, mode: EditorMode, area: &DrawingArea, context: &Self::Context, width: i32, height: i32) -> Result<&mut Self, Self::Error>;
+    fn callback(
+        &mut self,
+        data: &Plot,
+        mode: EditorMode,
+        area: &DrawingArea,
+        context: &Self::Context,
+        width: i32,
+        height: i32,
+    ) -> Result<&mut Self, Self::Error>;
 
     // getter/setter
     fn translate(&mut self, translation: Vector2<f64>) -> &mut Self;
@@ -44,7 +53,7 @@ pub trait Renderer: Default {
     fn screen_space(&self) -> ScreenSpace {
         Vector2(
             self.screen_to_world(Vector2::default()),
-            self.screen_to_world(Vector2(self.size().0 as f64, self.size().1 as f64))
+            self.screen_to_world(Vector2(self.size().0 as f64, self.size().1 as f64)),
         )
     }
 
@@ -59,7 +68,7 @@ pub trait Renderer: Default {
     fn zoom(&mut self, amount: f64, screen_position: Option<Vector2<f64>>) {
         let screen_position = match screen_position {
             Some(position) => position,
-            None => (self.size().0 as f64 / 2., self.size().1 as f64 / 2.).into()
+            None => (self.size().0 as f64 / 2., self.size().1 as f64 / 2.).into(),
         };
 
         let p = self.screen_to_world(screen_position);
@@ -91,30 +100,30 @@ pub trait Renderer: Default {
 
         self.line_to(position + Vector2(size.0 - radius, 0));
         self.curve_to(
-            Vector2(position.0 + size.0 - radius, position.1), 
-            Vector2(position.0 + size.0, position.1), 
-            Vector2(position.0 + size.0, position.1 + radius), 
+            Vector2(position.0 + size.0 - radius, position.1),
+            Vector2(position.0 + size.0, position.1),
+            Vector2(position.0 + size.0, position.1 + radius),
         );
-    
+
         self.line_to(Vector2(position.0 + size.0, position.1 + size.1 - radius));
         self.curve_to(
             Vector2(position.0 + size.0, position.1 + size.1 - radius),
             Vector2(position.0 + size.0, position.1 + size.1),
             Vector2(position.0 + size.0 - radius, position.1 + size.1),
         );
-    
+
         self.line_to(Vector2(position.0 + radius, position.1 + size.1));
         self.curve_to(
             Vector2(position.0 + radius, position.1 + size.1),
-            Vector2 (position.0, position.1 + size.1),
-            Vector2(position.0, position.1 + size.1 - radius)
+            Vector2(position.0, position.1 + size.1),
+            Vector2(position.0, position.1 + size.1 - radius),
         );
-    
+
         self.line_to(Vector2(position.0, position.1 + radius));
         self.curve_to(
             Vector2(position.0, position.1 + radius),
             position,
-            Vector2(position.0 + radius, position.1)
+            Vector2(position.0 + radius, position.1),
         )
     }
 
@@ -122,18 +131,18 @@ pub trait Renderer: Default {
         self.move_to(Vector2(position.0 + radius, position.1));
         self.line_to(Vector2(position.0 + size.0 - radius, position.1));
         self.curve_to(
-            Vector2(position.0 + size.0 - radius, position.1), 
-            Vector2(position.0 + size.0, position.1), 
-            Vector2(position.0 + size.0, position.1 + radius), 
+            Vector2(position.0 + size.0 - radius, position.1),
+            Vector2(position.0 + size.0, position.1),
+            Vector2(position.0 + size.0, position.1 + radius),
         );
-    
+
         self.line_to(Vector2(position.0 + size.0, position.1 + size.1));
         self.line_to(Vector2(position.0, position.1 + size.1));
         self.line_to(Vector2(position.0, position.1 + radius));
         self.curve_to(
             Vector2(position.0, position.1 + radius),
             position,
-            Vector2(position.0 + radius, position.1)
+            Vector2(position.0 + radius, position.1),
         )
     }
 }

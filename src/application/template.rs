@@ -1,12 +1,15 @@
-use gtk::{prelude::*, subclass::prelude::*, gio, glib, gdk};
-use adw::subclass::prelude::*;
-use std::cell::RefCell;
 use crate::{
-    ui::{main_window::MainWindow, circuit_view::CircuitView, dialogs},
-    fatal::*, project::*, simulator::*, renderer::Theme,
+    fatal::*,
+    project::*,
+    renderer::Theme,
+    simulator::*,
+    ui::{circuit_view::CircuitView, dialogs, main_window::MainWindow},
 };
+use adw::subclass::prelude::*;
+use gtk::{gdk, gio, glib, prelude::*};
+use std::cell::RefCell;
 
-use super::{action::*, clipboard::Clipboard, Application, selection::*};
+use super::{action::*, clipboard::Clipboard, selection::*, Application};
 
 #[derive(Default)]
 pub struct ApplicationTemplate {
@@ -15,13 +18,14 @@ pub struct ApplicationTemplate {
     simulator: RefCell<Option<Simulator>>,
     file: RefCell<Option<gio::File>>,
     action_stack: RefCell<ActionStack>,
-} 
+}
 
 impl ApplicationTemplate {
     const CSS_RESOURCE: &'static str = "/style/style.css";
 
     fn start_simulation(&self) {
-        *self.simulator.borrow_mut() = Some(Simulator::new(self.project.clone(), self.window.clone()))
+        *self.simulator.borrow_mut() =
+            Some(Simulator::new(self.project.clone(), self.window.clone()))
     }
 
     fn stop_simulation(&self) {
@@ -40,7 +44,7 @@ impl ApplicationTemplate {
         gtk::StyleContext::add_provider_for_display(
             &gdk::Display::default().expect("Could not connect to a display."),
             &provider,
-           gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
         );
 
         // build the application window and UI
@@ -50,15 +54,14 @@ impl ApplicationTemplate {
     }
 
     pub fn save(&self, then: fn(&Application)) -> Result<(), String> {
-        if let Some(file) = self.file.borrow().as_ref() { 
+        if let Some(file) = self.file.borrow().as_ref() {
             let project = self.project.lock().unwrap();
             project.write_to(file)?;
             if let Some(window) = self.window.borrow().as_ref() {
                 window.set_subtitle(&self.file_name());
             }
             then(&self.instance());
-        }
-        else {
+        } else {
             self.instance().save_as(then);
         }
 
@@ -72,7 +75,7 @@ impl ApplicationTemplate {
         let mut old = self.project.lock().unwrap();
         *old = project;
         drop(old);
-        
+
         self.file.replace(file);
         self.action_stack.borrow_mut().reset();
         if let Some(window) = self.window.borrow().as_ref() {
@@ -104,7 +107,7 @@ impl ApplicationTemplate {
     pub fn file_name(&self) -> String {
         match self.file.borrow().as_ref() {
             Some(file) => file.path().unwrap().into_os_string().into_string().unwrap(),
-            None => String::from("New File")
+            None => String::from("New File"),
         }
     }
 
@@ -113,7 +116,9 @@ impl ApplicationTemplate {
     }
 
     pub fn current_circuit_view(&self) -> Option<CircuitView> {
-        self.window.borrow().as_ref()
+        self.window
+            .borrow()
+            .as_ref()
             .and_then(|window| window.imp().circuit_panel.imp().view.selected_page())
             .and_then(|page| page.child().downcast::<CircuitView>().ok())
     }
@@ -135,11 +140,23 @@ impl ApplicationTemplate {
     }
 
     pub fn undo_button(&self) -> gtk::Button {
-        self.window.borrow().as_ref().unwrap().panel().undo_button().to_owned()
+        self.window
+            .borrow()
+            .as_ref()
+            .unwrap()
+            .panel()
+            .undo_button()
+            .to_owned()
     }
 
     pub fn redo_button(&self) -> gtk::Button {
-        self.window.borrow().as_ref().unwrap().panel().redo_button().to_owned()
+        self.window
+            .borrow()
+            .as_ref()
+            .unwrap()
+            .panel()
+            .redo_button()
+            .to_owned()
     }
 
     pub fn action_stack(&self) -> &RefCell<ActionStack> {
@@ -171,18 +188,21 @@ impl ApplicationTemplate {
                     .map(|(id, _)| *id)
                     .collect::<Vec<BlockID>>();
 
-                delete.iter().for_each(|id| { plot.delete_block(*id); });
+                delete.iter().for_each(|id| {
+                    plot.delete_block(*id);
+                });
             };
 
             remove_dependencies(locked.main_plot_mut());
-            locked.modules_mut().iter_mut().for_each(|(_, module)|
+            locked.modules_mut().iter_mut().for_each(|(_, module)| {
                 if let Some(plot) = module.plot_mut() {
                     remove_dependencies(plot);
                 }
-            );
-        
+            });
+
             drop(locked);
-            self.instance().new_action(Action::DeleteModule(self.project.clone(), owned_module));
+            self.instance()
+                .new_action(Action::DeleteModule(self.project.clone(), owned_module));
         }
     }
 
@@ -192,7 +212,12 @@ impl ApplicationTemplate {
             let module_name = module.name().clone();
             let provider = PlotProvider::Module(self.project.clone(), module_name);
             drop(project);
-            self.window.borrow().as_ref().unwrap().panel().open_tab(provider);
+            self.window
+                .borrow()
+                .as_ref()
+                .unwrap()
+                .panel()
+                .open_tab(provider);
         }
     }
 }
@@ -240,7 +265,12 @@ impl ApplicationImpl for ApplicationTemplate {
                 self.create_window(&self.instance());
                 self.start_simulation();
 
-                dialogs::run(self.instance().to_owned(), self.instance().active_window().unwrap(), err, dialogs::basic_error);
+                dialogs::run(
+                    self.instance().to_owned(),
+                    self.instance().active_window().unwrap(),
+                    err,
+                    dialogs::basic_error,
+                );
             }
         }
     }

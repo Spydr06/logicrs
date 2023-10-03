@@ -1,6 +1,6 @@
 use std::ops::*;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 pub trait VectorCast<To> {
     fn cast(value: Self) -> Vector2<To>;
@@ -12,7 +12,7 @@ pub struct Vector2<T>(pub T, pub T);
 impl<T: Copy> Vector2<T> {
     pub fn new(x: T, y: T) -> Self {
         Self(x, y)
-    } 
+    }
 
     #[inline]
     pub fn x(&self) -> T {

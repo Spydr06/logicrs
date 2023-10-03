@@ -3,7 +3,9 @@ pub trait FatalResult<T> {
 }
 
 impl<T, E> FatalResult<T> for Result<T, E>
-where E: std::fmt::Display {
+where
+    E: std::fmt::Display,
+{
     fn unwrap_or_die(self) -> T {
         self.unwrap_or_else(|err| die(&err.to_string()))
     }

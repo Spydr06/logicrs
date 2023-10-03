@@ -1,8 +1,14 @@
-use crate::{application::{Application, editor::EditorMode}, simulator::PlotProvider};
 use super::circuit_view::CircuitView;
-use gtk::{prelude::*, subclass::prelude::*, gio, glib};
+use crate::{
+    application::{editor::EditorMode, Application},
+    simulator::PlotProvider,
+};
+use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 
-use std::{cell::{RefCell, Cell}, collections::HashMap};
+use std::{
+    cell::{Cell, RefCell},
+    collections::HashMap,
+};
 
 glib::wrapper! {
     pub struct CircuitPanel(ObjectSubclass<CircuitPanelTemplate>)
@@ -40,7 +46,7 @@ impl CircuitPanel {
     }
 
     pub fn redo_button(&self) -> &gtk::Button {
-        &self.imp().redo_button        
+        &self.imp().redo_button
     }
 
     pub fn open_tab(&self, plot_provider: PlotProvider) {
@@ -55,7 +61,7 @@ impl CircuitPanel {
                 }
                 i += 1;
             }
-            
+
             // page not found, create new
             self.imp().new_tab(module_name, plot_provider.clone());
         }
@@ -84,8 +90,7 @@ impl CircuitPanel {
             if !errors.contains(&error) {
                 errors.push(error);
             }
-        }
-        else {
+        } else {
             template.info_label.set_label(&error);
             template.info_bar.show();
         }
@@ -128,7 +133,7 @@ pub struct CircuitPanelTemplate {
     application: RefCell<Application>,
     pages: RefCell<HashMap<String, adw::TabPage>>,
     force_closing: Cell<bool>,
-    errors: RefCell<Vec<String>>
+    errors: RefCell<Vec<String>>,
 }
 
 impl CircuitPanelTemplate {
@@ -157,7 +162,13 @@ impl CircuitPanelTemplate {
     }
 
     fn set_title(&self, title: &str) {
-        (self.header_bar.title_widget().unwrap().downcast_ref().unwrap() as &adw::WindowTitle).set_subtitle(title);
+        (self
+            .header_bar
+            .title_widget()
+            .unwrap()
+            .downcast_ref()
+            .unwrap() as &adw::WindowTitle)
+            .set_subtitle(title);
     }
 
     fn close_tabs(&self) {
@@ -206,14 +217,16 @@ impl ObjectImpl for CircuitPanelTemplate {
             true
         }));
 
-        self.info_close_button.connect_clicked(glib::clone!(@weak self as widget => move |_| widget.info_bar.hide()));
-        self.info_bar.connect_hide(glib::clone!(@weak self as widget => move |bar| {
-            let mut errors = widget.errors.borrow_mut();
-            if let Some(err) = errors.pop() {
-                widget.info_label.set_label(&err);
-                bar.show();
-            }
-        }));
+        self.info_close_button
+            .connect_clicked(glib::clone!(@weak self as widget => move |_| widget.info_bar.hide()));
+        self.info_bar
+            .connect_hide(glib::clone!(@weak self as widget => move |bar| {
+                let mut errors = widget.errors.borrow_mut();
+                if let Some(err) = errors.pop() {
+                    widget.info_label.set_label(&err);
+                    bar.show();
+                }
+            }));
     }
 }
 

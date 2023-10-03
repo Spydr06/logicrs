@@ -1,6 +1,6 @@
 use super::*;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct PlotState {
@@ -17,21 +17,35 @@ impl From<&mut Plot> for PlotState {
 impl From<&Plot> for PlotState {
     fn from(plot: &Plot) -> Self {
         Self {
-            blocks: plot.blocks().iter().map(|(id, block)| (*id, block.state().clone())).collect(),
-            connections: plot.connections().iter().map(|(id, connection)| (*id, connection.is_active())).collect()
+            blocks: plot
+                .blocks()
+                .iter()
+                .map(|(id, block)| (*id, block.state().clone()))
+                .collect(),
+            connections: plot
+                .connections()
+                .iter()
+                .map(|(id, connection)| (*id, connection.is_active()))
+                .collect(),
         }
     }
 }
 
 impl PlotState {
     pub fn apply(&self, plot: &mut Plot) {
-        plot.blocks_mut().iter_mut().for_each(|(id, block)| if let Some(state) = self.blocks.get(id) {
-            block.set_state(state.clone())
+        plot.blocks_mut().iter_mut().for_each(|(id, block)| {
+            if let Some(state) = self.blocks.get(id) {
+                block.set_state(state.clone())
+            }
         });
 
-        plot.connections_mut().iter_mut().for_each(|(id, connection)| if let Some(state) = self.connections.get(id) {
-            connection.set_active(*state);
-        })
+        plot.connections_mut()
+            .iter_mut()
+            .for_each(|(id, connection)| {
+                if let Some(state) = self.connections.get(id) {
+                    connection.set_active(*state);
+                }
+            })
     }
 }
 
@@ -40,13 +54,13 @@ pub enum State {
     #[default]
     None,
     Direct(u128),
-    Inherit(PlotState)
+    Inherit(PlotState),
 }
 
 impl State {
     pub fn apply(&self, plot: &mut Plot) {
         if let Self::Inherit(state) = self {
-             state.apply(plot)
+            state.apply(plot)
         }
     }
 }

@@ -1,13 +1,17 @@
-use crate::{simulator::Module, project::Project, FileExtension, application::Application};
+use crate::{application::Application, project::Project, simulator::Module, FileExtension};
 
-use serde::{Serialize, Deserialize};
 use gtk::{gio, prelude::FileExt, subclass::prelude::ObjectSubclassIsExt};
-use std::{fs::{OpenOptions, File}, io::{Write, BufReader}, collections::HashMap};
+use serde::{Deserialize, Serialize};
+use std::{
+    collections::HashMap,
+    fs::{File, OpenOptions},
+    io::{BufReader, Write},
+};
 
 #[derive(Serialize, Deserialize)]
 pub struct ModuleFile {
     main_name: String,
-    modules: HashMap<String, Module>
+    modules: HashMap<String, Module>,
 }
 
 impl FileExtension for ModuleFile {
@@ -27,7 +31,7 @@ impl ModuleFile {
         project.module(&mod_name).map(|module| {
             let mut mod_file = Self {
                 main_name: mod_name.clone(),
-                modules: HashMap::from([(mod_name.clone(), module.clone())])
+                modules: HashMap::from([(mod_name.clone(), module.clone())]),
             };
 
             project.collect_dependencies(&mod_name, &mut mod_file.modules);
@@ -36,36 +40,46 @@ impl ModuleFile {
     }
 
     pub fn export(&self, file: &gio::File) -> Result<(), String> {
-        info!("Exporting to `{}`...", file.path().unwrap().to_str().unwrap());
+        info!(
+            "Exporting to `{}`...",
+            file.path().unwrap().to_str().unwrap()
+        );
         let mut f = OpenOptions::new()
             .write(true)
             .truncate(true)
             .open(file.path().unwrap())
             .map_err(|err| err.to_string())?;
 
-        let serialized = serde_json::to_string(self)
-            .map_err(|err| err.to_string())?;
-        let bytes_written = f.write(serialized.as_bytes())
+        let serialized = serde_json::to_string(self).map_err(|err| err.to_string())?;
+        let bytes_written = f
+            .write(serialized.as_bytes())
             .map_err(|err| err.to_string())?;
 
-        info!("Wrote {bytes_written} bytes to `{}` successfully", file.path().unwrap().to_str().unwrap());
+        info!(
+            "Wrote {bytes_written} bytes to `{}` successfully",
+            file.path().unwrap().to_str().unwrap()
+        );
         Ok(())
     }
 
     pub fn import(file: &gio::File) -> Result<Self, String> {
-        let f = File::open(file.path().unwrap())
-            .map_err(|err| err.to_string())?;
-        let mod_file: Self = serde_json::from_reader(BufReader::new(f))
-            .map_err(|err| err.to_string())?;
+        let f = File::open(file.path().unwrap()).map_err(|err| err.to_string())?;
+        let mod_file: Self =
+            serde_json::from_reader(BufReader::new(f)).map_err(|err| err.to_string())?;
 
-        info!("Imported module `{}` from file `{}`", mod_file.main_name, file.path().unwrap().to_str().unwrap());
+        info!(
+            "Imported module `{}` from file `{}`",
+            mod_file.main_name,
+            file.path().unwrap().to_str().unwrap()
+        );
         Ok(mod_file)
     }
 
-    fn check_compat(&self, project: &mut Project) -> Vec<String> {
-        self.modules.keys()
+    fn check_compat(&self, project: &Project) -> Vec<String> {
+        self.modules
+            .keys()
+            .filter(|&name| project.module(name).is_some())
             .cloned()
-            .filter(|name| project.module(name).is_some())
             .collect::<Vec<_>>()
     }
 
@@ -87,7 +101,8 @@ impl ModuleFile {
         // construct error message
         let message = format!(
             "Error importing `{}`; Conflicting modules exist:\n\t{}",
-            self.main_name, conflicting.join(",\n\t")
+            self.main_name,
+            conflicting.join(",\n\t")
         );
         Err(message)
     }
