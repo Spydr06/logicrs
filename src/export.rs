@@ -75,11 +75,11 @@ impl ModuleFile {
         Ok(mod_file)
     }
 
-    fn check_compat(&self, project: &mut Project) -> Vec<String> {
+    fn check_compat(&self, project: &Project) -> Vec<String> {
         self.modules
             .keys()
+            .filter(|&name| project.module(name).is_some())
             .cloned()
-            .filter(|name| project.module(name).is_some())
             .collect::<Vec<_>>()
     }
 

@@ -258,7 +258,7 @@ lazy_static! {
                     2,
                     Decoration::Label(String::from("Demux")),
                 ),
-                |input, _| ((((input == 0b11) as u128) << 1) | (input == 0b01) as u128) as u128,
+                |input, _| ((((input == 0b11) as u128) << 1) | (input == 0b01) as u128),
             ),
         );
 

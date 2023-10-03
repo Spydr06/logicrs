@@ -6,7 +6,7 @@ use crate::{
     ui::{circuit_view::CircuitView, dialogs, main_window::MainWindow},
 };
 use adw::subclass::prelude::*;
-use gtk::{gdk, gio, glib, prelude::*, subclass::prelude::*};
+use gtk::{gdk, gio, glib, prelude::*};
 use std::cell::RefCell;
 
 use super::{action::*, clipboard::Clipboard, selection::*, Application};
