@@ -175,6 +175,26 @@ LogicRs features several builtin modules available for every project. Here is a 
   | 1 | 0 | 1      |
   | 1 | 1 | 0      |
 
+### Combinational Modules
+
+- **`Mux`**: A 2:1 multiplexer, selecting either the A or B input based on the S input:
+
+  <img style="float: right;" src="./assets/modules/mux.png"/>
+
+  | S | Output |
+  |---|--------|
+  | 0 | A      |
+  | 1 | B      |
+
+- **`Demux`**: A 1:2 demultiplexer, selecting either the O0 or O1 output based on the S input:
+  
+  <img style="float: right;" src="./assets/modules/demux.png"/>
+
+  | S | O1 | O0 |
+  |---|----|----|
+  | 0 | 0  | A  |
+  | 1 | A  | 0  |
+
 ### Latch Modules
 
 - **`JK Latch`**: Latch similar to the `SR Latch`, but toggeling its value when both inputs A and B are `1`:
