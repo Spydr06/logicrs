@@ -4,6 +4,7 @@ pub mod action;
 pub mod clipboard;
 pub mod editor;
 pub mod selection;
+pub mod user_settings;
 
 use action::*;
 use std::cell::RefCell;

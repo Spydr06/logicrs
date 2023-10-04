@@ -5,6 +5,7 @@ use crate::{
     ui::{main_window::MainWindow, circuit_view::CircuitView, dialogs},
     fatal::*, project::*, simulator::*, renderer::Theme,
 };
+use crate::application::user_settings::UserSettings;
 
 use super::{action::*, clipboard::Clipboard, Application, selection::*};
 
@@ -15,6 +16,7 @@ pub struct ApplicationTemplate {
     simulator: RefCell<Option<Simulator>>,
     file: RefCell<Option<gio::File>>,
     action_stack: RefCell<ActionStack>,
+    user_settings: RefCell<UserSettings>,
 } 
 
 impl ApplicationTemplate {

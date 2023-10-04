@@ -1,8 +1,9 @@
+use serde::{Deserialize, Serialize};
 use super::{*, selection::Selectable};
 use crate::{fatal::*, project::Project, simulator::Simulator, FileExtension, export::ModuleFile};
 
-#[derive(Default, Clone, Copy)]
-enum Theme {
+#[derive(Default, Clone, Copy, Serialize, Deserialize)]
+pub enum Theme {
     #[default]
     SystemPreference = 0,
     Dark = 1,
