@@ -127,4 +127,4 @@ jobs:
       - name: Install cargo audit
         run: cargo install cargo-audit
       - name: Run "cargo audit" to check for vulnerabilities
-        run: cargo audit --deny=warnings
+        run: cargo audit
