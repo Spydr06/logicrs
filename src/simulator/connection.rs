@@ -1,6 +1,6 @@
 use super::*;
 use crate::{
-    application::editor::{EditorMode, self},
+    application::editor::{self, EditorMode},
     id::Id,
     renderer::{vector::*, *},
 };
