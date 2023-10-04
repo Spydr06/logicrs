@@ -22,9 +22,9 @@
 
 </div>
 
-**LogicRs** is an easy-to-use, free and open-source simulator for logical circuits/diagrams written in rust.
+**LogicRs** is an easy-to-use, free, and open-source simulator for logical circuits/diagrams written in Rust.
 
-This program is meant for students, who want learn about [boolean algebra](https://en.wikipedia.org/wiki/Boolean_algebra) and visualize their equations as well as for developers simulating and debugging conditional expressions found everywhere in programming.
+This program is meant for students, who want to learn about [boolean algebra](https://en.wikipedia.org/wiki/Boolean_algebra) and visualize their equations as well as for developers simulating and debugging conditional expressions found everywhere in programming.
 
 ![random screenshot](./assets/random-screenshot.png)
 
@@ -35,8 +35,8 @@ LogicRs can be downloaded as a prebuilt package from the [releases](https://gith
 - `.AppImage` package (Linux)
 - `.zip` portable installation (Windows)
 
-Alternatively, you can download this repository and build LogicRs from source. 
-Please refer to [INSTALL.md](./INSTALL.md) for build instructions and information about compatability
+Alternatively, you can download this repository and build LogicRs from the source. 
+Please refer to [INSTALL.md](./INSTALL.md) for build instructions and information about compatibility
 
 ## Documentation
 
