@@ -140,13 +140,23 @@ impl Application {
 
     pub(self) fn setup_gactions(&self) {
         gactions::ACTIONS.iter().for_each(|gaction| {
+            let mut accels = gaction.accels().to_vec();
+            let temp: Vec<String>;
+            if cfg!(target_os = "macos") {
+                temp = gaction
+                    .accels()
+                    .iter()
+                    .map(|s| s.replace("<primary>", "<meta>"))
+                    .collect::<Vec<String>>();
+                accels = temp.iter().map(|x| &**x).collect::<Vec<&str>>();
+            }
             let callback = gaction.callback();
             let action = gio::SimpleAction::from(gaction);
             action.connect_activate(glib::clone!(
                 @weak self as app => move |action, parameter| callback(app, action, parameter)
             ));
             self.add_action(&action);
-            self.set_accels_for_action(&format!("app.{}", gaction.name()), gaction.accels());
+            self.set_accels_for_action(&format!("app.{}", gaction.name()), &accels);
         });
     }
 }
