@@ -330,7 +330,7 @@ lazy_static! {
                     "D Flip-Flop",
                     Category::FlipFlop,
                     2,
-                    1,
+                    2,
                     Decoration::Label("D".to_string()),
                 ),
                 d_flip_flop,
@@ -344,7 +344,7 @@ lazy_static! {
                     "T Flip-Flop",
                     Category::FlipFlop,
                     2,
-                    1,
+                    2,
                     Decoration::Label("T".to_string()),
                 ),
                 t_flip_flop,
@@ -401,7 +401,7 @@ fn d_flip_flop(input: u128, instance: &mut Block) -> u128 {
         instance.set_bytes(input);
     }
     instance.set_bytes(instance.bytes() & !0b10 | (input & 0b10));
-    instance.bytes() & 1
+    instance.bytes() & 1 | !instance.bytes() << 1
 }
 
 fn t_flip_flop(input: u128, instance: &mut Block) -> u128 {
@@ -409,5 +409,5 @@ fn t_flip_flop(input: u128, instance: &mut Block) -> u128 {
         instance.set_bytes(instance.bytes() ^ 1);
     }
     instance.set_bytes((instance.bytes() & !0b10) | (input & 0b10));
-    instance.bytes() & 1
+    instance.bytes() & 1 | !instance.bytes() << 1
 }
