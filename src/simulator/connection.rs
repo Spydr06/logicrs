@@ -1,6 +1,6 @@
 use super::*;
 use crate::{
-    application::editor::{EditorMode, self},
+    application::editor::{self, EditorMode},
     id::Id,
     renderer::{vector::*, *},
 };
@@ -475,7 +475,7 @@ where
         .map(|_| ())
 }
 
-fn render_block_connector<R>(
+pub fn render_block_connector<R>(
     position: Vector2<i32>,
     active: bool,
     highlighted: bool,
@@ -507,7 +507,7 @@ where
         .map(|_| ())
 }
 
-fn render_line<R>(
+pub fn render_line<R>(
     active: bool,
     start: Vector2<i32>,
     end: Vector2<i32>,

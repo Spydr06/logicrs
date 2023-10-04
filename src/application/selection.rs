@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     renderer::{vector::Vector2, Renderable, COLOR_THEME},
-    simulator::{Block, BlockID, Plot, SegmentID},
+    simulator::{render_block_connector, render_line, Block, BlockID, Plot, SegmentID},
 };
 use std::cmp;
 
@@ -80,18 +80,8 @@ impl Renderable for Selection {
                     .map(|_| ())
             }
             Self::Connection(_, start, end) => {
-                let offset = Vector2(
-                    Vector2(start.0 + ((end.0 - start.0) as f32 * 0.7) as i32, start.1),
-                    Vector2(end.0 + ((start.0 - end.0) as f32 * 0.7) as i32, end.1),
-                );
-
-                renderer
-                    .set_line_width(4.)
-                    .set_color(unsafe { &COLOR_THEME.disabled_bg_color })
-                    .move_to(*start)
-                    .curve_to(offset.0, offset.1, *end)
-                    .stroke()
-                    .map(|_| ())
+                render_line(false, *start, *end, renderer)?;
+                render_block_connector(*end, false, false, renderer)
             }
             Self::MoveBlock(block) => block.render(renderer, data),
             _ => Ok(()),
