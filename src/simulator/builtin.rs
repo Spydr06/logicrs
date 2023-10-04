@@ -263,6 +263,25 @@ lazy_static! {
         );
 
         builtins.insert(
+            "D Latch",
+            Builtin::new(
+                Module::new_builtin(
+                    "D Latch",
+                    Category::Latch,
+                    2,
+                    1,
+                    Decoration::Label("D L".to_string()),
+                ),
+                |input, instance| {
+                    if input & 0b10 > 0 {
+                        instance.set_bytes(input);
+                    }
+                    instance.bytes()
+                },
+            ),
+        );
+
+        builtins.insert(
             "SR Nand Latch",
             Builtin::new(
                 Module::new_builtin(
@@ -305,13 +324,27 @@ lazy_static! {
         );
 
         builtins.insert(
+            "D Flip-Flop",
+            Builtin::new(
+                Module::new_builtin(
+                    "D Flip-Flop",
+                    Category::FlipFlop,
+                    2,
+                    2,
+                    Decoration::Label("D".to_string()),
+                ),
+                d_flip_flop,
+            ),
+        );
+
+        builtins.insert(
             "T Flip-Flop",
             Builtin::new(
                 Module::new_builtin(
                     "T Flip-Flop",
                     Category::FlipFlop,
-                    1,
-                    1,
+                    2,
+                    2,
                     Decoration::Label("T".to_string()),
                 ),
                 t_flip_flop,
@@ -363,10 +396,18 @@ fn sr_nand_latch(input: u128, instance: &mut Block) -> u128 {
     instance.bytes() | (((instance.bytes() == 0) as u128) << 1)
 }
 
+fn d_flip_flop(input: u128, instance: &mut Block) -> u128 {
+    if input & 0b10 > 0 && instance.bytes() & 0b10 == 0 {
+        instance.set_bytes(input);
+    }
+    instance.set_bytes(instance.bytes() & !0b10 | (input & 0b10));
+    instance.bytes() & 1 | !instance.bytes() << 1
+}
+
 fn t_flip_flop(input: u128, instance: &mut Block) -> u128 {
-    if input & 1 > 0 && instance.bytes() & 0b10 == 0 {
+    if input == 0b11 && instance.bytes() & 0b10 == 0 {
         instance.set_bytes(instance.bytes() ^ 1);
     }
-    instance.set_bytes((instance.bytes() & !0b10) | (input << 1));
-    instance.bytes() & 1
+    instance.set_bytes((instance.bytes() & !0b10) | (input & 0b10));
+    instance.bytes() & 1 | !instance.bytes() << 1
 }
