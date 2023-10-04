@@ -1,6 +1,6 @@
 use super::*;
 use crate::{
-    application::editor::EditorMode,
+    application::editor::{EditorMode, self},
     id::Id,
     renderer::{vector::*, *},
 };
@@ -76,7 +76,7 @@ pub enum Segment {
 }
 
 impl Segment {
-    pub const HITBOX_SIZE: i32 = 6;
+    pub const HITBOX_SIZE: i32 = editor::GRID_SIZE / 2;
 
     pub fn position(&self) -> Option<&Vector2<i32>> {
         match self {
