@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use super::{*, selection::Selectable};
 use crate::{fatal::*, project::Project, simulator::Simulator, FileExtension, export::ModuleFile};
+use crate::application::user_settings::UserSettingsKey::ThemeKey;
+use crate::application::user_settings::UserSettingsValue::ThemeValue;
 
 #[derive(Default, Clone, Copy, Serialize, Deserialize)]
 pub enum Theme {
@@ -229,6 +231,14 @@ impl Application {
             .into();
 
         adw::StyleManager::default().set_color_scheme(new.into());
+
+        let mut user_settings = self.imp().user_settings().borrow_mut();
+        user_settings.set_setting(ThemeKey, ThemeValue(new.into()));
+        match user_settings.save_config() {
+            Ok(()) => {}
+            Err(_save_config_err) => { println!("Could not save to config") }
+        }
+
         action.set_state(&new.to_variant());
     }
 

@@ -152,6 +152,8 @@ impl ApplicationTemplate {
         self.action_stack.borrow().is_dirty()
     }
 
+    pub fn user_settings(&self) -> &RefCell<UserSettings> { &self.user_settings }
+
     pub fn generate_clipboard(&self) -> Clipboard {
         if let Some(selected) = self.with_current_plot(|plot| !matches!(plot.selection(), Selection::None)) && selected {
             self.with_current_plot(|plot| Clipboard::from(plot)).unwrap_or_default()

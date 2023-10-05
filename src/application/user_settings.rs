@@ -7,7 +7,7 @@ use crate::application::gactions::Theme;
 
 #[derive(Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub enum UserSettingsKey {
-    Theme,
+    ThemeKey,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -24,10 +24,10 @@ impl Default for UserSettings {
     fn default() -> Self {
         let mut instance = UserSettings::new();
 
-        if let Err(load_config_err) = instance.load_config() {
+        if let Err(_load_config_err) = instance.load_config() {
             match instance.create_config() {
                 Ok(_) => (),
-                Err(create_config_err) => {
+                Err(_create_config_err) => {
                     println!("Failed to create config, saving will not be enabled");
                 }
             }
@@ -75,7 +75,7 @@ impl UserSettings {
 
     pub fn create_config(&mut self) -> Result<(), String> {
         // Once more settings are added, we can consider creating a "Default" trait to add these programmatically.
-        self.user_settings.insert(UserSettingsKey::Theme, UserSettingsValue::ThemeValue(Theme::SystemPreference));
+        self.user_settings.insert(UserSettingsKey::ThemeKey, UserSettingsValue::ThemeValue(Theme::SystemPreference));
         self.save_config()?;
         Ok(())
     }
