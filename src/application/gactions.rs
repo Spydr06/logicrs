@@ -126,7 +126,7 @@ lazy_static! {
         GAction::new("new", &["<primary>N"], None, None, Application::gaction_new),
         GAction::new(
             "delete-block",
-            &["Delete"],
+            &["Delete", "<primary>BackSpace"],
             None,
             None,
             Application::gaction_delete_block
