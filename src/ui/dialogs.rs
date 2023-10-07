@@ -1,14 +1,22 @@
 use adw::prelude::*;
 use gtk::{
-    traits::DialogExt,
-    subclass::prelude::ObjectSubclassIsExt,
-    ButtonsType, Entry, MessageDialog, ResponseType, Orientation, Box, ColorButton, Label, Align, 
+    subclass::prelude::ObjectSubclassIsExt, traits::DialogExt, Align, Box, ButtonsType,
+    ColorButton, Entry, Label, MessageDialog, Orientation, ResponseType,
 };
 
+use crate::{
+    application::{action::Action, selection::SelectionField, Application},
+    renderer::{IntoColor, IntoRGBA, COLOR_THEME},
+    simulator::Module,
+};
 use std::future::Future;
-use crate::{simulator::Module, application::{Application, action::Action, selection::SelectionField}, renderer::{COLOR_THEME, IntoRGBA, IntoColor}};
 
-fn create_new_module(app: Application, name: String, num_inputs: u8, num_outputs: u8) -> Result<(), String> {
+fn create_new_module(
+    app: Application,
+    name: String,
+    num_inputs: u8,
+    num_outputs: u8,
+) -> Result<(), String> {
     if name.is_empty() {
         return Err("Invalid name".to_string());
     }
@@ -19,8 +27,14 @@ fn create_new_module(app: Application, name: String, num_inputs: u8, num_outputs
         return Err(err);
     }
 
-    info!("Create new Module \"{}\"\nwith: {} inputs\n      {} outputs", name, num_inputs, num_outputs);
-    app.new_action(Action::CreateModule(app.imp().project().clone(), Module::new(name, num_inputs, num_outputs)));
+    info!(
+        "Create new Module \"{}\"\nwith: {} inputs\n      {} outputs",
+        name, num_inputs, num_outputs
+    );
+    app.new_action(Action::CreateModule(
+        app.imp().project().clone(),
+        Module::new(name, num_inputs, num_outputs),
+    ));
 
     Ok(())
 }
@@ -66,7 +80,7 @@ pub async fn new_module(app: Application, window: gtk::Window, _data: ()) {
     content.append(&input_chooser);
 
     let output_adjustment = gtk::Adjustment::new(1.0, 1.0, 129.0, 1.0, 1.0, 1.0);
-    let output_chooser = gtk::SpinButton::builder()        
+    let output_chooser = gtk::SpinButton::builder()
         .climb_rate(1.0)
         .adjustment(&output_adjustment)
         .margin_start(12)
@@ -91,12 +105,17 @@ pub async fn new_module(app: Application, window: gtk::Window, _data: ()) {
     dialog.close();
 
     if answer == ResponseType::Ok {
-       // let num_inputs = INPUTS.iter().position(|&elem| elem == input_chooser.active_id().unwrap()).unwrap_or_default() + 1;
+        // let num_inputs = INPUTS.iter().position(|&elem| elem == input_chooser.active_id().unwrap()).unwrap_or_default() + 1;
         let num_inputs = input_chooser.value_as_int();
         let num_outputs = output_chooser.value_as_int();
 
         // generate new module
-        if let Err(err) = create_new_module(app, name_input.buffer().text().trim().to_string(), num_inputs as u8, num_outputs as u8) {
+        if let Err(err) = create_new_module(
+            app,
+            name_input.buffer().text().trim().to_string(),
+            num_inputs as u8,
+            num_outputs as u8,
+        ) {
             gtk::glib::MainContext::default().spawn_local(invalid_module(window, err));
         }
     }
@@ -111,7 +130,7 @@ pub async fn basic_error(_app: Application, window: gtk::Window, message: String
         .text(&message)
         .title("Error")
         .build();
-    
+
     dialog.run_future().await;
     dialog.close();
 }
@@ -125,11 +144,11 @@ pub async fn confirm_delete_module(app: Application, window: gtk::Window, module
         .text(&format!("Do you really want to delete the module \"{module_name}\"?\nThis action is not reversable!"))
         .title(&format!("Delete Module \"{module_name}\"?"))
         .build();
-    
+
     let answer = dialog.run_future().await;
     dialog.close();
 
-    if answer == ResponseType::Yes  {
+    if answer == ResponseType::Yes {
         app.imp().delete_module(&module_name);
     }
 }
@@ -143,7 +162,11 @@ pub async fn select_border_color(app: Application, window: gtk::Window, _data: (
         .buttons(ButtonsType::OkCancel)
         .build();
 
-    let label = Label::builder().label("Border Color:").halign(Align::Start).hexpand(false).build();
+    let label = Label::builder()
+        .label("Border Color:")
+        .halign(Align::Start)
+        .hexpand(false)
+        .build();
     let color_button = ColorButton::with_rgba(&unsafe { &COLOR_THEME.border_color }.into_rgba());
 
     let content = dialog.content_area();
@@ -165,8 +188,12 @@ pub async fn select_border_color(app: Application, window: gtk::Window, _data: (
     }
 }
 
-pub fn run<F, T>(application: Application, window: gtk::Window, data: T, dialog: fn(Application, gtk::Window, T) -> F) 
-where
+pub fn run<F, T>(
+    application: Application,
+    window: gtk::Window,
+    data: T,
+    dialog: fn(Application, gtk::Window, T) -> F,
+) where
     F: Future<Output = ()> + 'static,
 {
     gtk::glib::MainContext::default().spawn_local(dialog(application, window, data));

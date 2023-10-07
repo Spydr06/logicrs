@@ -1,5 +1,5 @@
-use crate::{simulator::*, renderer::vector::*, id::Id};
-use serde::{Serialize, Deserialize};
+use crate::{id::Id, renderer::vector::*, simulator::*};
+use serde::{Deserialize, Serialize};
 
 use super::{action::Action, selection::*};
 
@@ -7,7 +7,7 @@ use super::{action::Action, selection::*};
 pub enum Clipboard {
     Empty,
     Blocks(Vec<Block>, Vec<Connection>),
-    Module(Box<Module>)
+    Module(Box<Module>),
 }
 
 impl Default for Clipboard {
@@ -25,17 +25,26 @@ impl Clipboard {
         serde_json::from_str(data).map_err(|err| err.to_string())
     }
 
-    pub fn paste_to(&self, plot_provider: PlotProvider, position: Vector2<f64>) -> Result<Action, String> {
+    pub fn paste_to(
+        &self,
+        plot_provider: PlotProvider,
+        position: Vector2<f64>,
+    ) -> Result<Action, String> {
         if let Clipboard::Blocks(blocks, connections) = self {
             let mut data = (blocks.to_owned(), connections.to_owned());
             data.prepare_pasting(position);
             plot_provider.with_mut(|plot| {
                 plot.unhighlight();
-                plot.set_selection(Selection::Many(data.0.iter().map(|block| Selectable::Block(block.id())).collect()));
+                plot.set_selection(Selection::Many(
+                    data.0
+                        .iter()
+                        .map(|block| Selectable::Block(block.id()))
+                        .collect(),
+                ));
             });
             return Ok(Action::PasteBlocks(plot_provider, data.0, data.1));
         }
-        
+
         panic!("called `paste_to()` on clipboard != Clipboard::Blocks")
     }
 }
@@ -86,8 +95,7 @@ impl Copyable<(&Plot, Vec<BlockID>)> for (Vec<Block>, Vec<Connection>) {
                     let mut connection = connection.clone();
                     if connection.remove_unselected_branches(&block_ids) {
                         *c = None;
-                    }
-                    else {
+                    } else {
                         connections.push(connection);
                     }
                 }
@@ -120,7 +128,12 @@ trait Pasteable<T> {
 
 impl Pasteable<Vector2<f64>> for (Vec<Block>, Vec<Connection>) {
     fn prepare_pasting(&mut self, position: Vector2<f64>) -> &mut Self {
-        let min = self.0.iter().map(|block| block.position()).min().unwrap_or_default();
+        let min = self
+            .0
+            .iter()
+            .map(|block| block.position())
+            .min()
+            .unwrap_or_default();
         let offset = Vector2::cast(position) - min;
 
         self.0.iter_mut().for_each(|block| {
@@ -130,28 +143,31 @@ impl Pasteable<Vector2<f64>> for (Vec<Block>, Vec<Connection>) {
             block.set_position(block.position() + offset);
             block.set_highlighted(true);
 
-            self.1.iter_mut().for_each(|connection| connection.refactor_id(old_id, new_id));
+            self.1
+                .iter_mut()
+                .for_each(|connection| connection.refactor_id(old_id, new_id));
         });
 
         self.1.iter_mut().for_each(|connection| {
             let old_id = connection.id();
             let new_id = Id::new();
             connection.set_id(new_id);
-            connection.for_each_mut_segment(|segment| 
+            connection.for_each_mut_segment(|segment| {
                 if let Some(position) = segment.position() {
                     segment.set_position(*position + offset)
                 }
-            );
+            });
 
-            self.0.iter_mut().for_each(|block|
-                block.connections_mut()
+            self.0.iter_mut().for_each(|block| {
+                block
+                    .connections_mut()
                     .filter_map(|c| c.as_mut())
-                    .for_each(|c|
+                    .for_each(|c| {
                         if *c == old_id {
                             *c = new_id;
                         }
-                )
-            );
+                    })
+            });
         });
 
         self

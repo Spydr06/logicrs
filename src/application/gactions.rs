@@ -3,6 +3,8 @@ use super::{*, selection::Selectable};
 use crate::{fatal::*, project::Project, simulator::Simulator, FileExtension, export::ModuleFile};
 use crate::application::user_settings::UserSettingsKey::ThemeKey;
 use crate::application::user_settings::UserSettingsValue::ThemeValue;
+use super::{selection::Selectable, *};
+use crate::{export::ModuleFile, fatal::*, project::Project, simulator::Simulator, FileExtension};
 
 #[derive(Default, Clone, Copy, Serialize, Deserialize)]
 pub enum Theme {
@@ -24,7 +26,7 @@ impl From<u8> for Theme {
             0 => Self::SystemPreference,
             1 => Self::Dark,
             2 => Self::Light,
-            _ => panic!()
+            _ => panic!(),
         }
     }
 }
@@ -34,7 +36,7 @@ impl From<Theme> for adw::ColorScheme {
         match val {
             Theme::SystemPreference => adw::ColorScheme::Default,
             Theme::Dark => adw::ColorScheme::ForceDark,
-            Theme::Light => adw::ColorScheme::ForceLight
+            Theme::Light => adw::ColorScheme::ForceLight,
         }
     }
 }
@@ -91,22 +93,115 @@ lazy_static! {
         GAction::new("save-as", &["<primary><shift>S"], None, None, Application::gaction_save_as),
         GAction::new("open", &["<primary>O"], None, None, Application::gaction_open),
         GAction::new("new", &["<primary>N"], None, None, Application::gaction_new),
-        GAction::new("delete-block", &["Delete"], None, None, Application::gaction_delete_block),
-        GAction::new("create-new-module", &["<primary><shift>N"], None, None, Application::gaction_create_new_module),
-        GAction::new("undo", &["<primary>Z"], None, None, Application::gaction_undo),
-        GAction::new("redo", &["<primary>Y"], None, None, Application::gaction_redo),
-        GAction::new("copy", &["<primary>C"], None, None, Application::gaction_copy),
+        GAction::new(
+            "delete-block",
+            &["Delete", "<primary>BackSpace"],
+            None,
+            None,
+            Application::gaction_delete_block
+        ),
+        GAction::new(
+            "create-new-module",
+            &["<primary><shift>N"],
+            None,
+            None,
+            Application::gaction_create_new_module
+        ),
+        GAction::new(
+            "undo",
+            &["<primary>Z"],
+            None,
+            None,
+            Application::gaction_undo
+        ),
+        GAction::new(
+            "redo",
+            &["<primary>Y"],
+            None,
+            None,
+            Application::gaction_redo
+        ),
+        GAction::new(
+            "copy",
+            &["<primary>C"],
+            None,
+            None,
+            Application::gaction_copy
+        ),
         GAction::new("cut", &["<primary>X"], None, None, Application::gaction_cut),
-        GAction::new("paste", &["<primary>V"], None, None, Application::gaction_paste),
-        GAction::new("select-all", &["<primary>A"], None, None, Application::gaction_select_all),
-        GAction::new("set-selection-color", &[], None, None, Application::gaction_set_selection_color),
-        GAction::new("delete-module", &[], Some(glib::VariantTy::STRING), None, Application::gaction_delete_module),
-        GAction::new("edit-module", &[], Some(glib::VariantTy::STRING), None, Application::gaction_edit_module),
-        GAction::new("search-module", &["<primary>F"], None, None, Application::gaction_search_module),
-        GAction::new("change-theme", &[], None, Some((glib::VariantTy::BYTE, Theme::SystemPreference.to_variant())), Application::gaction_change_theme),
-        GAction::new("change-tick-speed", &[], None, Some((glib::VariantTy::INT32, Simulator::DEFAULT_TICKS_PER_SECOND.to_variant())), Application::gaction_change_tps),
-        GAction::new("export-module", &[], Some(glib::VariantTy::STRING), None, Application::gaction_export_module),
-        GAction::new("import-module", &[], None, None, Application::gaction_import_module)
+        GAction::new(
+            "paste",
+            &["<primary>V"],
+            None,
+            None,
+            Application::gaction_paste
+        ),
+        GAction::new(
+            "select-all",
+            &["<primary>A"],
+            None,
+            None,
+            Application::gaction_select_all
+        ),
+        GAction::new(
+            "set-selection-color",
+            &[],
+            None,
+            None,
+            Application::gaction_set_selection_color
+        ),
+        GAction::new(
+            "delete-module",
+            &[],
+            Some(glib::VariantTy::STRING),
+            None,
+            Application::gaction_delete_module
+        ),
+        GAction::new(
+            "edit-module",
+            &[],
+            Some(glib::VariantTy::STRING),
+            None,
+            Application::gaction_edit_module
+        ),
+        GAction::new(
+            "search-module",
+            &["<primary>F"],
+            None,
+            None,
+            Application::gaction_search_module
+        ),
+        GAction::new(
+            "change-theme",
+            &[],
+            None,
+            Some((glib::VariantTy::BYTE, Theme::SystemPreference.to_variant())),
+            Application::gaction_change_theme
+        ),
+        GAction::new(
+            "change-tick-speed",
+            &[],
+            None,
+            Some((
+                glib::VariantTy::INT32,
+                Simulator::DEFAULT_TICKS_PER_SECOND.to_variant()
+            )),
+            Application::gaction_change_tps
+        ),
+        GAction::new(
+            "export-module",
+            &[],
+            Some(glib::VariantTy::STRING),
+            None,
+            Application::gaction_export_module
+        ),
+        GAction::new(
+            "import-module",
+            &[],
+            None,
+            None,
+            Application::gaction_import_module
+        )
     ];
 }
 
@@ -157,7 +252,12 @@ impl Application {
                     }
                 }).collect()
             )).unwrap_or_default();
-            self.new_action(Action::DeleteSelection(plot_provider, blocks, connections, vec![]));
+            self.new_action(Action::DeleteSelection(
+                plot_provider,
+                blocks,
+                connections,
+                vec![],
+            ));
         }
     }
 
@@ -174,7 +274,6 @@ impl Application {
     fn gaction_redo(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
         self.redo_action();
     }
-
 
     fn gaction_copy(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
         self.copy_clipboard(false);
@@ -212,14 +311,19 @@ impl Application {
     fn gaction_edit_module(self, _: &gio::SimpleAction, parameter: Option<&glib::Variant>) {
         let module_name = parameter
             .expect("Could not get module name target.")
-            .get::<String>().unwrap();
+            .get::<String>()
+            .unwrap();
         self.imp().edit_module(module_name);
     }
 
     fn gaction_search_module(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
-        self.imp().window()
-            .borrow().as_ref().unwrap()
-            .module_list().show_search();
+        self.imp()
+            .window()
+            .borrow()
+            .as_ref()
+            .unwrap()
+            .module_list()
+            .show_search();
     }
 
     fn gaction_change_theme(self, action: &gio::SimpleAction, parameter: Option<&glib::Variant>) {
@@ -247,9 +351,7 @@ impl Application {
             .get::<i32>()
             .expect("the parameter needs to be of type `u8`");
 
-        self.imp()
-            .project()
-            .lock().unwrap().set_tps(new);
+        self.imp().project().lock().unwrap().set_tps(new);
 
         action.set_state(&new.to_variant());
     }
@@ -356,7 +458,13 @@ impl Application {
             .transient_for(&window)
             .modal(true)
             .heading("Save File?")
-            .body(format!("There are unsaved changes in \"{}\". Do you want to save them?", self.imp().file_name()).as_str())
+            .body(
+                format!(
+                    "There are unsaved changes in \"{}\". Do you want to save them?",
+                    self.imp().file_name()
+                )
+                .as_str(),
+            )
             .close_response("Cancel")
             .default_response("Yes")
             .build();
@@ -423,7 +531,7 @@ impl Application {
                 .cancel_label("Cancel")
                 .filter(&Project::file_filter())
                 .build();
-            
+
             open_dialog.connect_response({
                 let file_chooser = RefCell::new(Some(open_dialog.clone()));
                 glib::clone!(@weak app, @weak window => move |_, response| {
@@ -449,7 +557,7 @@ impl Application {
                     }
                 })
             });
-            
+
             open_dialog.show();
         }));
     }

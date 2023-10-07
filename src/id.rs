@@ -1,11 +1,13 @@
-use std::hash::Hasher;
 use std::collections::hash_map::DefaultHasher;
+use std::hash::Hasher;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 // Id: Struct that already stores a pre-hashed Uuid value to make HashTable lookups faster
 
-#[derive(Debug, Default, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(
+    Debug, Default, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash,
+)]
 pub struct Id(u64);
 
 impl Id {

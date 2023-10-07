@@ -1,11 +1,7 @@
-use crate::{simulator::Plot, application::selection::*};
+use crate::{application::selection::*, simulator::Plot};
 
 use super::*;
-use gtk::cairo::{
-    Context,
-    Antialias,
-    Error, FontFace
-};
+use gtk::cairo::{Antialias, Context, Error, FontFace};
 
 pub struct CairoRenderer {
     size: Vector2<i32>,
@@ -14,7 +10,7 @@ pub struct CairoRenderer {
     original_translation: Vector2<f64>,
     font: FontFace,
     context: Option<Context>,
-    editor_mode: EditorMode
+    editor_mode: EditorMode,
 }
 
 impl CairoRenderer {
@@ -26,7 +22,12 @@ impl CairoRenderer {
             original_translation: Vector2::default(),
             context: None,
             editor_mode: EditorMode::default(),
-            font: FontFace::toy_create("Cascadia Code", gtk::cairo::FontSlant::Normal, gtk::cairo::FontWeight::Normal).unwrap()
+            font: FontFace::toy_create(
+                "Cascadia Code",
+                gtk::cairo::FontSlant::Normal,
+                gtk::cairo::FontWeight::Normal,
+            )
+            .unwrap(),
         }
     }
 
@@ -49,15 +50,26 @@ impl CairoRenderer {
 }
 
 impl Default for CairoRenderer {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Renderer for CairoRenderer {
     type Context = cairo::Context;
     type Error = cairo::Error;
 
-    fn callback(&mut self, plot: &Plot, mode: EditorMode, _area: &DrawingArea, context: &Self::Context, width: i32, height: i32) -> Result<&mut Self, Self::Error> {
-        self.set_size(Vector2(width, height)).set_context(Some(context.clone()));     
+    fn callback(
+        &mut self,
+        plot: &Plot,
+        mode: EditorMode,
+        _area: &DrawingArea,
+        context: &Self::Context,
+        width: i32,
+        height: i32,
+    ) -> Result<&mut Self, Self::Error> {
+        self.set_size(Vector2(width, height))
+            .set_context(Some(context.clone()));
         self.set_editor_mode(mode);
         if width == 0 || height == 0 {
             return Ok(self);
@@ -67,7 +79,7 @@ impl Renderer for CairoRenderer {
         context.set_antialias(Antialias::Default);
         context.translate(self.translation.x(), self.translation.y());
         context.scale(self.scale, self.scale);
-        
+
         context.set_font_face(&self.font);
         context.set_font_size(DEFAULT_FONT_SIZE);
 
@@ -78,7 +90,7 @@ impl Renderer for CairoRenderer {
 
         // draw the editor grid if enabled
         mode.render(self, plot)?;
-        
+
         // draw the actual contents of the editor
         plot.render(self, plot)?;
 
@@ -122,7 +134,12 @@ impl Renderer for CairoRenderer {
     #[inline]
     fn set_color(&self, color: &Color) -> &Self {
         if let Some(context) = &self.context {
-            context.set_source_rgba(color.0 as f64, color.1 as f64, color.2 as f64, color.3 as f64);
+            context.set_source_rgba(
+                color.0 as f64,
+                color.1 as f64,
+                color.2 as f64,
+                color.3 as f64,
+            );
         }
         self
     }
@@ -147,7 +164,7 @@ impl Renderer for CairoRenderer {
     fn fill(&self) -> Result<&Self, Self::Error> {
         match &self.context {
             Some(context) => context.fill().map(|_| self),
-            None => Ok(self) // TODO: error handling
+            None => Ok(self), // TODO: error handling
         }
     }
 
@@ -155,7 +172,7 @@ impl Renderer for CairoRenderer {
     fn fill_preserve(&self) -> Result<&Self, Self::Error> {
         match &self.context {
             Some(context) => context.fill_preserve().map(|_| self),
-            None => Ok(self) // TODO: error handling
+            None => Ok(self), // TODO: error handling
         }
     }
 
@@ -163,7 +180,7 @@ impl Renderer for CairoRenderer {
     fn stroke(&self) -> Result<&Self, Self::Error> {
         match &self.context {
             Some(context) => context.stroke().map(|_| self),
-            None => Ok(self) // TODO: error handling
+            None => Ok(self), // TODO: error handling
         }
     }
 
@@ -171,7 +188,7 @@ impl Renderer for CairoRenderer {
     fn show_text(&self, text: &str) -> Result<&Self, Error> {
         match &self.context {
             Some(context) => context.show_text(text).map(|_| self),
-            None => Ok(self)
+            None => Ok(self),
         }
     }
 
@@ -186,7 +203,12 @@ impl Renderer for CairoRenderer {
     #[inline]
     fn rectangle(&self, position: Vector2<i32>, size: Vector2<i32>) -> &Self {
         if let Some(context) = &self.context {
-            context.rectangle(position.0 as f64, position.1 as f64, size.0 as f64, size.1 as f64);
+            context.rectangle(
+                position.0 as f64,
+                position.1 as f64,
+                size.0 as f64,
+                size.1 as f64,
+            );
         }
         self
     }
@@ -203,9 +225,12 @@ impl Renderer for CairoRenderer {
     fn curve_to(&self, start: Vector2<i32>, mid: Vector2<i32>, end: Vector2<i32>) -> &Self {
         if let Some(context) = &self.context {
             context.curve_to(
-                start.0 as f64, start.1 as f64, 
-                mid.0 as f64, mid.1 as f64, 
-                end.0 as f64, end.1 as f64
+                start.0 as f64,
+                start.1 as f64,
+                mid.0 as f64,
+                mid.1 as f64,
+                end.0 as f64,
+                end.1 as f64,
             );
         }
         self

@@ -24,9 +24,9 @@ impl IntoRGBA for Color {
 pub const fn hex_to_color(hex: Hex) -> (f32, f32, f32, f32) {
     (
         ((hex >> 16) & 0xff) as f32 / 255.0,
-        ((hex >> 8) & 0xff)  as f32 / 255.0,
-        (hex & 0xff)         as f32 / 255.0,
-        ((hex >> 24) & 0xff) as f32 / 255.0
+        ((hex >> 8) & 0xff) as f32 / 255.0,
+        (hex & 0xff) as f32 / 255.0,
+        ((hex >> 24) & 0xff) as f32 / 255.0,
     )
 }
 
@@ -41,7 +41,7 @@ pub struct Theme {
     pub block_fg_color: Color,
 
     pub grid_color: Color,
-    
+
     // accent colors (selection, etc.)
     pub accent_bg_color: Color,
     pub accent_fg_color: Color,
@@ -63,17 +63,21 @@ pub struct Theme {
 
 impl From<&adw::StyleManager> for Theme {
     fn from(style_manager: &adw::StyleManager) -> Self {
-        if style_manager.is_dark() { Self::DARK } else { Self::LIGHT }
+        if style_manager.is_dark() {
+            Self::DARK
+        } else {
+            Self::LIGHT
+        }
     }
 }
 
 impl Theme {
     pub fn init() {
         let style_manager = adw::StyleManager::default();
-        style_manager.connect_dark_notify(|style_manager| unsafe { 
+        style_manager.connect_dark_notify(|style_manager| unsafe {
             COLOR_THEME = Self::from(style_manager)
         });
-        unsafe { COLOR_THEME = Self::from(&style_manager) } 
+        unsafe { COLOR_THEME = Self::from(&style_manager) }
     }
 
     const DARK: Self = Self {

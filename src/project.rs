@@ -1,7 +1,16 @@
-use std::{collections::*, sync::*, fs::{OpenOptions, File}, io::{Write, BufReader}};
-use serde::{Serialize, Deserialize, ser::SerializeStruct};
+use crate::{
+    renderer::vector::Vector2,
+    simulator::{builtin::BUILTINS, *},
+    FileExtension,
+};
 use gtk::{gio, prelude::FileExt};
-use crate::{simulator::{*, builtin::BUILTINS}, renderer::vector::Vector2, FileExtension};
+use serde::{ser::SerializeStruct, Deserialize, Serialize};
+use std::{
+    collections::*,
+    fs::{File, OpenOptions},
+    io::{BufReader, Write},
+    sync::*,
+};
 
 pub type ProjectRef = Arc<Mutex<Project>>;
 
@@ -9,21 +18,32 @@ pub type ProjectRef = Arc<Mutex<Project>>;
 pub struct Project {
     modules: HashMap<String, Module>,
     main_plot: Plot,
-    tps: i32
+    tps: i32,
 }
 
 impl Default for Project {
     fn default() -> Self {
-        Self::new(builtin::BUILTINS.iter().map(|(_, builtin)| builtin.module().clone()).collect())
+        Self::new(
+            builtin::BUILTINS
+                .iter()
+                .map(|(_, builtin)| builtin.module().clone())
+                .collect(),
+        )
     }
 }
 
 impl Serialize for Project {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer {
+    where
+        S: serde::Serializer,
+    {
         let mut state = serializer.serialize_struct("Project", 2)?;
-        state.serialize_field("modules", &HashMap::<&String, &Module>::from_iter(self.modules.iter().filter(|(_, module)| !module.builtin())))?;
+        state.serialize_field(
+            "modules",
+            &HashMap::<&String, &Module>::from_iter(
+                self.modules.iter().filter(|(_, module)| !module.builtin()),
+            ),
+        )?;
         state.serialize_field("main_plot", &self.main_plot)?;
         state.serialize_field("tps", &self.tps)?;
         state.end()
@@ -45,40 +65,55 @@ impl FileExtension for Project {
 impl Project {
     pub fn new(modules: Vec<Module>) -> Self {
         Self {
-            modules: modules.iter().map(|module| (module.name().to_owned(), module.clone())).collect(),
+            modules: modules
+                .iter()
+                .map(|module| (module.name().to_owned(), module.clone()))
+                .collect(),
             main_plot: Plot::new(),
-            tps: Simulator::DEFAULT_TICKS_PER_SECOND
+            tps: Simulator::DEFAULT_TICKS_PER_SECOND,
         }
     }
 
     pub fn load_from(file: &gio::File) -> Result<Self, String> {
-        let f = File::open(file.path().unwrap())
-            .map_err(|err| err.to_string())?;
-        let mut project: Self = serde_json::from_reader(BufReader::new(f))
-            .map_err(|err| err.to_string())?;
+        let f = File::open(file.path().unwrap()).map_err(|err| err.to_string())?;
+        let mut project: Self =
+            serde_json::from_reader(BufReader::new(f)).map_err(|err| err.to_string())?;
 
-        BUILTINS.iter().for_each(|(_, builtin)| project.add_module(builtin.module().clone()));
+        BUILTINS
+            .iter()
+            .for_each(|(_, builtin)| project.add_module(builtin.module().clone()));
 
-        info!("Loaded from file `{}`", file.path().unwrap().to_str().unwrap());
+        info!(
+            "Loaded from file `{}`",
+            file.path().unwrap().to_str().unwrap()
+        );
 
-        project.iter_plots_mut().for_each(|plot| plot.update_all_blocks());
+        project
+            .iter_plots_mut()
+            .for_each(|plot| plot.update_all_blocks());
         Ok(project)
     }
 
     pub fn write_to(&self, file: &gio::File) -> Result<(), String> {
-        info!("Writing to `{}` ...", file.path().unwrap().to_str().unwrap());
+        info!(
+            "Writing to `{}` ...",
+            file.path().unwrap().to_str().unwrap()
+        );
         let mut f = OpenOptions::new()
             .write(true)
             .truncate(true)
             .open(file.path().unwrap())
             .map_err(|err| err.to_string())?;
 
-        let serialized = serde_json::to_string(self)
-            .map_err(|err| err.to_string())?;
-        let bytes_written = f.write(serialized.as_bytes())
+        let serialized = serde_json::to_string(self).map_err(|err| err.to_string())?;
+        let bytes_written = f
+            .write(serialized.as_bytes())
             .map_err(|err| err.to_string())?;
 
-        info!("Wrote {bytes_written} bytes to `{}` successfully", file.path().unwrap().to_str().unwrap());
+        info!(
+            "Wrote {bytes_written} bytes to `{}` successfully",
+            file.path().unwrap().to_str().unwrap()
+        );
         Ok(())
     }
 
@@ -106,12 +141,26 @@ impl Project {
         if module.plot().is_some() && !module.has_io_blocks() {
             let num_inputs = module.get_num_inputs();
             let num_outputs = module.get_num_outputs();
-            
+
             let input_module = self.modules.get(&*builtin::INPUT_MODULE_NAME).unwrap();
-            let input_block = Block::new_sized(&input_module, Vector2(50, 50), true, num_inputs,  num_inputs, None);
-            
+            let input_block = Block::new_sized(
+                &input_module,
+                Vector2(50, 50),
+                true,
+                num_inputs,
+                num_inputs,
+                None,
+            );
+
             let output_module = self.modules.get(&*builtin::OUTPUT_MODULE_NAME).unwrap();
-            let output_block = Block::new_sized(&output_module, Vector2(400, 50), true, num_outputs, num_outputs, None);
+            let output_block = Block::new_sized(
+                &output_module,
+                Vector2(400, 50),
+                true,
+                num_outputs,
+                num_outputs,
+                None,
+            );
 
             module.set_io_blocks(input_block.id(), output_block.id());
 
@@ -133,7 +182,9 @@ impl Project {
     }
 
     pub fn plot(&self, module_name: &String) -> Option<&Plot> {
-        self.modules.get(module_name).and_then(|module| module.plot())
+        self.modules
+            .get(module_name)
+            .and_then(|module| module.plot())
     }
 
     pub fn main_plot_mut(&mut self) -> &mut Plot {
@@ -141,11 +192,14 @@ impl Project {
     }
 
     pub fn plot_mut(&mut self, module_name: &String) -> Option<&mut Plot> {
-        self.modules.get_mut(module_name).and_then(|module| module.plot_mut())
+        self.modules
+            .get_mut(module_name)
+            .and_then(|module| module.plot_mut())
     }
 
     pub fn iter_plots_mut(&mut self) -> impl Iterator<Item = &mut Plot> {
-        self.modules.iter_mut()
+        self.modules
+            .iter_mut()
             .filter_map(|(_, module)| module.plot_mut())
             .chain(std::iter::once(&mut self.main_plot))
     }
@@ -160,14 +214,16 @@ impl Project {
 
     pub fn collect_dependencies(&self, mod_name: &String, modules: &mut HashMap<String, Module>) {
         if let Some(plot) = self.modules.get(mod_name).and_then(|module| module.plot()) {
-            plot.blocks()
-                .iter()
-                .for_each(|(_, block)| {
-                    if let Some(module) = self.modules.get(block.module_id()).filter(|m| !m.builtin() && !modules.contains_key(m.name())) {
-                        modules.insert(module.name().clone(), module.clone());
-                        self.collect_dependencies(module.name(), modules);
-                    }
-                })
+            plot.blocks().iter().for_each(|(_, block)| {
+                if let Some(module) = self
+                    .modules
+                    .get(block.module_id())
+                    .filter(|m| !m.builtin() && !modules.contains_key(m.name()))
+                {
+                    modules.insert(module.name().clone(), module.clone());
+                    self.collect_dependencies(module.name(), modules);
+                }
+            })
         }
     }
 }

@@ -1,19 +1,22 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-use crate::{renderer::{Renderable, COLOR_THEME, vector::Vector2}, simulator::{Plot, Block, BlockID, SegmentID}};
+use crate::{
+    renderer::{vector::Vector2, Renderable, COLOR_THEME},
+    simulator::{render_block_connector, render_line, Block, BlockID, Plot, SegmentID},
+};
 use std::cmp;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub enum Selectable {
     Block(BlockID),
-    Waypoint(SegmentID)
+    Waypoint(SegmentID),
 }
 
 impl Selectable {
     pub fn block_id(&self) -> Option<BlockID> {
         match self {
             Self::Block(block_id) => Some(*block_id),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -21,7 +24,7 @@ impl Selectable {
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub enum ConnectionSource {
     Block(BlockID, u8),
-    Waypoint(SegmentID)
+    Waypoint(SegmentID),
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -32,19 +35,22 @@ pub enum Selection {
     MouseEvent(BlockID),
     MoveBlock(Box<Block>),
     Connection(ConnectionSource, Vector2<i32>, Vector2<i32>),
-    None
+    None,
 }
 
 impl Selection {
     pub fn connecting(&self) -> bool {
-        matches!(self, Self::Connection {..} | Self::Single(Selectable::Waypoint(..), ..))
+        matches!(
+            self,
+            Self::Connection { .. } | Self::Single(Selectable::Waypoint(..), ..)
+        )
     }
 
     pub fn blocks(&self) -> Vec<BlockID> {
         match self {
             Self::Single(Selectable::Block(block_id), _) => vec![*block_id],
             Self::Many(selected) => selected.iter().filter_map(|s| s.block_id()).collect(),
-            _ => vec![]
+            _ => vec![],
         }
     }
 }
@@ -57,33 +63,28 @@ impl Default for Selection {
 
 impl Renderable for Selection {
     fn render<R>(&self, renderer: &R, data: &Plot) -> Result<(), R::Error>
-        where R: crate::renderer::Renderer {
-
+    where
+        R: crate::renderer::Renderer,
+    {
         match self {
             Self::Area(start, end) => {
                 let position = cmp::min(start, end);
                 let size = *cmp::max(start, end) - *position;
-                renderer.rectangle(*position, size)
+                renderer
+                    .rectangle(*position, size)
                     .set_line_width(1.)
                     .set_color(unsafe { &COLOR_THEME.accent_bg_color })
                     .fill_preserve()?
                     .set_color(unsafe { &COLOR_THEME.accent_fg_color })
-                    .stroke().map(|_| ())
+                    .stroke()
+                    .map(|_| ())
             }
             Self::Connection(_, start, end) => {
-                let offset = Vector2(
-                    Vector2(start.0 + ((end.0 - start.0) as f32 * 0.7) as i32, start.1),
-                    Vector2(end.0 + ((start.0 - end.0) as f32 * 0.7) as i32, end.1),
-                );
-
-                renderer.set_line_width(4.)
-                    .set_color(unsafe { &COLOR_THEME.disabled_bg_color })    
-                    .move_to(*start)
-                    .curve_to(offset.0, offset.1, *end)
-                    .stroke().map(|_| ())
+                render_line(false, *start, *end, renderer)?;
+                render_block_connector(*end, false, false, renderer)
             }
             Self::MoveBlock(block) => block.render(renderer, data),
-            _ => Ok(())
+            _ => Ok(()),
         }
     }
 }

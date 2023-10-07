@@ -1,0 +1,130 @@
+# This CI (Continuous Integration) file will automatically check your Rust code for errors.
+# It runs using GitHub Actions: https://docs.github.com/en/actions
+# It will check the code compiles, run tests, run lints, and check for security issues.
+# CI will help you standardise your code style and to detect issues with your code easily and early.
+# It makes it easier to integrate different branches once they're finished.
+# adapted from https://github.com/actions-rs/meta/blob/master/recipes/quickstart.md and https://gist.github.com/LukeMathWalker/5ae1107432ce283310c3e601fac915f3
+
+name: Rust CI
+
+on:
+  push:
+  #     branches:
+  #       - main
+  release:
+    types: [published]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: Check code compiles
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install apt dependencies
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: build-essential gettext git libcairo2-dev libgtk-4-dev meson ninja-build sassc valac
+          version: latest
+      - name: Clone libadwaita git repo
+        run: git clone https://gitlab.gnome.org/GNOME/libadwaita.git -b libadwaita-1-2 --depth=1
+      - name: Build libadwaita with Meson
+        run: |
+          cd libadwaita
+          meson . _build -Dgtk_doc=false -Dtests=false -Dexamples=false
+      - name: Install libadwaita with Ninja
+        run: |
+          cd libadwaita
+          sudo ninja -C _build install
+
+      - uses: dtolnay/rust-toolchain@nightly
+      - name: Run cargo check
+        run: cargo check
+
+  test:
+    name: Run tests
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install apt dependencies
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: build-essential gettext git libcairo2-dev libgtk-4-dev meson ninja-build sassc valac
+          version: latest
+      - name: Clone libadwaita git repo
+        run: git clone https://gitlab.gnome.org/GNOME/libadwaita.git -b libadwaita-1-2 --depth=1
+      - name: Build libadwaita with Meson
+        run: |
+          cd libadwaita
+          meson . _build -Dgtk_doc=false -Dtests=false -Dexamples=false
+      - name: Install libadwaita with Ninja
+        run: |
+          cd libadwaita
+          sudo ninja -C _build install
+
+      - uses: dtolnay/rust-toolchain@nightly
+      - name: Run cargo test
+        run: cargo test
+
+  fmt:
+    name: Lint with rustfmt
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt
+      - name: Run rustfmt checks
+        run: cargo fmt --check
+
+  clippy:
+    name: Lint with clippy
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install apt dependencies
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: build-essential gettext git libcairo2-dev libgtk-4-dev meson ninja-build sassc valac
+          version: latest
+      - name: Clone libadwaita git repo
+        run: git clone https://gitlab.gnome.org/GNOME/libadwaita.git -b libadwaita-1-2 --depth=1
+      - name: Build libadwaita with Meson
+        run: |
+          cd libadwaita
+          meson . _build -Dgtk_doc=false -Dtests=false -Dexamples=false
+      - name: Install libadwaita with Ninja
+        run: |
+          cd libadwaita
+          sudo ninja -C _build install
+
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: clippy
+      - name: Run cargo clippy checks
+        run: cargo clippy -- -D warnings
+
+  cargo-deny:
+    name: Security scan with cargo deny
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run "cargo deny" to check for vulnerabilities
+        uses: EmbarkStudios/cargo-deny-action@v1
+
+  cargo-audit:
+    name: Security scan with cargo audit
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - name: Install cargo audit
+        run: cargo install cargo-audit
+      - name: Run "cargo audit" to check for vulnerabilities
+        run: cargo audit
