@@ -12,6 +12,9 @@ use adw::traits::MessageDialogExt;
 use gtk::{prelude::*, subclass::prelude::*, gio, glib};
 use selection::SelectionField;
 use crate::{config, ui::dialogs, application::clipboard::Clipboard};
+use crate::application::gactions::Theme;
+use crate::application::user_settings::UserSettingsKey::ThemeKey;
+use crate::application::user_settings::UserSettingsValue::ThemeValue;
 
 glib::wrapper! {
     pub struct Application(ObjectSubclass<template::ApplicationTemplate>)
@@ -28,7 +31,7 @@ impl Default for Application {
 impl Application {
     pub fn new() -> Self {
         gio::resources_register_include!("logicrs.gresource").expect("Failed to register resources.");
-        
+
 
         glib::Object::new::<Self>(&[
             ("application-id", &"com.spydr06.logicrs"),
@@ -55,7 +58,7 @@ impl Application {
                     .current_circuit_view()
                     .map(|view| view.mouse_world_position())
                     .unwrap_or_default();
-                
+
                 match clipboard.paste_to(self.imp().current_plot().unwrap(), position)
                 {
                     Ok(action) => self.new_action(action),
@@ -63,7 +66,7 @@ impl Application {
                 }
             }
             Clipboard::Module(_) => todo!(),
-            Clipboard::Empty => {},
+            Clipboard::Empty => {}
         }
     }
 
@@ -130,6 +133,17 @@ impl Application {
         gactions::ACTIONS.iter().for_each(|gaction| {
             let callback = gaction.callback();
             let action = gio::SimpleAction::from(gaction);
+
+            if gaction.name() == "change-theme" {
+                let theme_variant =
+                    match self.imp().user_settings().borrow().get_setting(ThemeKey) {
+                        Some(ThemeValue(custom_theme)) => { custom_theme.to_variant() }
+                        None => { Theme::SystemPreference.to_variant() }
+                    };
+
+                action.set_state(&theme_variant);
+            }
+
             action.connect_activate(glib::clone!(
                 @weak self as app => move |action, parameter| callback(app, action, parameter)
             ));

@@ -9,7 +9,7 @@ pub enum Theme {
     #[default]
     SystemPreference = 0,
     Dark = 1,
-    Light = 2
+    Light = 2,
 }
 
 impl ToVariant for Theme {
@@ -43,20 +43,20 @@ pub(super) type GActionCallbackFn = fn(Application, &gio::SimpleAction, Option<&
 
 pub(super) struct GAction<'a> {
     name: &'a str,
-    accels: &'a[&'a str],
+    accels: &'a [&'a str],
     parameter_type: Option<&'a glib::VariantTy>,
     state_type: Option<(&'a glib::VariantTy, glib::Variant)>,
-    callback: GActionCallbackFn
+    callback: GActionCallbackFn,
 }
 
 impl<'a> GAction<'a> {
-    fn new(name: &'a str, accels: &'a[&str], parameter_type: Option<&'a glib::VariantTy>, state_type: Option<(&'a glib::VariantTy, glib::Variant)>, callback: GActionCallbackFn) -> Self {
+    fn new(name: &'a str, accels: &'a [&str], parameter_type: Option<&'a glib::VariantTy>, state_type: Option<(&'a glib::VariantTy, glib::Variant)>, callback: GActionCallbackFn) -> Self {
         Self {
             name,
             accels,
             parameter_type,
             state_type,
-            callback
+            callback,
         }
     }
 
@@ -77,8 +77,7 @@ impl<'a> From<&GAction<'a>> for gio::SimpleAction {
     fn from(value: &GAction<'a>) -> Self {
         if let Some((state_type, original)) = &value.state_type {
             gio::SimpleAction::new_stateful(value.name, Some(state_type), original)
-        }
-        else {
+        } else {
             gio::SimpleAction::new(value.name, value.parameter_type)
         }
     }
@@ -87,7 +86,7 @@ impl<'a> From<&GAction<'a>> for gio::SimpleAction {
 lazy_static! {
     pub(super) static ref ACTIONS: [GAction<'static>; 22] = [
         GAction::new("quit", &["<primary>Q", "<primary>W"], None, None, Application::gaction_quit),
-        GAction::new("about", &["<primary>comma"], None, None, Application::gaction_about),  
+        GAction::new("about", &["<primary>comma"], None, None, Application::gaction_about),
         GAction::new("save", &["<primary>S"], None, None, Application::gaction_save),
         GAction::new("save-as", &["<primary><shift>S"], None, None, Application::gaction_save_as),
         GAction::new("open", &["<primary>O"], None, None, Application::gaction_open),
@@ -122,7 +121,7 @@ impl Application {
 
     fn gaction_save(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
         if let Err(err) = self.imp().save(|_| ()) {
-            let message =  format!("Error saving to '{}': {}", self.imp().file_name(), err);
+            let message = format!("Error saving to '{}': {}", self.imp().file_name(), err);
             error!("{}", message);
             if let Some(window) = self.active_window() {
                 dialogs::run(self, window, message, dialogs::basic_error);
@@ -164,7 +163,7 @@ impl Application {
 
     fn gaction_create_new_module(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
         if let Some(window) = self.active_window() {
-            dialogs::run(self, window, (), dialogs::new_module); 
+            dialogs::run(self, window, (), dialogs::new_module);
         }
     }
 
@@ -202,8 +201,8 @@ impl Application {
 
     fn gaction_delete_module(self, _: &gio::SimpleAction, parameter: Option<&glib::Variant>) {
         let module_name = parameter
-                .expect("Could not get module name target.")
-                .get::<String>().unwrap();
+            .expect("Could not get module name target.")
+            .get::<String>().unwrap();
 
         if let Some(window) = self.active_window() {
             dialogs::run(self, window, module_name, dialogs::confirm_delete_module);
@@ -271,7 +270,7 @@ impl Application {
             .filter(&ModuleFile::file_filter())
             .cancel_label("Cancel")
             .build();
-        
+
         export_dialog.set_current_name(&format!("{module_id}.lrsmod"));
         export_dialog.connect_response({
             let file_chooser = RefCell::new(Some(export_dialog.clone()));
@@ -314,7 +313,7 @@ impl Application {
             .cancel_label("Cancel")
             .filter(&ModuleFile::file_filter())
             .build();
-        
+
         open_dialog.connect_response({
             let file_chooser = RefCell::new(Some(open_dialog.clone()));
             glib::clone!(@weak self as app => move |_, response| {
@@ -339,13 +338,13 @@ impl Application {
                 }
             })
         });
-        
+
         open_dialog.show();
     }
 
     pub(super) fn close_current_file<F>(&self, after: F)
-    where
-        F: Fn(&str) + 'static,
+        where
+            F: Fn(&str) + 'static,
     {
         if !self.imp().is_dirty() {
             after("No");
@@ -362,7 +361,7 @@ impl Application {
             .default_response("Yes")
             .build();
 
-        save_dialog.add_response("Yes",  "Yes");
+        save_dialog.add_response("Yes", "Yes");
         save_dialog.add_response("Cancel", "Cancel");
         save_dialog.add_response("No", "No");
         save_dialog.set_response_enabled("Yes", true);
@@ -467,7 +466,7 @@ impl Application {
             .filter(&Project::file_filter())
             .cancel_label("Cancel")
             .build();
-        
+
         save_dialog.set_current_name("new-project.lrsproj");
         save_dialog.connect_response({
             let file_chooser = RefCell::new(Some(save_dialog.clone()));
@@ -511,7 +510,7 @@ impl Application {
             .issue_url(&(config::REPOSITORY.to_owned() + "/issues"))
             .license_type(gtk::License::MitX11)
             .build();
-        
+
         dialog.present();
     }
 }
