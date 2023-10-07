@@ -54,22 +54,29 @@ impl UserSettings {
     }
 
     pub fn save_config(&self) -> Result<(), String> {
-        let config_file_path = self.get_config_file_path();
+        let config_file_path = self.get_config_file_path()?;
         let json_text = serde_json::to_string(&self.user_settings)
-            .map_err(|err|format!("Could not read config file: {}", err))?;
+            .map_err(|err| format!("Could not read config file: {}", err))?;
+
+        if let Some(parent_dir) = config_file_path.parent() {
+            if !parent_dir.exists() {
+                std::fs::create_dir_all(parent_dir)
+                    .map_err(|err| format!("Could not create config directory: {}", err))?;
+            }
+        }
 
         std::fs::write(&config_file_path, json_text)
-            .map_err(|err|format!("Could not write to config file: {}", err))?;
+            .map_err(|err| format!("Could not write to config file: {}", err))?;
         Ok(())
     }
 
     pub fn load_config(&mut self) -> Result<(), String> {
-        let config_file_path = self.get_config_file_path();
+        let config_file_path = self.get_config_file_path()?;
         let json_text = std::fs::read_to_string(&config_file_path)
-            .map_err(|err|format!("Could not write to config file: {}", err))?;
+            .map_err(|err| format!("Could not write to config file: {}", err))?;
 
         self.user_settings = serde_json::from_str(&json_text)
-            .map_err(|err|format!("Could not read config file: {}", err))?;
+            .map_err(|err| format!("Could not read config file: {}", err))?;
         Ok(())
     }
 
@@ -81,14 +88,29 @@ impl UserSettings {
     }
 
     // TODO: Consider retrieving this from a crate like dirs
-    fn get_config_file_path(&self) -> PathBuf {
-        let exe_path = env::current_exe().expect("Error: Could not determine file path");
+    fn get_config_file_path(&self) -> Result<PathBuf, String> {
+        match env::consts::OS {
+            "linux" | "macos" => {
+                if let Some(xdg_config_home) = env::var_os("XDG_CONFIG_HOME") {
+                    Ok(PathBuf::from(xdg_config_home).join("logicrs").join(&self.config_name))
+                } else {
+                    match env::var_os("HOME") {
+                        Some(home_dir) => { Ok(PathBuf::from(home_dir).join(".config").join("logicrs").join(&self.config_name)) }
+                        _ => { Err("Could not find valid config directory".to_string()) }
+                    }
+                }
+            }
+            "windows" => {
+                match env::var_os("USERPROFILE") {
+                    Some(user_profile) => {
+                        Ok(PathBuf::from(user_profile).join("AppData").join("Local").join(&self.config_name))
+                    }
+                    _ => Err("Could not find user profile directory".to_string())
+                }
+            }
 
-        let mut current_path = exe_path.clone();
-        current_path.pop();
-        current_path.push(&self.config_name);
-
-        current_path
+            _ => Err("Could not find valid config directory".to_string())
+        }
     }
 }
 
