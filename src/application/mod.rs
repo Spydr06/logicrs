@@ -11,7 +11,6 @@ use action::*;
 use adw::traits::MessageDialogExt;
 use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 use selection::SelectionField;
-use crate::{config, ui::dialogs, application::clipboard::Clipboard};
 use crate::application::gactions::Theme;
 use crate::application::user_settings::UserSettingsKey::ThemeKey;
 use crate::application::user_settings::UserSettingsValue::ThemeValue;

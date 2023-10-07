@@ -3,8 +3,6 @@ use super::{*, selection::Selectable};
 use crate::{fatal::*, project::Project, simulator::Simulator, FileExtension, export::ModuleFile};
 use crate::application::user_settings::UserSettingsKey::ThemeKey;
 use crate::application::user_settings::UserSettingsValue::ThemeValue;
-use super::{selection::Selectable, *};
-use crate::{export::ModuleFile, fatal::*, project::Project, simulator::Simulator, FileExtension};
 
 #[derive(Default, Clone, Copy, Serialize, Deserialize)]
 pub enum Theme {

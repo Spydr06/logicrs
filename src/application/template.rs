@@ -13,9 +13,6 @@ use crate::application::gactions;
 use crate::application::user_settings::UserSettings;
 use crate::application::user_settings::UserSettingsKey::ThemeKey;
 use crate::application::user_settings::UserSettingsValue::ThemeValue;
-use adw::subclass::prelude::*;
-use gtk::{gdk, gio, glib, prelude::*};
-use std::cell::RefCell;
 
 use super::{action::*, clipboard::Clipboard, selection::*, Application};
 
