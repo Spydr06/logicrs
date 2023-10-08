@@ -3,17 +3,17 @@ pub mod clipboard;
 pub mod editor;
 pub mod gactions;
 pub mod selection;
-pub mod user_settings;
 pub mod template;
+pub mod user_settings;
 
+use crate::application::gactions::Theme;
+use crate::application::user_settings::UserSettingsKey::ThemeKey;
+use crate::application::user_settings::UserSettingsValue::ThemeValue;
 use crate::{application::clipboard::Clipboard, config, ui::dialogs};
 use action::*;
 use adw::traits::MessageDialogExt;
 use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 use selection::SelectionField;
-use crate::application::gactions::Theme;
-use crate::application::user_settings::UserSettingsKey::ThemeKey;
-use crate::application::user_settings::UserSettingsValue::ThemeValue;
 use std::cell::RefCell;
 
 glib::wrapper! {
@@ -158,11 +158,11 @@ impl Application {
             let action = gio::SimpleAction::from(gaction);
 
             if gaction.name() == "change-theme" {
-                let theme_variant =
-                    match self.imp().user_settings().borrow().get_setting(ThemeKey) {
-                        Some(ThemeValue(custom_theme)) => { custom_theme.to_variant() }
-                        None => { Theme::SystemPreference.to_variant() }
-                    };
+                let theme_variant = match self.imp().user_settings().borrow().get_setting(ThemeKey)
+                {
+                    Some(ThemeValue(custom_theme)) => custom_theme.to_variant(),
+                    None => Theme::SystemPreference.to_variant(),
+                };
 
                 action.set_state(&theme_variant);
             }

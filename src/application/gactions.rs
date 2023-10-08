@@ -1,9 +1,9 @@
-use adw::ColorScheme;
-use serde::{Deserialize, Serialize};
+use super::{selection::Selectable, *};
 use crate::application::user_settings::UserSettingsKey::ThemeKey;
 use crate::application::user_settings::UserSettingsValue::ThemeValue;
-use super::{selection::Selectable, *};
 use crate::{export::ModuleFile, fatal::*, project::Project, simulator::Simulator, FileExtension};
+use adw::ColorScheme;
+use serde::{Deserialize, Serialize};
 
 #[derive(Default, Clone, Copy, Serialize, Deserialize)]
 pub enum Theme {
@@ -375,7 +375,9 @@ impl Application {
         user_settings.set_setting(ThemeKey, ThemeValue(new));
         match user_settings.save_config() {
             Ok(()) => {}
-            Err(_save_config_err) => { println!("Could not save to config") }
+            Err(_save_config_err) => {
+                println!("Could not save to config")
+            }
         }
 
         action.set_state(&new.to_variant());

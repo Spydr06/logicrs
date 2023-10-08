@@ -1,4 +1,7 @@
-use adw::ColorScheme;
+use crate::application::gactions;
+use crate::application::user_settings::UserSettings;
+use crate::application::user_settings::UserSettingsKey::ThemeKey;
+use crate::application::user_settings::UserSettingsValue::ThemeValue;
 use crate::{
     fatal::*,
     project::*,
@@ -6,11 +9,8 @@ use crate::{
     simulator::*,
     ui::{circuit_view::CircuitView, dialogs, main_window::MainWindow},
 };
-use crate::application::gactions;
-use crate::application::user_settings::UserSettings;
-use crate::application::user_settings::UserSettingsKey::ThemeKey;
-use crate::application::user_settings::UserSettingsValue::ThemeValue;
 use adw::subclass::prelude::*;
+use adw::ColorScheme;
 use gtk::{gdk, gio, glib, prelude::*};
 use std::cell::RefCell;
 
@@ -61,7 +61,7 @@ impl ApplicationTemplate {
         let user_settings = self.user_settings.borrow_mut();
         let theme: gactions::Theme = match user_settings.get_setting(ThemeKey) {
             Some(ThemeValue(custom_theme)) => *custom_theme,
-            _ => gactions::Theme::SystemPreference
+            _ => gactions::Theme::SystemPreference,
         };
 
         let color_scheme = Into::<ColorScheme>::into(theme);
@@ -182,7 +182,9 @@ impl ApplicationTemplate {
         self.action_stack.borrow().is_dirty()
     }
 
-    pub fn user_settings(&self) -> &RefCell<UserSettings> { &self.user_settings }
+    pub fn user_settings(&self) -> &RefCell<UserSettings> {
+        &self.user_settings
+    }
 
     pub fn generate_clipboard(&self) -> Clipboard {
         if let Some(selected) = self.with_current_plot(|plot| !matches!(plot.selection(), Selection::None)) && selected {
