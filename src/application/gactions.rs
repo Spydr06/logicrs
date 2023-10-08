@@ -372,7 +372,7 @@ impl Application {
         adw::StyleManager::default().set_color_scheme(ColorScheme::from(new));
 
         let mut user_settings = self.imp().user_settings().borrow_mut();
-        user_settings.set_setting(ThemeKey, ThemeValue(new.into()));
+        user_settings.set_setting(ThemeKey, ThemeValue(new));
         match user_settings.save_config() {
             Ok(()) => {}
             Err(_save_config_err) => { println!("Could not save to config") }
