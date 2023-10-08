@@ -1,9 +1,9 @@
-use serde::{Serialize, Deserialize};
+use crate::application::gactions::Theme;
+use serde::{Deserialize, Serialize};
 use serde_json;
+use std::collections::HashMap;
 use std::env;
 use std::path::PathBuf;
-use std::collections::HashMap;
-use crate::application::gactions::Theme;
 
 #[derive(Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub enum UserSettingsKey {
@@ -12,7 +12,7 @@ pub enum UserSettingsKey {
 
 #[derive(Serialize, Deserialize)]
 pub enum UserSettingsValue {
-    ThemeValue(Theme)
+    ThemeValue(Theme),
 }
 
 pub struct UserSettings {
@@ -82,7 +82,10 @@ impl UserSettings {
 
     pub fn create_config(&mut self) -> Result<(), String> {
         // Once more settings are added, we can consider creating a "Default" trait to add these programmatically.
-        self.user_settings.insert(UserSettingsKey::ThemeKey, UserSettingsValue::ThemeValue(Theme::SystemPreference));
+        self.user_settings.insert(
+            UserSettingsKey::ThemeKey,
+            UserSettingsValue::ThemeValue(Theme::SystemPreference),
+        );
         self.save_config()?;
         Ok(())
     }
@@ -92,24 +95,28 @@ impl UserSettings {
         match env::consts::OS {
             "linux" | "macos" => {
                 if let Some(xdg_config_home) = env::var_os("XDG_CONFIG_HOME") {
-                    Ok(PathBuf::from(xdg_config_home).join("logicrs").join(&self.config_name))
+                    Ok(PathBuf::from(xdg_config_home)
+                        .join("logicrs")
+                        .join(&self.config_name))
                 } else {
                     match env::var_os("HOME") {
-                        Some(home_dir) => { Ok(PathBuf::from(home_dir).join(".config").join("logicrs").join(&self.config_name)) }
-                        _ => { Err("Could not find valid config directory".to_string()) }
+                        Some(home_dir) => Ok(PathBuf::from(home_dir)
+                            .join(".config")
+                            .join("logicrs")
+                            .join(&self.config_name)),
+                        _ => Err("Could not find valid config directory".to_string()),
                     }
                 }
             }
-            "windows" => {
-                match env::var_os("USERPROFILE") {
-                    Some(user_profile) => {
-                        Ok(PathBuf::from(user_profile).join("AppData").join("Local").join(&self.config_name))
-                    }
-                    _ => Err("Could not find user profile directory".to_string())
-                }
-            }
+            "windows" => match env::var_os("USERPROFILE") {
+                Some(user_profile) => Ok(PathBuf::from(user_profile)
+                    .join("AppData")
+                    .join("Local")
+                    .join(&self.config_name)),
+                _ => Err("Could not find user profile directory".to_string()),
+            },
 
-            _ => Err("Could not find valid config directory".to_string())
+            _ => Err("Could not find valid config directory".to_string()),
         }
     }
 }
