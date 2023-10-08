@@ -1,12 +1,20 @@
 use gtk::{prelude::*, subclass::prelude::*, gio, glib, gdk};
 use adw::subclass::prelude::*;
 use std::cell::RefCell;
+use adw::ColorScheme;
 use crate::{
-    ui::{main_window::MainWindow, circuit_view::CircuitView, dialogs},
-    fatal::*, project::*, simulator::*, renderer::Theme,
+    fatal::*,
+    project::*,
+    renderer::Theme,
+    simulator::*,
+    ui::{circuit_view::CircuitView, dialogs, main_window::MainWindow},
 };
+use crate::application::gactions;
+use crate::application::user_settings::UserSettings;
+use crate::application::user_settings::UserSettingsKey::ThemeKey;
+use crate::application::user_settings::UserSettingsValue::ThemeValue;
 
-use super::{action::*, clipboard::Clipboard, Application, selection::*};
+use super::{action::*, clipboard::Clipboard, selection::*, Application};
 
 #[derive(Default)]
 pub struct ApplicationTemplate {
@@ -15,7 +23,8 @@ pub struct ApplicationTemplate {
     simulator: RefCell<Option<Simulator>>,
     file: RefCell<Option<gio::File>>,
     action_stack: RefCell<ActionStack>,
-} 
+    user_settings: RefCell<UserSettings>,
+}
 
 impl ApplicationTemplate {
     const CSS_RESOURCE: &'static str = "/style/style.css";
@@ -47,6 +56,15 @@ impl ApplicationTemplate {
         let window = MainWindow::new(application);
         window.show();
         self.window.replace(Some(window));
+
+        let user_settings = self.user_settings.borrow_mut();
+        let theme: gactions::Theme = match user_settings.get_setting(ThemeKey) {
+            Some(ThemeValue(custom_theme)) => *custom_theme,
+            _ => gactions::Theme::SystemPreference
+        };
+
+        let color_scheme = Into::<ColorScheme>::into(theme);
+        adw::StyleManager::default().set_color_scheme(color_scheme);
     }
 
     pub fn save(&self, then: fn(&Application)) -> Result<(), String> {
@@ -149,6 +167,8 @@ impl ApplicationTemplate {
     pub fn is_dirty(&self) -> bool {
         self.action_stack.borrow().is_dirty()
     }
+
+    pub fn user_settings(&self) -> &RefCell<UserSettings> { &self.user_settings }
 
     pub fn generate_clipboard(&self) -> Clipboard {
         if let Some(selected) = self.with_current_plot(|plot| !matches!(plot.selection(), Selection::None)) && selected {

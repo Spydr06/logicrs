@@ -1,16 +1,20 @@
-pub mod template;
-pub mod gactions;
 pub mod action;
 pub mod clipboard;
 pub mod editor;
+pub mod gactions;
 pub mod selection;
+pub mod user_settings;
+pub mod template;
 
+use crate::{application::clipboard::Clipboard, config, ui::dialogs};
 use action::*;
-use std::cell::RefCell;
 use adw::traits::MessageDialogExt;
-use gtk::{prelude::*, subclass::prelude::*, gio, glib};
+use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 use selection::SelectionField;
-use crate::{config, ui::dialogs, application::clipboard::Clipboard};
+use crate::application::gactions::Theme;
+use crate::application::user_settings::UserSettingsKey::ThemeKey;
+use crate::application::user_settings::UserSettingsValue::ThemeValue;
+use std::cell::RefCell;
 
 glib::wrapper! {
     pub struct Application(ObjectSubclass<template::ApplicationTemplate>)
@@ -129,6 +133,17 @@ impl Application {
         gactions::ACTIONS.iter().for_each(|gaction| {
             let callback = gaction.callback();
             let action = gio::SimpleAction::from(gaction);
+
+            if gaction.name() == "change-theme" {
+                let theme_variant =
+                    match self.imp().user_settings().borrow().get_setting(ThemeKey) {
+                        Some(ThemeValue(custom_theme)) => { custom_theme.to_variant() }
+                        None => { Theme::SystemPreference.to_variant() }
+                    };
+
+                action.set_state(&theme_variant);
+            }
+
             action.connect_activate(glib::clone!(
                 @weak self as app => move |action, parameter| callback(app, action, parameter)
             ));
