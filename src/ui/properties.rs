@@ -1,4 +1,4 @@
-use gtk::{prelude::*, subclass::prelude::*, gio, glib};
+use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 
 glib::wrapper! {
     pub struct Properties(ObjectSubclass<PropertiesTemplate>)
@@ -6,19 +6,13 @@ glib::wrapper! {
         @implements gio::ActionGroup, gio::ActionMap, gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Native, gtk::Root, gtk::ShortcutManager;
 }
 
-impl Properties {
-
-}
+impl Properties {}
 
 #[derive(gtk::CompositeTemplate, Default)]
 #[template(resource = "/content/properties.ui")]
-pub struct PropertiesTemplate {
+pub struct PropertiesTemplate {}
 
-}
-
-impl PropertiesTemplate {
-
-}
+impl PropertiesTemplate {}
 
 #[glib::object_subclass]
 impl ObjectSubclass for PropertiesTemplate {
@@ -28,7 +22,7 @@ impl ObjectSubclass for PropertiesTemplate {
 
     fn class_init(class: &mut Self::Class) {
         Self::bind_template(class);
-    }   
+    }
 
     fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {
         obj.init_template();
@@ -51,6 +45,4 @@ impl WidgetImpl for PropertiesTemplate {
     }
 }
 
-impl BoxImpl for PropertiesTemplate {
-    
-}
+impl BoxImpl for PropertiesTemplate {}

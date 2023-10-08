@@ -1,6 +1,14 @@
-use std::{cell::{RefCell, Cell}, collections::HashMap};
-use gtk::{prelude::*, subclass::prelude::*, gio, glib, gdk};
-use crate::{renderer::{*, vector::*}, simulator::*, fatal::FatalResult, application::{selection::*, Application, action::Action, editor::EditorMode}};
+use crate::{
+    application::{action::Action, editor::EditorMode, selection::*, Application},
+    fatal::FatalResult,
+    renderer::{vector::*, *},
+    simulator::*,
+};
+use gtk::{gdk, gio, glib, prelude::*, subclass::prelude::*};
+use std::{
+    cell::{Cell, RefCell},
+    collections::HashMap,
+};
 
 glib::wrapper! {
     pub struct CircuitView(ObjectSubclass<CircuitViewTemplate>)
@@ -11,7 +19,8 @@ glib::wrapper! {
 impl CircuitView {
     pub fn new(app: Application, plot_provider: PlotProvider) -> Self {
         let circuit_view: Self = glib::Object::new::<Self>(&[]);
-        circuit_view.imp()
+        circuit_view
+            .imp()
             .set_application(app)
             .set_plot_provider(plot_provider)
             .initialize();
@@ -30,7 +39,6 @@ impl CircuitView {
         self.imp().rerender();
     }
 
-
     pub fn plot_provider(&self) -> PlotProvider {
         self.imp().plot_provider()
     }
@@ -41,7 +49,10 @@ impl CircuitView {
     }
 
     pub fn fetch_border_color(&self) -> Option<Color> {
-        self.imp().border_color_enabled.is_active().then(|| self.imp().border_color_button.rgba().into_color())
+        self.imp()
+            .border_color_enabled
+            .is_active()
+            .then(|| self.imp().border_color_button.rgba().into_color())
     }
 }
 
@@ -85,7 +96,7 @@ pub struct CircuitViewTemplate {
     alt_down: Cell<bool>,
     application: RefCell<Application>,
     editor_mode: RefCell<EditorMode>,
-    mouse_position: Cell<Vector2<f64>>
+    mouse_position: Cell<Vector2<f64>>,
 }
 
 impl CircuitViewTemplate {
@@ -108,42 +119,51 @@ impl CircuitViewTemplate {
     }
 
     fn init_buttons(&self) {
-        self.zoom_reset.connect_clicked(glib::clone!(@weak self as widget => move |_| {
-            let mut r = widget.renderer.borrow_mut();
-            r.set_scale(DEFAULT_SCALE);
-            r.translate(Vector2::default());
-            widget.drawing_area.queue_draw();
-            widget.left_osd_label.set_label("0, 0");
-        }));
+        self.zoom_reset
+            .connect_clicked(glib::clone!(@weak self as widget => move |_| {
+                let mut r = widget.renderer.borrow_mut();
+                r.set_scale(DEFAULT_SCALE);
+                r.translate(Vector2::default());
+                widget.drawing_area.queue_draw();
+                widget.left_osd_label.set_label("0, 0");
+            }));
 
-        self.zoom_in.connect_clicked(glib::clone!(@weak self as widget => move |_| {
-            let mut r = widget.renderer.borrow_mut();
-            r.zoom(1.1, None);
-            widget.drawing_area.queue_draw();
-        }));
+        self.zoom_in
+            .connect_clicked(glib::clone!(@weak self as widget => move |_| {
+                let mut r = widget.renderer.borrow_mut();
+                r.zoom(1.1, None);
+                widget.drawing_area.queue_draw();
+            }));
 
-        self.zoom_out.connect_clicked(glib::clone!(@weak self as widget => move |_| {
-            let mut r = widget.renderer.borrow_mut();
-            r.zoom(0.9, None);
-            widget.drawing_area.queue_draw();
-        }));
+        self.zoom_out
+            .connect_clicked(glib::clone!(@weak self as widget => move |_| {
+                let mut r = widget.renderer.borrow_mut();
+                r.zoom(0.9, None);
+                widget.drawing_area.queue_draw();
+            }));
 
-        self.border_color_enabled.connect_toggled(glib::clone!(@weak self as widget => move |button| {
-            widget.border_color_button.set_sensitive(button.is_active());
-        }));
+        self.border_color_enabled.connect_toggled(
+            glib::clone!(@weak self as widget => move |button| {
+                widget.border_color_button.set_sensitive(button.is_active());
+            }),
+        );
         self.border_color_button.set_sensitive(false);
     }
 
     fn init_mouse(&self) {
         let mouse_controller = gtk::EventControllerMotion::new();
-        mouse_controller.connect_motion(glib::clone!(@weak self as widget => move |_, x, y| widget.on_mouse_move(x, y)));
+        mouse_controller.connect_motion(
+            glib::clone!(@weak self as widget => move |_, x, y| widget.on_mouse_move(x, y)),
+        );
         self.drawing_area.add_controller(&mouse_controller);
 
-        let gesture_drag = gtk::GestureDrag::builder().button(gdk::ffi::GDK_BUTTON_PRIMARY as u32).build();
+        let gesture_drag = gtk::GestureDrag::builder()
+            .button(gdk::ffi::GDK_BUTTON_PRIMARY as u32)
+            .build();
         gesture_drag.connect_drag_begin(glib::clone!(@weak self as widget => move |gesture, x, y| {
             gesture.set_state(gtk::EventSequenceState::Claimed);
             widget.drawing_area.grab_focus();
-            
+
             if widget.ctrl_down.get() {
                 widget.renderer.borrow_mut().save_translation();
                 widget.set_left_osd_visible(true);
@@ -170,58 +190,69 @@ impl CircuitViewTemplate {
         }));
 
         let app = &*self.application.borrow();
-        gesture_drag.connect_drag_end(glib::clone!(@weak self as widget, @weak app => move |gesture, x, y| {
-            gesture.set_state(gtk::EventSequenceState::Claimed);
+        gesture_drag.connect_drag_end(
+            glib::clone!(@weak self as widget, @weak app => move |gesture, x, y| {
+                gesture.set_state(gtk::EventSequenceState::Claimed);
 
-            if widget.ctrl_down.get() && (x != 0. || y != 0.) {
-                widget.set_left_osd_visible(false);
-            }
-            else {
-                let scale = widget.renderer.borrow().scale();
-                widget.drag_end(Vector2((x / scale) as i32, (y / scale) as i32));
-            }
-        }));
+                if widget.ctrl_down.get() && (x != 0. || y != 0.) {
+                    widget.set_left_osd_visible(false);
+                }
+                else {
+                    let scale = widget.renderer.borrow().scale();
+                    widget.drag_end(Vector2((x / scale) as i32, (y / scale) as i32));
+                }
+            }),
+        );
 
         self.drawing_area.add_controller(&gesture_drag);
     }
 
     fn init_context_menu(&self) {
-        let gesture = gtk::GestureClick::builder().button(gdk::ffi::GDK_BUTTON_SECONDARY as u32).build();
-        gesture.connect_pressed(glib::clone!(@weak self as widget => move |gesture, _, x, y| {
-            gesture.set_state(gtk::EventSequenceState::Claimed);
-            widget.context_menu(x, y);
-        }));
+        let gesture = gtk::GestureClick::builder()
+            .button(gdk::ffi::GDK_BUTTON_SECONDARY as u32)
+            .build();
+        gesture.connect_pressed(
+            glib::clone!(@weak self as widget => move |gesture, _, x, y| {
+                gesture.set_state(gtk::EventSequenceState::Claimed);
+                widget.context_menu(x, y);
+            }),
+        );
         self.drawing_area.add_controller(&gesture);
     }
 
     fn init_keyboard(&self) {
         let key_controller = gtk::EventControllerKey::new();
-        key_controller.connect_key_pressed(glib::clone!(@weak self as widget => @default-panic, move |_, key, _, _| {
-            match key {
-                gdk::Key::Control_L | gdk::Key::Control_R => widget.ctrl_down.set(true),
-                gdk::Key::Shift_L | gdk::Key::Shift_R => widget.shift_down.set(true),
-                gdk::Key::Alt_L | gdk::Key::Alt_R => widget.alt_down.set(true),
-                _ => ()
-            }
-            gtk::Inhibit(true)
-        }));
+        key_controller.connect_key_pressed(
+            glib::clone!(@weak self as widget => @default-panic, move |_, key, _, _| {
+                match key {
+                    gdk::Key::Control_L | gdk::Key::Control_R => widget.ctrl_down.set(true),
+                    gdk::Key::Shift_L | gdk::Key::Shift_R => widget.shift_down.set(true),
+                    gdk::Key::Alt_L | gdk::Key::Alt_R => widget.alt_down.set(true),
+                    _ => ()
+                }
+                gtk::Inhibit(true)
+            }),
+        );
 
-        key_controller.connect_key_released(glib::clone!(@weak self as widget => @default-panic, move |_, key, _, _| 
-            match key {
-                gdk::Key::Control_L | gdk::Key::Control_R => {
-                    widget.set_left_osd_visible(false);
-                    widget.ctrl_down.set(false)
-                },
-                gdk::Key::Shift_L | gdk::Key::Shift_R => widget.shift_down.set(false),
-                gdk::Key::Alt_L | gdk::Key::Alt_R => widget.alt_down.set(false),
-                _ => ()
-            }
-        ));
+        key_controller.connect_key_released(
+            glib::clone!(@weak self as widget => @default-panic, move |_, key, _, _|
+                match key {
+                    gdk::Key::Control_L | gdk::Key::Control_R => {
+                        widget.set_left_osd_visible(false);
+                        widget.ctrl_down.set(false)
+                    },
+                    gdk::Key::Shift_L | gdk::Key::Shift_R => widget.shift_down.set(false),
+                    gdk::Key::Alt_L | gdk::Key::Alt_R => widget.alt_down.set(false),
+                    _ => ()
+                }
+            ),
+        );
         self.drawing_area.add_controller(&key_controller);
     }
 
     fn init_scrolling(&self) {
-        let scroll_controller = gtk::EventControllerScroll::new(gtk::EventControllerScrollFlags::VERTICAL);
+        let scroll_controller =
+            gtk::EventControllerScroll::new(gtk::EventControllerScrollFlags::VERTICAL);
         scroll_controller.connect_scroll(glib::clone!(@weak self as widget => @default-panic, move |_, _, y| {
             widget.renderer.borrow_mut().zoom(if y > 0. { 0.9 } else { 1.1 }, Some(widget.mouse_position.get()));
             widget.drawing_area.queue_draw();
@@ -232,26 +263,30 @@ impl CircuitViewTemplate {
     }
 
     fn init_drawing_area(&self) {
-        self.drawing_area.set_draw_func(glib::clone!(@weak self as widget => move |area, context, width, height|
-            widget.plot_provider.borrow().with_mut(|plot| 
-                widget.renderer.borrow_mut()
-                    .callback(plot, *widget.editor_mode.borrow(), area, context, width, height)
-                    .map(|_| ())
-                    .unwrap_or_die()
-            );
-        ));
+        self.drawing_area.set_draw_func(
+            glib::clone!(@weak self as widget => move |area, context, width, height|
+                widget.plot_provider.borrow().with_mut(|plot|
+                    widget.renderer.borrow_mut()
+                        .callback(plot, *widget.editor_mode.borrow(), area, context, width, height)
+                        .map(|_| ())
+                        .unwrap_or_die()
+                );
+            ),
+        );
 
         self.drawing_area.set_focusable(true);
         self.drawing_area.grab_focus();
         self.drawing_area.set_focus_on_click(true);
 
-        self.drawing_area.connect_has_focus_notify(glib::clone!(@weak self as widget => move |area|
-            if !area.has_focus() {
-                widget.shift_down.set(false);
-                widget.ctrl_down.set(false);
-                widget.alt_down.set(false);   
-            }
-        ));
+        self.drawing_area.connect_has_focus_notify(
+            glib::clone!(@weak self as widget => move |area|
+                if !area.has_focus() {
+                    widget.shift_down.set(false);
+                    widget.ctrl_down.set(false);
+                    widget.alt_down.set(false);
+                }
+            ),
+        );
     }
 
     fn initialize(&self) {
@@ -267,18 +302,19 @@ impl CircuitViewTemplate {
         let position = Vector2(x, y);
         self.mouse_position.set(position);
 
-        self.plot_provider.borrow_mut().with_mut(|plot|
+        self.plot_provider.borrow_mut().with_mut(|plot| {
             if let Selection::MoveBlock(block) = plot.selection_mut() {
-                let position = self.editor_mode.borrow()
-                    .align(VectorCast::cast(self.renderer.borrow().screen_to_world(position)));
-                
+                let position = self.editor_mode.borrow().align(VectorCast::cast(
+                    self.renderer.borrow().screen_to_world(position),
+                ));
+
                 block.set_position(position);
                 self.drawing_area.queue_draw();
             }
-        );
+        });
     }
 
-    fn context_menu(&self, x: f64, y: f64) {        
+    fn context_menu(&self, x: f64, y: f64) {
         let position = self.renderer.borrow().screen_to_world(Vector2(x, y));
 
         self.plot_provider.borrow_mut().with_mut(|plot| {
@@ -291,23 +327,31 @@ impl CircuitViewTemplate {
                         match plot.selection() {
                             Selection::None => {
                                 plot.unhighlight();
-                                plot.set_selection(Selection::Single(Selectable::Block(id), start_position));
+                                plot.set_selection(Selection::Single(
+                                    Selectable::Block(id),
+                                    start_position,
+                                ));
                             }
                             Selection::Many(sel) if sel.is_empty() => {
                                 plot.unhighlight();
-                                plot.set_selection(Selection::Single(Selectable::Block(id), start_position));
+                                plot.set_selection(Selection::Single(
+                                    Selectable::Block(id),
+                                    start_position,
+                                ));
                             }
                             _ => {}
                         }
 
                         //drop(plot);
 
-                        self.context_menu.set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
+                        self.context_menu
+                            .set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
                         self.context_menu.popup();
                     }
                 }
                 None => {
-                    self.area_context_menu.set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
+                    self.area_context_menu
+                        .set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
                     self.area_context_menu.popup();
                 }
             }
@@ -325,58 +369,73 @@ impl CircuitViewTemplate {
     }
 
     fn selection_shift_click(&self, selected: Vec<Selectable>, position: Vector2<i32>) -> bool {
-        self.plot_provider.borrow().with_mut(move |p| 
-            if let Some(block_id) = p.get_block_at(position) {
-                let mut selected = selected.clone();
-                if let Some(index) = selected.iter().position(|sel| sel == &Selectable::Block(block_id)) {
-                    selected.remove(index);
-                    p.get_block_mut(block_id).unwrap().set_highlighted(false);
-                }
-                else {
-                    p.get_block_mut(block_id).unwrap().set_highlighted(true);
-                    selected.push(Selectable::Block(block_id));
-                }
-                p.set_selection(Selection::Many(selected));
-                
-                true
-            }
-            else if let Some(waypoint_id) = p.get_waypoint_at(position) {
-                let mut selected = selected.clone();
-                if let Some(index) = selected.iter().position(|sel| sel == &Selectable::Waypoint(waypoint_id.clone())) {
-                    selected.remove(index);
-                    p.get_connection_mut(waypoint_id.connection_id()).unwrap().get_segment_mut(waypoint_id.location()).unwrap().set_highlighted(false);
-                }   
-                else {
-                    p.get_connection_mut(waypoint_id.connection_id()).unwrap().get_segment_mut(waypoint_id.location()).unwrap().set_highlighted(true);
-                    selected.push(Selectable::Waypoint(waypoint_id));
-                }
-                p.set_selection(Selection::Many(selected));
+        self.plot_provider
+            .borrow()
+            .with_mut(move |p| {
+                if let Some(block_id) = p.get_block_at(position) {
+                    let mut selected = selected.clone();
+                    if let Some(index) = selected
+                        .iter()
+                        .position(|sel| sel == &Selectable::Block(block_id))
+                    {
+                        selected.remove(index);
+                        p.get_block_mut(block_id).unwrap().set_highlighted(false);
+                    } else {
+                        p.get_block_mut(block_id).unwrap().set_highlighted(true);
+                        selected.push(Selectable::Block(block_id));
+                    }
+                    p.set_selection(Selection::Many(selected));
 
-                true
-            }
-            else {
-                false
-            }
-        ).unwrap_or(false)
+                    true
+                } else if let Some(waypoint_id) = p.get_waypoint_at(position) {
+                    let mut selected = selected.clone();
+                    if let Some(index) = selected
+                        .iter()
+                        .position(|sel| sel == &Selectable::Waypoint(waypoint_id.clone()))
+                    {
+                        selected.remove(index);
+                        p.get_connection_mut(waypoint_id.connection_id())
+                            .unwrap()
+                            .get_segment_mut(waypoint_id.location())
+                            .unwrap()
+                            .set_highlighted(false);
+                    } else {
+                        p.get_connection_mut(waypoint_id.connection_id())
+                            .unwrap()
+                            .get_segment_mut(waypoint_id.location())
+                            .unwrap()
+                            .set_highlighted(true);
+                        selected.push(Selectable::Waypoint(waypoint_id));
+                    }
+                    p.set_selection(Selection::Many(selected));
+
+                    true
+                } else {
+                    false
+                }
+            })
+            .unwrap_or(false)
     }
 
     fn drag_begin(&self, position: Vector2<i32>) {
         let selection = self.plot_provider.borrow().with(|p| p.selection().clone());
         match selection {
-            Some(Selection::MoveBlock(block)) =>
-                self.application.borrow()
-                    .new_action(Action::NewBlock(self.plot_provider.borrow().clone(), *block)),
-            Some(Selection::Many(block_ids)) => 
+            Some(Selection::MoveBlock(block)) => self.application.borrow().new_action(
+                Action::NewBlock(self.plot_provider.borrow().clone(), *block),
+            ),
+            Some(Selection::Many(block_ids)) => {
                 if self.shift_down.get() && self.selection_shift_click(block_ids, position) {
                     self.drawing_area.queue_draw();
                     return;
                 }
-            Some(Selection::Single(block_id, _)) =>
+            }
+            Some(Selection::Single(block_id, _)) => {
                 if self.shift_down.get() && self.selection_shift_click(vec![block_id], position) {
                     self.drawing_area.queue_draw();
                     return;
                 }
-            _ => ()   
+            }
+            _ => (),
         }
 
         self.plot_provider.borrow().with_mut(|plot| {
@@ -387,42 +446,52 @@ impl CircuitViewTemplate {
                 if block.on_mouse_press(position) {
                     plot.set_selection(Selection::MouseEvent(id));
                     plot.add_block_to_update(id);
-                }
-                else if let Some(i) = block.position_on_connection(position, false) {
+                } else if let Some(i) = block.position_on_connection(position, false) {
                     let start = block.get_connector_pos(Connector::Output(i));
-                    plot.set_selection(Selection::Connection(ConnectionSource::Block(id, i), start, start));
-                }
-                else {
+                    plot.set_selection(Selection::Connection(
+                        ConnectionSource::Block(id, i),
+                        start,
+                        start,
+                    ));
+                } else {
                     let start_position = block.position();
                     block.set_highlighted(true);
                     plot.set_selection(Selection::Single(Selectable::Block(id), start_position));
                 }
-            }
-            else if let Some(id) = plot.get_waypoint_at(position) {
-                let waypoint = plot.get_connection_mut(id.connection_id()).and_then(|c| c.get_segment_mut(id.location())).unwrap();
+            } else if let Some(id) = plot.get_waypoint_at(position) {
+                let waypoint = plot
+                    .get_connection_mut(id.connection_id())
+                    .and_then(|c| c.get_segment_mut(id.location()))
+                    .unwrap();
                 let start = *waypoint.position().unwrap();
 
                 if self.alt_down.take() {
-                    plot.set_selection(Selection::Connection(ConnectionSource::Waypoint(id), start, start))                    
-                }
-                else {
+                    plot.set_selection(Selection::Connection(
+                        ConnectionSource::Waypoint(id),
+                        start,
+                        start,
+                    ))
+                } else {
                     waypoint.set_highlighted(true);
                     plot.set_selection(Selection::Single(Selectable::Waypoint(id), start))
                 }
-            }
-            else {
+            } else {
                 plot.set_selection(Selection::Area(position, position));
             }
         });
-    
+
         self.drawing_area.queue_draw();
     }
-        
+
     fn drag_update(&self, offset: Vector2<i32>) {
-        self.plot_provider.borrow().with_mut(|plot|
-            match plot.selection().clone() {
+        self.plot_provider
+            .borrow()
+            .with_mut(|plot| match plot.selection().clone() {
                 Selection::Single(selected, Vector2(start_x, start_y)) => {
-                    let new_position = self.editor_mode.borrow().align(Vector2(start_x, start_y) + offset);
+                    let new_position = self
+                        .editor_mode
+                        .borrow()
+                        .align(Vector2(start_x, start_y) + offset);
 
                     match selected {
                         Selectable::Block(id) => {
@@ -431,11 +500,13 @@ impl CircuitViewTemplate {
                                 plot.set_selection(Selection::None);
                                 return;
                             }
-                        
+
                             block.unwrap().set_position(new_position);
                         }
                         Selectable::Waypoint(id) => {
-                            let waypoint = plot.get_connection_mut(id.connection_id()).and_then(|c| c.get_segment_mut(id.location()));
+                            let waypoint = plot
+                                .get_connection_mut(id.connection_id())
+                                .and_then(|c| c.get_segment_mut(id.location()));
                             if waypoint.is_none() {
                                 plot.set_selection(Selection::None);
                                 return;
@@ -455,9 +526,8 @@ impl CircuitViewTemplate {
                     plot.set_selection(Selection::Area(area_start, area_start + offset));
                     self.drawing_area.queue_draw();
                 }
-                _ => ()
-            }
-        );
+                _ => (),
+            });
     }
 
     fn drag_end(&self, offset: Vector2<i32>) {
@@ -469,28 +539,56 @@ impl CircuitViewTemplate {
                     return;
                 }
 
-                let new_position = self.editor_mode.borrow().align(Vector2(start_x, start_y) + offset);
+                let new_position = self
+                    .editor_mode
+                    .borrow()
+                    .align(Vector2(start_x, start_y) + offset);
 
                 match selected {
-                    Selectable::Block(block_id) => self.application.borrow().new_action(Action::MoveBlock(plot_provider.clone(), block_id, Vector2(start_x, start_y), new_position)),
+                    Selectable::Block(block_id) => {
+                        self.application.borrow().new_action(Action::MoveBlock(
+                            plot_provider.clone(),
+                            block_id,
+                            Vector2(start_x, start_y),
+                            new_position,
+                        ))
+                    }
                     Selectable::Waypoint(id) => {
-                        let con_action = plot_provider.with_mut(|plot| {
-                            let block_id = plot.get_block_at(new_position)?;
-                            let port = plot.get_block(block_id)?.position_on_connection(new_position, true)?;
+                        let con_action = plot_provider
+                            .with_mut(|plot| {
+                                let block_id = plot.get_block_at(new_position)?;
+                                let port = plot
+                                    .get_block(block_id)?
+                                    .position_on_connection(new_position, true)?;
 
-                            let segment = plot.get_connection(id.connection_id())?.get_segment(id.location())?;
-                            Some(Action::WaypointToConnection(plot_provider.clone(), id.clone(), segment.clone(), block_id, port))
-                        }).flatten();
-                        
-                        self.application.borrow().new_action(if let Some(con_action) = con_action {
-                            con_action
-                        }
-                        else {
-                            Action::MoveWaypoint(plot_provider.clone(), id, Vector2(start_x, start_y), new_position)
-                        })
+                                let segment = plot
+                                    .get_connection(id.connection_id())?
+                                    .get_segment(id.location())?;
+                                Some(Action::WaypointToConnection(
+                                    plot_provider.clone(),
+                                    id.clone(),
+                                    segment.clone(),
+                                    block_id,
+                                    port,
+                                ))
+                            })
+                            .flatten();
+
+                        self.application
+                            .borrow()
+                            .new_action(if let Some(con_action) = con_action {
+                                con_action
+                            } else {
+                                Action::MoveWaypoint(
+                                    plot_provider.clone(),
+                                    id,
+                                    Vector2(start_x, start_y),
+                                    new_position,
+                                )
+                            })
                     }
                 }
-            },
+            }
             Selection::Connection(ConnectionSource::Block(origin_id, output), _, position) => {
                 let connection = plot_provider.with_mut(|plot| {
                     plot.set_selection(Selection::None);
@@ -499,7 +597,7 @@ impl CircuitViewTemplate {
                         let Some(block) = plot.get_block(block_id) &&
                         let Some(i) = block.position_on_connection(position, true) {
 
-                        block.connection(Connector::Input(i)).is_none().then(|| 
+                        block.connection(Connector::Input(i)).is_none().then(||
                             Connection::new_basic(origin_id, output, block_id, i )
                         )
                     }
@@ -509,7 +607,9 @@ impl CircuitViewTemplate {
                 }).flatten();
 
                 if let Some(connection) = connection {
-                    self.application.borrow().new_action(Action::NewConnection(plot_provider.clone(), connection));
+                    self.application
+                        .borrow()
+                        .new_action(Action::NewConnection(plot_provider.clone(), connection));
                 }
 
                 self.drawing_area.queue_draw()
@@ -520,16 +620,20 @@ impl CircuitViewTemplate {
                     if let Some(block_id) = plot.get_block_at(position) &&
                         let Some(block) = plot.get_block(block_id) &&
                         let Some(i) = block.position_on_connection(position, true) {
-                        
                         block.connection(Connector::Input(i)).is_none().then_some(Segment::Block(block_id, i))
-                    }   
+                    }
                     else {
                         Some(Segment::Waypoint(HashMap::new(), position, false))
-                    }                
+                    }
                 }).flatten();
-                
+
                 if let Some(segment) = segment {
-                    self.application.borrow().new_action(Action::AddSegment(plot_provider.clone(), segment_id, segment, None))
+                    self.application.borrow().new_action(Action::AddSegment(
+                        plot_provider.clone(),
+                        segment_id,
+                        segment,
+                        None,
+                    ))
                 }
 
                 self.drawing_area.queue_draw();
@@ -541,7 +645,9 @@ impl CircuitViewTemplate {
             Selection::MouseEvent(block_id) => {
                 plot_provider.with_mut(|plot| {
                     plot.set_selection(Selection::None);
-                    if let Some(block) = plot.get_block_mut(block_id) { block.on_mouse_release() }
+                    if let Some(block) = plot.get_block_mut(block_id) {
+                        block.on_mouse_release()
+                    }
                     plot.add_block_to_update(block_id);
                 });
                 self.drawing_area.queue_draw();
@@ -565,7 +671,6 @@ impl ObjectSubclass for CircuitViewTemplate {
         obj.init_template();
     }
 }
-
 
 impl ObjectImpl for CircuitViewTemplate {
     fn constructed(&self) {

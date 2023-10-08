@@ -16,7 +16,9 @@
   - [Basic Modules](#basic-modules)
   - [Input/Output Modules](#inputoutput-modules)
   - [Gate Modules](#gate-modules)
+  - [Combinational Modules](#combinational-modules)
   - [Latch Modules](#latch-modules)
+  - [Flip Flops](#flip-flops)
 - [3. Custom Modules](#3-custom-modules)
   - [Creating a new module](#creating-a-new-module)
   - [Exporting Modules](#exporting-modules)
@@ -104,41 +106,41 @@ LogicRs features several builtin modules available for every project. Here is a 
 
   <img style="float: right;" src="./assets/modules/and.png"/>
 
-  | A | B | Output |
-  |---|---|--------|
-  | 0 | 0 | 0      |
-  | 0 | 1 | 0      |
-  | 1 | 0 | 0      |
-  | 1 | 1 | 1      |
+  | A   | B   | Output |
+  | --- | --- | ------ |
+  | 0   | 0   | 0      |
+  | 0   | 1   | 0      |
+  | 1   | 0   | 0      |
+  | 1   | 1   | 1      |
 
 - **`Nand`**: inverse of `And`:
 
   <img style="float: right;" src="./assets/modules/nand.png"/>
 
-  | A | B | Output |
-  |---|---|--------|
-  | 0 | 0 | 1      |
-  | 0 | 1 | 1      |
-  | 1 | 0 | 1      |
-  | 1 | 1 | 0      |
+  | A   | B   | Output |
+  | --- | --- | ------ |
+  | 0   | 0   | 1      |
+  | 0   | 1   | 1      |
+  | 1   | 0   | 1      |
+  | 1   | 1   | 0      |
 
 - **`Nor`**: inverse of `Or`:
 
   <img style="float: right;" src="./assets/modules/nor.png"/>
 
-  | A | B | Output |
-  |---|---|--------|
-  | 0 | 0 | 1      |
-  | 0 | 1 | 0      |
-  | 1 | 0 | 0      |
-  | 1 | 1 | 0      |
+  | A   | B   | Output |
+  | --- | --- | ------ |
+  | 0   | 0   | 1      |
+  | 0   | 1   | 0      |
+  | 1   | 0   | 0      |
+  | 1   | 1   | 0      |
 
 - **`Not`**: outputs the inverse of the input signal:
 
   <img style="float: right;" src="./assets/modules/not.png"/>
 
   | Input | Output |
-  |-------|--------|
+  | ----- | ------ |
   | 0     | 1      |
   | 1     | 0      |
 
@@ -146,34 +148,54 @@ LogicRs features several builtin modules available for every project. Here is a 
 
   <img style="float: right;" src="./assets/modules/or.png"/>
 
-  | A | B | Output |
-  |---|---|--------|
-  | 0 | 0 | 0      |
-  | 0 | 1 | 1      |
-  | 1 | 0 | 1      |
-  | 1 | 1 | 1      |
+  | A   | B   | Output |
+  | --- | --- | ------ |
+  | 0   | 0   | 0      |
+  | 0   | 1   | 1      |
+  | 1   | 0   | 1      |
+  | 1   | 1   | 1      |
 
 - **`Xnor`**: inverse of `Xor`:
 
   <img style="float: right;" src="./assets/modules/xnor.png"/>
 
-  | A | B | Output |
-  |---|---|--------|
-  | 0 | 0 | 1      |
-  | 0 | 1 | 0      |
-  | 1 | 0 | 0      |
-  | 1 | 1 | 1      |
+  | A   | B   | Output |
+  | --- | --- | ------ |
+  | 0   | 0   | 1      |
+  | 0   | 1   | 0      |
+  | 1   | 0   | 0      |
+  | 1   | 1   | 1      |
 
 - **`Xor`**: outputs `1` if either the A *or* (strictly) B input is `1`:
 
   <img style="float: right;" src="./assets/modules/xor.png"/>
 
-  | A | B | Output |
-  |---|---|--------|
-  | 0 | 0 | 0      |
-  | 0 | 1 | 1      |
-  | 1 | 0 | 1      |
-  | 1 | 1 | 0      |
+  | A   | B   | Output |
+  | --- | --- | ------ |
+  | 0   | 0   | 0      |
+  | 0   | 1   | 1      |
+  | 1   | 0   | 1      |
+  | 1   | 1   | 0      |
+
+### Combinational Modules
+
+- **`Mux`**: A 2:1 multiplexer, selecting either the A or B input based on the S input:
+
+  <img style="float: right;" src="./assets/modules/mux.png"/>
+
+  | S   | Output |
+  | --- | ------ |
+  | 0   | A      |
+  | 1   | B      |
+
+- **`Demux`**: A 1:2 demultiplexer, selecting either the O0 or O1 output based on the S input:
+  
+  <img style="float: right;" src="./assets/modules/demux.png"/>
+
+  | S   | O1  | O0  |
+  | --- | --- | --- |
+  | 0   | 0   | A   |
+  | 1   | A   | 0   |
 
 ### Latch Modules
 
@@ -181,34 +203,59 @@ LogicRs features several builtin modules available for every project. Here is a 
 
   <img style="float: right;" src="./assets/modules/jk-latch.png"/>
 
-  | A | B | Action    |
-  |---|---|-----------|
-  | 0 | 0 | No change |
-  | 0 | 1 | Reset     |
-  | 1 | 0 | Set       |
-  | 1 | 1 | Toggle    |
+  | A   | B   | Action    |
+  | --- | --- | --------- |
+  | 0   | 0   | No change |
+  | 0   | 1   | Reset     |
+  | 1   | 0   | Set       |
+  | 1   | 1   | Toggle    |
 
 - **`SR Latch`**: Latch used to store a value:
 
   <img style="float: right;" src="./assets/modules/sr-latch.png"/>
 
-  | A | B | Action      |
-  |---|---|-------------|
-  | 0 | 0 | No change   |
-  | 0 | 1 | Reset       |
-  | 1 | 0 | Set         |
-  | 1 | 1 | Not allowed |
+  | A   | B   | Action      |
+  | --- | --- | ----------- |
+  | 0   | 0   | No change   |
+  | 0   | 1   | Reset       |
+  | 1   | 0   | Set         |
+  | 1   | 1   | Not allowed |
 
 - **`SR Nand Latch`**: 
 
   <img style="float: right;" src="./assets/modules/sr-nand-latch.png"/>
 
-  | A | B | Action      |
-  |---|---|-------------|
-  | 0 | 0 | Not allowed |
-  | 0 | 1 | Store 1     |
-  | 1 | 0 | Store 0     |
-  | 1 | 1 | No change   |
+  | A   | B   | Action      |
+  | --- | --- | ----------- |
+  | 0   | 0   | Not allowed |
+  | 0   | 1   | Store 1     |
+  | 1   | 0   | Store 0     |
+  | 1   | 1   | No change   |
+
+
+### Flip Flops
+
+- **`D Flip Flop`**: A positive edge triggered flip flop storing D value:
+
+  <img style="float: right;" src="./assets/modules/d-flip-flop.png"/>
+
+  | D   | Q(t) | Q(t+1) |
+  | --- | ---- | ------ |
+  | 0   | 0    | 0      |
+  | 0   | 1    | 0      |
+  | 1   | 0    | 1      |
+  | 1   | 1    | 1      |
+
+- **`T Flip Flop`**: A positive edge triggered flip flop toggeling its value:
+
+  <img style="float: right;" src="./assets/modules/t-flip-flop.png"/>
+
+  | T   | Q(t) | Q(t+1) |
+  | --- | ---- | ------ |
+  | 0   | 0    | 0      |
+  | 0   | 1    | 1      |
+  | 1   | 0    | 1      |
+  | 1   | 1    | 0      |
 
 > **Note**
 > Feel free to submit pull-requests for more module implementations
