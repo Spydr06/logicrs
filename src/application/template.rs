@@ -1,3 +1,7 @@
+use crate::application::gactions;
+use crate::application::user_settings::UserSettings;
+use crate::application::user_settings::UserSettingsKey::ThemeKey;
+use crate::application::user_settings::UserSettingsValue::ThemeValue;
 use crate::{
     fatal::*,
     project::*,
@@ -6,6 +10,7 @@ use crate::{
     ui::{circuit_view::CircuitView, dialogs, main_window::MainWindow},
 };
 use adw::subclass::prelude::*;
+use adw::ColorScheme;
 use gtk::{gdk, gio, glib, prelude::*};
 use std::cell::RefCell;
 
@@ -18,6 +23,7 @@ pub struct ApplicationTemplate {
     simulator: RefCell<Option<Simulator>>,
     file: RefCell<Option<gio::File>>,
     action_stack: RefCell<ActionStack>,
+    user_settings: RefCell<UserSettings>,
 }
 
 impl ApplicationTemplate {
@@ -51,6 +57,15 @@ impl ApplicationTemplate {
         let window = MainWindow::new(application);
         window.show();
         self.window.replace(Some(window));
+
+        let user_settings = self.user_settings.borrow_mut();
+        let theme: gactions::Theme = match user_settings.get_setting(ThemeKey) {
+            Some(ThemeValue(custom_theme)) => *custom_theme,
+            _ => gactions::Theme::SystemPreference,
+        };
+
+        let color_scheme = Into::<ColorScheme>::into(theme);
+        adw::StyleManager::default().set_color_scheme(color_scheme);
     }
 
     pub fn save(&self, then: fn(&Application)) -> Result<(), String> {
@@ -165,6 +180,10 @@ impl ApplicationTemplate {
 
     pub fn is_dirty(&self) -> bool {
         self.action_stack.borrow().is_dirty()
+    }
+
+    pub fn user_settings(&self) -> &RefCell<UserSettings> {
+        &self.user_settings
     }
 
     pub fn generate_clipboard(&self) -> Clipboard {

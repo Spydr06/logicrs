@@ -1,8 +1,12 @@
 use super::{selection::Selectable, *};
+use crate::application::user_settings::UserSettingsKey::ThemeKey;
+use crate::application::user_settings::UserSettingsValue::ThemeValue;
 use crate::{export::ModuleFile, fatal::*, project::Project, simulator::Simulator, FileExtension};
+use adw::ColorScheme;
+use serde::{Deserialize, Serialize};
 
-#[derive(Default, Clone, Copy)]
-enum Theme {
+#[derive(Default, Clone, Copy, Serialize, Deserialize)]
+pub enum Theme {
     #[default]
     SystemPreference = 0,
     Dark = 1,
@@ -365,7 +369,17 @@ impl Application {
             .expect("the parameter needs to be of type `u8`")
             .into();
 
-        adw::StyleManager::default().set_color_scheme(new.into());
+        adw::StyleManager::default().set_color_scheme(ColorScheme::from(new));
+
+        let mut user_settings = self.imp().user_settings().borrow_mut();
+        user_settings.set_setting(ThemeKey, ThemeValue(new));
+        match user_settings.save_config() {
+            Ok(()) => {}
+            Err(_save_config_err) => {
+                println!("Could not save to config")
+            }
+        }
+
         action.set_state(&new.to_variant());
     }
 
