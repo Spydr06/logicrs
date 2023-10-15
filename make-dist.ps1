@@ -13,6 +13,7 @@ $shortcut = "logicrs.lnk"
 $target = ".\target\release\$executable"
 $zip_name = "logicrs-win64.zip"
 $strip_debug_script = "strip-debug-symbols.ps1"
+$installer = "logicrs-windows-x86_64-installer.exe"
 
 function Create-Shortcut {
     param (
@@ -50,6 +51,7 @@ Push-Location $dir
     Test-Remove -Path $zip_name
     Test-Remove -Path "$dist_dir\$shortcut"
     Test-Remove -Path "$dist_dir\bin\$executable"
+    Test-Remove -Path $installer
 
     # compile for release
     cargo rustc --release -- -Clink-args="-Wl,--subsystem,windows"
@@ -101,4 +103,13 @@ Push-Location $dir
     else {
         Write-Output "Info: Created distributable package $zip_name."
     }
+
+    Write-Output "Info: Generating Installer using NSIS."
+
+    $snippets_dir = "snippets"
+    makensis.exe "$snippets_dir\installer.nsi"
+
+    Move-Item -Path "$snippets_dir\$installer" -Destination $installer
+
+    Write-Output "Info: Generated $installer."
 Pop-Location # script directory

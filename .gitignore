@@ -7,3 +7,4 @@ gtk4-rs/
 *.zip
 *.AppImage
 *.lrsmod
+*.exe
