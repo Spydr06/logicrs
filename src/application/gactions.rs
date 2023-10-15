@@ -651,7 +651,12 @@ impl Application {
             .comments(config::DESCRIPTION)
             .copyright(config::COPYRIGHT)
             .developer_name("Spydr06")
-            .developers(config::AUTHORS.split(':').map(|s| s.to_string()).collect())
+            .developers(
+                config::AUTHORS
+                    .split(':')
+                    .map(|s| format!("{s} https://github.com/{s}"))
+                    .collect(),
+            )
             .website(config::REPOSITORY)
             .issue_url(&(config::REPOSITORY.to_owned() + "/issues"))
             .license_type(gtk::License::MitX11)
