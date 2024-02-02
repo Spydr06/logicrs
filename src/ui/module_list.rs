@@ -1,4 +1,4 @@
-use gtk::{gdk, gio, glib, prelude::*, subclass::prelude::*};
+use gtk::{gdk, gio, glib, prelude::*, subclass::prelude::*, StateFlags};
 
 use crate::{
     application::{selection::*, Application},
@@ -70,6 +70,14 @@ impl ModuleList {
     pub fn show_search(&self) {
         self.imp().search_bar.set_search_mode(true);
     }
+
+    pub fn unselect_items(&self) {
+        self.imp().lists().iter().for_each(|(list, _)|
+            list.selected_rows().iter().for_each(|item| 
+                item.unset_state_flags(StateFlags::SELECTED)
+            ) 
+        );
+    }
 }
 
 #[gtk::template_callbacks]
@@ -103,24 +111,38 @@ pub struct ModuleListTemplate {
 
     #[template_child]
     basic_list_box: TemplateChild<gtk::ListBox>,
+    #[template_child]
+    basic_list_label: TemplateChild<gtk::Label>,
 
     #[template_child]
     input_output_list_box: TemplateChild<gtk::ListBox>,
+    #[template_child]
+    input_output_list_label: TemplateChild<gtk::Label>,
 
     #[template_child]
     gate_list_box: TemplateChild<gtk::ListBox>,
+    #[template_child]
+    gate_list_label: TemplateChild<gtk::Label>,
 
     #[template_child]
     combinational_list_box: TemplateChild<gtk::ListBox>,
+    #[template_child]
+    combinational_list_label: TemplateChild<gtk::Label>,
 
     #[template_child]
     latch_list_box: TemplateChild<gtk::ListBox>,
+    #[template_child]
+    latch_list_label: TemplateChild<gtk::Label>,
 
     #[template_child]
     flip_flop_list_box: TemplateChild<gtk::ListBox>,
+    #[template_child]
+    flip_flop_list_label: TemplateChild<gtk::Label>,
 
     #[template_child]
     custom_list_box: TemplateChild<gtk::ListBox>,
+    #[template_child]
+    custom_list_label: TemplateChild<gtk::Label>,
 
     #[template_child]
     search_bar: TemplateChild<gtk::SearchBar>,
@@ -143,14 +165,15 @@ impl ModuleListTemplate {
         }
     }
 
-    fn lists(&self) -> [&gtk::ListBox; 6] {
+    fn lists(&self) -> [(&gtk::ListBox, &gtk::Label); 7] {
         [
-            &self.basic_list_box,
-            &self.input_output_list_box,
-            &self.gate_list_box,
-            &self.latch_list_box,
-            &self.flip_flop_list_box,
-            &self.custom_list_box,
+            (&self.basic_list_box, &self.basic_list_label),
+            (&self.input_output_list_box, &self.input_output_list_label),
+            (&self.gate_list_box, &self.gate_list_label),
+            (&self.combinational_list_box, &self.combinational_list_label),
+            (&self.latch_list_box, &self.latch_list_label),
+            (&self.flip_flop_list_box, &self.flip_flop_list_label),
+            (&self.custom_list_box, &self.custom_list_label)
         ]
     }
 
@@ -207,6 +230,9 @@ impl ModuleListTemplate {
             .button(gdk::ffi::GDK_BUTTON_SECONDARY as u32)
             .build();
         item.add_controller(&right_click_gesture);
+//        item.connect_state_flags_changed(|item, flags| {
+//            item.unset_state_flags(StateFlags::SELECTED);
+//        });
 
         let name = module.name().to_owned();
         let is_builtin = module.builtin();
@@ -239,7 +265,7 @@ impl ModuleListTemplate {
     }
 
     fn clear_list(&self) {
-        self.lists().iter().for_each(|list| {
+        self.lists().iter().for_each(|(list, _)| {
             while let Some(row) = list.row_at_index(0) {
                 list.remove(&row);
             }
@@ -263,19 +289,23 @@ impl ModuleListTemplate {
     }
 
     fn n_visible(&self) -> u32 {
-        self.lists().iter().map(|list| list.n_visible()).sum()
+        self.lists().iter().map(|(list, _)| list.n_visible()).sum()
     }
 
     fn filter(&self, search_text: Option<String>) {
         if let Some(search_text) = search_text {
-            self.lists().iter().for_each(move |list| {
+            self.lists().iter().for_each(move |(list, label)| {
                 let search_text = search_text.clone();
                 list.set_filter_func(move |item| Self::filter_func(item, &search_text));
+                label.set_visible(list.n_visible() != 0);
             });
         } else {
             self.lists()
                 .iter()
-                .for_each(|list| list.unset_filter_func());
+                .for_each(|(list, label)| {
+                    list.unset_filter_func();
+                    label.set_visible(true);
+                });
         }
 
         self.stack.set_visible_child_name(if self.n_visible() == 0 {
@@ -333,7 +363,7 @@ impl ObjectImpl for ModuleListTemplate {
         };
         self.lists()
             .iter()
-            .for_each(|list| list.set_sort_func(order_alphabetically));
+            .for_each(|(list, _)| list.set_sort_func(order_alphabetically));
     }
 }
 

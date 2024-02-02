@@ -53,7 +53,7 @@
                       <object class="GtkBox">
                         <property name="orientation">vertical</property>
                         <child>
-                          <object class="GtkLabel">
+                          <object class="GtkLabel" id="basic_list_label">
                             <property name="label">Basic Modules</property>
                             <property name="xalign">0.0</property>
                             <style>
@@ -70,7 +70,7 @@
                           </object>
                         </child>
                         <child>
-                          <object class="GtkLabel">
+                          <object class="GtkLabel" id="input_output_list_label">
                             <property name="label">Input/Output Modules</property>
                             <property name="xalign">0.0</property>
                             <style>
@@ -87,7 +87,7 @@
                           </object>
                         </child>
                         <child>
-                          <object class="GtkLabel">
+                          <object class="GtkLabel" id="gate_list_label">
                             <property name="label">Gate Modules</property>
                             <property name="xalign">0.0</property>
                             <style>
@@ -104,8 +104,8 @@
                           </object>
                         </child>
                         <child>
-                          <object class="GtkLabel">
-                            <property name="label">Combinational Blocks</property>
+                          <object class="GtkLabel" id="combinational_list_label">
+                            <property name="label">Combinational Modules</property>
                             <property name="xalign">0.0</property>
                             <style>
                               <class name="module_list_label"/>
@@ -121,7 +121,7 @@
                           </object>
                         </child>
                         <child>
-                          <object class="GtkLabel">
+                          <object class="GtkLabel" id="latch_list_label">
                             <property name="label">Latch Modules</property>
                             <property name="xalign">0.0</property>
                             <style>
@@ -138,7 +138,7 @@
                           </object>
                         </child>
                         <child>
-                          <object class="GtkLabel">
+                          <object class="GtkLabel" id="flip_flop_list_label">
                             <property name="label">Flip-Flop Modules</property>
                             <property name="xalign">0.0</property>
                             <style>
@@ -155,7 +155,7 @@
                           </object>
                         </child>
                         <child>
-                          <object class="GtkLabel">
+                          <object class="GtkLabel" id="custom_list_label">
                             <property name="label">Custom Modules</property>
                             <property name="xalign">0.0</property>
                             <style>

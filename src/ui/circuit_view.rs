@@ -420,9 +420,12 @@ impl CircuitViewTemplate {
     fn drag_begin(&self, position: Vector2<i32>) {
         let selection = self.plot_provider.borrow().with(|p| p.selection().clone());
         match selection {
-            Some(Selection::MoveBlock(block)) => self.application.borrow().new_action(
-                Action::NewBlock(self.plot_provider.borrow().clone(), *block),
-            ),
+            Some(Selection::MoveBlock(block)) => {
+                let app = self.application.borrow();
+                app.new_action(Action::NewBlock(self.plot_provider.borrow().clone(), *block));
+                let window = app.imp().window().borrow();
+                window.as_ref().unwrap().module_list().unselect_items();
+            }
             Some(Selection::Many(block_ids)) => {
                 if self.shift_down.get() && self.selection_shift_click(block_ids, position) {
                     self.drawing_area.queue_draw();

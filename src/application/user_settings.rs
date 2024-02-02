@@ -28,7 +28,7 @@ impl Default for UserSettings {
             match instance.create_config() {
                 Ok(_) => (),
                 Err(_create_config_err) => {
-                    println!("Failed to create config, saving will not be enabled");
+                    error!("Failed to create config, saving will not be enabled");
                 }
             }
         }
