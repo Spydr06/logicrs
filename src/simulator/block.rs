@@ -95,7 +95,9 @@ impl Block {
     }
 
     pub fn set_color(&mut self, mut color: Option<Color>) {
-        if let Some(c) = color && c == unsafe { COLOR_THEME.border_color } {
+        if let Some(c) = color
+            && c == unsafe { COLOR_THEME.border_color }
+        {
             color = None
         }
 

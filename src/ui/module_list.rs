@@ -72,11 +72,11 @@ impl ModuleList {
     }
 
     pub fn unselect_items(&self) {
-        self.imp().lists().iter().for_each(|(list, _)|
-            list.selected_rows().iter().for_each(|item| 
-                item.unset_state_flags(StateFlags::SELECTED)
-            ) 
-        );
+        self.imp().lists().iter().for_each(|(list, _)| {
+            list.selected_rows()
+                .iter()
+                .for_each(|item| item.unset_state_flags(StateFlags::SELECTED))
+        });
     }
 }
 
@@ -173,7 +173,7 @@ impl ModuleListTemplate {
             (&self.combinational_list_box, &self.combinational_list_label),
             (&self.latch_list_box, &self.latch_list_label),
             (&self.flip_flop_list_box, &self.flip_flop_list_label),
-            (&self.custom_list_box, &self.custom_list_label)
+            (&self.custom_list_box, &self.custom_list_label),
         ]
     }
 
@@ -230,9 +230,9 @@ impl ModuleListTemplate {
             .button(gdk::ffi::GDK_BUTTON_SECONDARY as u32)
             .build();
         item.add_controller(&right_click_gesture);
-//        item.connect_state_flags_changed(|item, flags| {
-//            item.unset_state_flags(StateFlags::SELECTED);
-//        });
+        //        item.connect_state_flags_changed(|item, flags| {
+        //            item.unset_state_flags(StateFlags::SELECTED);
+        //        });
 
         let name = module.name().to_owned();
         let is_builtin = module.builtin();
@@ -300,12 +300,10 @@ impl ModuleListTemplate {
                 label.set_visible(list.n_visible() != 0);
             });
         } else {
-            self.lists()
-                .iter()
-                .for_each(|(list, label)| {
-                    list.unset_filter_func();
-                    label.set_visible(true);
-                });
+            self.lists().iter().for_each(|(list, label)| {
+                list.unset_filter_func();
+                label.set_visible(true);
+            });
         }
 
         self.stack.set_visible_child_name(if self.n_visible() == 0 {

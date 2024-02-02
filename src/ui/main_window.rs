@@ -44,9 +44,10 @@ impl MainWindow {
     }
 
     pub fn rerender_circuit(&self) {
-        if let Some(a) = self.imp().circuit_panel.imp().view.selected_page() &&
-            let Ok(view ) = a.child().downcast::<CircuitView>() {
-                view.rerender();
+        if let Some(a) = self.imp().circuit_panel.imp().view.selected_page()
+            && let Ok(view) = a.child().downcast::<CircuitView>()
+        {
+            view.rerender();
         }
     }
 

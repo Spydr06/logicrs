@@ -273,20 +273,33 @@ impl Application {
 
     fn gaction_delete_block(self, _: &gio::SimpleAction, _: Option<&glib::Variant>) {
         if let Some(plot_provider) = self.imp().current_plot() {
-            let (blocks, connections) = plot_provider.with_mut(|plot| (
-                plot.selected().iter().filter_map(|selected| {
-                    match selected {
-                        Selectable::Block(id) if let Some(block) = plot.get_block(*id) => Some(block.to_owned()),
-                        _ => None
-                    }
-                }).collect(),
-                plot.selected().iter().filter_map(|selected| {
-                    match selected {
-                        Selectable::Waypoint(id) if let Some(connection) = plot.get_connection(id.connection_id()) => Some(connection.to_owned()),
-                        _ => None
-                    }
-                }).collect()
-            )).unwrap_or_default();
+            let (blocks, connections) = plot_provider
+                .with_mut(|plot| {
+                    (
+                        plot.selected()
+                            .iter()
+                            .filter_map(|selected| match selected {
+                                Selectable::Block(id) if let Some(block) = plot.get_block(*id) => {
+                                    Some(block.to_owned())
+                                }
+                                _ => None,
+                            })
+                            .collect(),
+                        plot.selected()
+                            .iter()
+                            .filter_map(|selected| match selected {
+                                Selectable::Waypoint(id)
+                                    if let Some(connection) =
+                                        plot.get_connection(id.connection_id()) =>
+                                {
+                                    Some(connection.to_owned())
+                                }
+                                _ => None,
+                            })
+                            .collect(),
+                    )
+                })
+                .unwrap_or_default();
             self.new_action(Action::DeleteSelection(
                 plot_provider,
                 blocks,

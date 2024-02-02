@@ -53,27 +53,33 @@ impl From<&Plot> for Clipboard {
     fn from(plot: &Plot) -> Self {
         match plot.selection() {
             Selection::Single(Selectable::Block(block_id), _) => {
-                if let Some(block) = plot.get_block(*block_id) && !block.unique() {
+                if let Some(block) = plot.get_block(*block_id)
+                    && !block.unique()
+                {
                     let mut block = block.clone();
                     block.prepare_copying(());
                     Self::Blocks(vec![block], Vec::new())
-                }
-                else {
+                } else {
                     Self::Empty
                 }
-            },
+            }
             Selection::Many(blocks) => {
                 let selection = blocks
                     .iter()
                     .filter_map(|selectable| selectable.block_id())
-                    .filter_map(|block_id| plot.get_block(block_id).filter(|block| !block.unique()));
-                let block_ids = selection.clone().map(|block| block.id()).collect::<Vec<BlockID>>();
+                    .filter_map(|block_id| {
+                        plot.get_block(block_id).filter(|block| !block.unique())
+                    });
+                let block_ids = selection
+                    .clone()
+                    .map(|block| block.id())
+                    .collect::<Vec<BlockID>>();
                 let blocks = selection.cloned().collect::<Vec<Block>>();
                 let mut data = (blocks, Vec::new());
                 data.prepare_copying((plot, block_ids));
                 Self::Blocks(data.0, data.1)
-            },
-            _ => Self::Empty
+            }
+            _ => Self::Empty,
         }
     }
 }

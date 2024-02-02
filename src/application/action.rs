@@ -165,21 +165,30 @@ impl Action {
                 app.imp().rerender_editor();
             }
             Self::AddSegment(plot_provider, segment_id, segment, index) => {
-                *index = plot_provider.with_mut(|plot|
-                    if let Some(root) = plot.get_connection_mut(segment_id.connection_id()).and_then(|c| c.get_segment_mut(segment_id.location())) {
-                        let index = root.add_segment(segment.clone());
+                *index = plot_provider
+                    .with_mut(|plot| {
+                        if let Some(root) = plot
+                            .get_connection_mut(segment_id.connection_id())
+                            .and_then(|c| c.get_segment_mut(segment_id.location()))
+                        {
+                            let index = root.add_segment(segment.clone());
 
-                        if let Segment::Block(block_id, port) = *segment && let Some(block) = plot.get_block_mut(block_id) {
-                            block.set_connection(Connector::Input(port), Some(*segment_id.connection_id()));
-                            plot.add_block_to_update(block_id);
+                            if let Segment::Block(block_id, port) = *segment
+                                && let Some(block) = plot.get_block_mut(block_id)
+                            {
+                                block.set_connection(
+                                    Connector::Input(port),
+                                    Some(*segment_id.connection_id()),
+                                );
+                                plot.add_block_to_update(block_id);
+                            }
+
+                            index
+                        } else {
+                            None
                         }
-
-                        index
-                    }
-                    else {
-                        None
-                    }
-                ).flatten();
+                    })
+                    .flatten();
                 app.imp().rerender_editor();
             }
             Self::ChangeBorderColor(plot_provider, new_color, block_ids, old_colors) => {
@@ -304,12 +313,17 @@ impl Action {
             }
             Self::AddSegment(plot_provider, segment_id, segment, id) => {
                 plot_provider.with_mut(|plot| {
-                    if let Some(root) = plot.get_connection_mut(segment_id.connection_id()).and_then(|c| c.get_segment_mut(segment_id.location())) &&
-                        let Some(id) = id {
+                    if let Some(root) = plot
+                        .get_connection_mut(segment_id.connection_id())
+                        .and_then(|c| c.get_segment_mut(segment_id.location()))
+                        && let Some(id) = id
+                    {
                         root.remove_segment(id);
                     }
 
-                    if let Segment::Block(block_id, port) = *segment && let Some(block) = plot.get_block_mut(block_id) {
+                    if let Segment::Block(block_id, port) = *segment
+                        && let Some(block) = plot.get_block_mut(block_id)
+                    {
                         block.set_connection(Connector::Input(port), None);
                         plot.add_block_to_update(block_id);
                     }

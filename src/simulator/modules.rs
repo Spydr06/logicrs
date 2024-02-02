@@ -156,17 +156,23 @@ impl Module {
         project: &mut Project,
         call_stack: &mut HashSet<String>,
     ) -> SimResult<u128> {
-        let outputs =
-        if self.builtin && let Some(builtin) = BUILTINS.get(self.name.as_str()) {
+        let outputs = if self.builtin
+            && let Some(builtin) = BUILTINS.get(self.name.as_str())
+        {
             builtin.simulate(inputs, instance)
-        }
-        else {
+        } else {
             if call_stack.contains(&self.name) {
-                return Err(format!("Recursion detected; Block of module \"{}\" is already on the call stack.", self.name))
+                return Err(format!(
+                    "Recursion detected; Block of module \"{}\" is already on the call stack.",
+                    self.name
+                ));
             }
             call_stack.insert(self.name.clone());
 
-            let custom_data = self.custom_data.as_mut().expect("cannot simulate custom module without correct data");
+            let custom_data = self
+                .custom_data
+                .as_mut()
+                .expect("cannot simulate custom module without correct data");
             let plot = &mut custom_data.plot;
 
             instance.state().apply(plot);
@@ -184,7 +190,10 @@ impl Module {
                 input.set_passthrough(true);
             }
 
-            let outputs = plot.get_block(custom_data.output_block).map(|block| block.bytes()).unwrap_or(0);
+            let outputs = plot
+                .get_block(custom_data.output_block)
+                .map(|block| block.bytes())
+                .unwrap_or(0);
             let state = PlotState::from(plot);
             instance.set_state(State::Inherit(state));
 

@@ -181,10 +181,18 @@ pub async fn select_border_color(app: Application, window: gtk::Window, _data: (
     let answer = dialog.run_future().await;
     dialog.close();
 
-    if answer == ResponseType::Ok && let Some(plot_provider) = app.imp().current_plot() && let Some(block_ids) = plot_provider.with_mut(|plot| plot.selection().blocks()) {
+    if answer == ResponseType::Ok
+        && let Some(plot_provider) = app.imp().current_plot()
+        && let Some(block_ids) = plot_provider.with_mut(|plot| plot.selection().blocks())
+    {
         let color = color_button.rgba().into_color();
         println!("here");
-        app.new_action(Action::ChangeBorderColor(plot_provider, color, block_ids, vec![]));
+        app.new_action(Action::ChangeBorderColor(
+            plot_provider,
+            color,
+            block_ids,
+            vec![],
+        ));
     }
 }
 

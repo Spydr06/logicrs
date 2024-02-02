@@ -372,31 +372,43 @@ impl SelectionField for Plot {
 
     fn unhighlight(&mut self) {
         match self.selection.clone() {
-            Selection::Single(item, _) => {
-                match item {
-                    Selectable::Block(id) if let Some(block) = self.get_block_mut(id) =>  block.set_highlighted(false),
-                    Selectable::Waypoint(id) if let Some(waypoint) = self.get_connection_mut(id.connection_id())
-                                                                                                    .and_then(|c| c.get_segment_mut(id.location())) =>
-                        waypoint.set_highlighted(false),
-                    _ => ()
+            Selection::Single(item, _) => match item {
+                Selectable::Block(id) if let Some(block) = self.get_block_mut(id) => {
+                    block.set_highlighted(false)
                 }
+                Selectable::Waypoint(id)
+                    if let Some(waypoint) = self
+                        .get_connection_mut(id.connection_id())
+                        .and_then(|c| c.get_segment_mut(id.location())) =>
+                {
+                    waypoint.set_highlighted(false)
+                }
+                _ => (),
             },
             Selection::Many(ids) => {
-                ids.iter().for_each(|item| {
-                    match item {
-                        Selectable::Block(id) if let Some(block) = self.get_block_mut(*id) => block.set_highlighted(false),
-                        Selectable::Waypoint(id) if let Some(waypoint) = self.get_connection_mut(id.connection_id())
-                                                                                                        .and_then(|c| c.get_segment_mut(id.location())) =>
-                            waypoint.set_highlighted(false),
-                        _ => ()
+                ids.iter().for_each(|item| match item {
+                    Selectable::Block(id) if let Some(block) = self.get_block_mut(*id) => {
+                        block.set_highlighted(false)
                     }
+                    Selectable::Waypoint(id)
+                        if let Some(waypoint) = self
+                            .get_connection_mut(id.connection_id())
+                            .and_then(|c| c.get_segment_mut(id.location())) =>
+                    {
+                        waypoint.set_highlighted(false)
+                    }
+                    _ => (),
                 });
-            },
-            Selection::Area(_, _) => {
-                self.blocks_mut().iter_mut().for_each(|(_, v)| v.set_highlighted(false));
-                self.connections_mut().iter_mut().for_each(|(_, c)| c.for_each_mut_segment(|segment| segment.set_highlighted(false)))
             }
-            _ => ()
+            Selection::Area(_, _) => {
+                self.blocks_mut()
+                    .iter_mut()
+                    .for_each(|(_, v)| v.set_highlighted(false));
+                self.connections_mut().iter_mut().for_each(|(_, c)| {
+                    c.for_each_mut_segment(|segment| segment.set_highlighted(false))
+                })
+            }
+            _ => (),
         }
 
         self.selection = Selection::None
