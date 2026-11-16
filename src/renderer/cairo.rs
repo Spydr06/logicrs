@@ -84,7 +84,7 @@ impl Renderer for CairoRenderer {
         context.set_font_size(DEFAULT_FONT_SIZE);
 
         // fill background
-        let (bg_color_r, bg_color_g, bg_color_b, _) = unsafe { COLOR_THEME.bg_color };
+        let (bg_color_r, bg_color_g, bg_color_b, _) = theme().bg_color;
         context.set_source_rgb(bg_color_r as f64, bg_color_g as f64, bg_color_b as f64);
         context.paint()?;
 

@@ -6,7 +6,7 @@ use gtk::{
 
 use crate::{
     application::{action::Action, selection::SelectionField, Application},
-    renderer::{IntoColor, IntoRGBA, COLOR_THEME},
+    renderer::{IntoColor, IntoRGBA, theme},
     simulator::Module,
 };
 use std::future::Future;
@@ -167,7 +167,7 @@ pub async fn select_border_color(app: Application, window: gtk::Window, _data: (
         .halign(Align::Start)
         .hexpand(false)
         .build();
-    let color_button = ColorButton::with_rgba(&unsafe { &COLOR_THEME.border_color }.into_rgba());
+    let color_button = ColorButton::with_rgba(&&theme().border_color.into_rgba());
 
     let content = dialog.content_area();
     content.set_orientation(Orientation::Horizontal);

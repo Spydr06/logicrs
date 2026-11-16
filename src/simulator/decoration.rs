@@ -34,7 +34,7 @@ impl Decoration {
                             + (block.size().0 / 2 - 7 * label.chars().count() as i32),
                         block.position().1 + (block.size().1 / 2 + 20),
                     ))
-                    .set_color(unsafe { &COLOR_THEME.decoration_fg_color })
+                    .set_color(&theme().decoration_fg_color)
                     .show_text(label)?
                     .set_font_size(DEFAULT_FONT_SIZE);
                 Ok(())
@@ -49,7 +49,7 @@ impl Decoration {
                 renderer
                     .set_font_size(26.0)
                     .move_to(position)
-                    .set_color(unsafe { &COLOR_THEME.decoration_fg_color })
+                    .set_color(&theme().decoration_fg_color)
                     .show_text(label)?
                     .set_font_size(DEFAULT_FONT_SIZE)
                     .move_to(Vector2(position.0, offset.1))
@@ -68,16 +68,14 @@ impl Decoration {
                     0.,
                     f64::consts::TAU,
                 )
-                .set_color(unsafe {
-                    if *active {
-                        &COLOR_THEME.suggestion_fg_color
+                .set_color(if *active {
+                        &theme().suggestion_fg_color
                     } else {
-                        &COLOR_THEME.border_color
-                    }
-                })
+                        &theme().border_color
+                    })
                 .fill_preserve()?
                 .set_line_width(1.5)
-                .set_color(unsafe { &COLOR_THEME.border_color })
+                .set_color(&theme().border_color)
                 .stroke()
                 .map(|_| ()),
             Self::Button(active) | Self::Switch(active) => renderer
@@ -90,16 +88,14 @@ impl Decoration {
                     0.,
                     f64::consts::TAU,
                 )
-                .set_color(unsafe {
-                    if *active {
-                        &COLOR_THEME.button_active_color
+                .set_color(if *active {
+                        &theme().button_active_color
                     } else {
-                        &COLOR_THEME.button_inactive_color
-                    }
-                })
+                        &theme().button_inactive_color
+                    })
                 .fill_preserve()?
                 .set_line_width(1.5)
-                .set_color(unsafe { &COLOR_THEME.border_color })
+                .set_color(&theme().border_color)
                 .stroke()
                 .map(|_| ()),
             _ => Ok(()),

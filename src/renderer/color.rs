@@ -1,3 +1,5 @@
+use std::cell::Cell;
+
 pub type Color = (f32, f32, f32, f32);
 pub type Hex = u32;
 
@@ -30,7 +32,14 @@ pub const fn hex_to_color(hex: Hex) -> (f32, f32, f32, f32) {
     )
 }
 
-pub static mut COLOR_THEME: Theme = Theme::DARK;
+thread_local! {
+    static CURRENT_THEME: Cell<&'static Theme> = const { Cell::new(&Theme::DARK) };
+}
+
+/// Returns the currently active color theme.
+pub fn theme() -> &'static Theme {
+    CURRENT_THEME.get()
+}
 
 #[derive(Copy, Clone)]
 pub struct Theme {
@@ -61,12 +70,12 @@ pub struct Theme {
     pub decoration_fg_color: Color,
 }
 
-impl From<&adw::StyleManager> for Theme {
-    fn from(style_manager: &adw::StyleManager) -> Self {
+impl Theme {
+    fn for_style_manager(style_manager: &adw::StyleManager) -> &'static Self {
         if style_manager.is_dark() {
-            Self::DARK
+            &Self::DARK
         } else {
-            Self::LIGHT
+            &Self::LIGHT
         }
     }
 }
@@ -74,10 +83,10 @@ impl From<&adw::StyleManager> for Theme {
 impl Theme {
     pub fn init() {
         let style_manager = adw::StyleManager::default();
-        style_manager.connect_dark_notify(|style_manager| unsafe {
-            COLOR_THEME = Self::from(style_manager)
+        style_manager.connect_dark_notify(|style_manager| {
+            CURRENT_THEME.set(Self::for_style_manager(style_manager))
         });
-        unsafe { COLOR_THEME = Self::from(&style_manager) }
+        CURRENT_THEME.set(Self::for_style_manager(&style_manager));
     }
 
     const DARK: Self = Self {
