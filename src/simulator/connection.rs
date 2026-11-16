@@ -452,25 +452,21 @@ fn render_waypoint<R>(
 where
     R: Renderer,
 {
-    let connector_color = unsafe {
-        if active {
-            &COLOR_THEME.enabled_fg_color
+    let connector_color = if active {
+            &theme().enabled_fg_color
         } else {
-            &COLOR_THEME.disabled_fg_color
-        }
-    };
+            &theme().disabled_fg_color
+        };
     renderer
         .set_line_width(1.)
         .arc(position, 6., 0., f64::consts::TAU)
         .set_color(connector_color)
         .fill_preserve()?
-        .set_color(unsafe {
-            if highlighted {
-                &COLOR_THEME.accent_fg_color
+        .set_color(if highlighted {
+                &theme().accent_fg_color
             } else {
-                &COLOR_THEME.border_color
-            }
-        })
+                &theme().border_color
+            })
         .stroke()
         .map(|_| ())
 }
@@ -484,25 +480,21 @@ pub fn render_block_connector<R>(
 where
     R: Renderer,
 {
-    let connector_color = unsafe {
-        if active {
-            &COLOR_THEME.enabled_fg_color
+    let connector_color = if active {
+            &theme().enabled_fg_color
         } else {
-            &COLOR_THEME.disabled_fg_color
-        }
-    };
+            &theme().disabled_fg_color
+        };
     renderer
         .set_line_width(1.)
         .arc(position, 6., 0., f64::consts::TAU)
         .set_color(connector_color)
         .fill_preserve()?
-        .set_color(unsafe {
-            if highlighted {
-                &COLOR_THEME.accent_fg_color
+        .set_color(if highlighted {
+                &theme().accent_fg_color
             } else {
-                &COLOR_THEME.border_color
-            }
-        })
+                &theme().border_color
+            })
         .stroke()
         .map(|_| ())
 }
@@ -517,13 +509,11 @@ where
     R: Renderer,
 {
     renderer
-        .set_color(unsafe {
-            if active {
-                &COLOR_THEME.enabled_bg_color
+        .set_color(if active {
+                &theme().enabled_bg_color
             } else {
-                &COLOR_THEME.disabled_bg_color
-            }
-        })
+                &theme().disabled_bg_color
+            })
         .set_line_width(4.);
 
     match renderer.editor_mode() {

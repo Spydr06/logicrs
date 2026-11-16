@@ -1,6 +1,6 @@
 use crate::renderer::{
     vector::{Vector2, VectorCast},
-    Renderable, COLOR_THEME,
+    Renderable, theme,
 };
 
 #[derive(Default, Copy, Clone)]
@@ -48,7 +48,7 @@ impl Renderable for EditorMode {
                 let Vector2(start, end) = renderer.screen_space();
                 let offset = VectorCast::cast(start) / GRID_SIZE.into() * GRID_SIZE.into();
 
-                renderer.set_color(unsafe { &COLOR_THEME.grid_color });
+                renderer.set_color(&theme().grid_color);
                 for i in (offset.0..end.0 as i32).step_by(GRID_SIZE as usize) {
                     for j in (offset.1..end.1 as i32).step_by(GRID_SIZE as usize) {
                         renderer

@@ -96,7 +96,7 @@ impl Block {
 
     pub fn set_color(&mut self, mut color: Option<Color>) {
         if let Some(c) = color
-            && c == unsafe { COLOR_THEME.border_color }
+            && c == theme().border_color
         {
             color = None
         }
@@ -354,12 +354,12 @@ impl Renderable for Block {
         let border_color = self
             .color
             .as_ref()
-            .unwrap_or(unsafe { &COLOR_THEME.border_color });
+            .unwrap_or(&theme().border_color);
 
         renderer.set_line_width(2.);
         renderer
             .rounded_rect(self.position, self.size, 5)
-            .set_color(unsafe { &COLOR_THEME.block_bg_color })
+            .set_color(&theme().block_bg_color)
             .fill()?;
 
         renderer
@@ -369,12 +369,12 @@ impl Renderable for Block {
 
         renderer
             .move_to(Vector2(self.position.0 + 5, self.position.1 + 18))
-            .set_color(unsafe { &COLOR_THEME.block_fg_color })
+            .set_color(&theme().block_fg_color)
             .show_text(self.name.as_str())?;
 
         renderer.rounded_rect(self.position, self.size, 5);
         match self.highlighted {
-            true => renderer.set_color(unsafe { &COLOR_THEME.accent_fg_color }),
+            true => renderer.set_color(&theme().accent_fg_color),
             false => renderer.set_color(border_color),
         };
         renderer.stroke()?;
@@ -383,23 +383,19 @@ impl Renderable for Block {
         let connector = |position, is_input, is_active| {
             renderer
                 .arc(position, 6., 0., f64::consts::TAU)
-                .set_color(unsafe {
-                    if show_suggestion && is_input {
-                        &COLOR_THEME.suggestion_fg_color
+                .set_color(if show_suggestion && is_input {
+                        &theme().suggestion_fg_color
                     } else if is_active {
-                        &COLOR_THEME.enabled_fg_color
+                        &theme().enabled_fg_color
                     } else {
-                        &COLOR_THEME.disabled_fg_color
-                    }
-                })
+                        &theme().disabled_fg_color
+                    })
                 .fill_preserve()?
-                .set_color(unsafe {
-                    if self.highlighted {
-                        &COLOR_THEME.accent_fg_color
+                .set_color(if self.highlighted {
+                        &theme().accent_fg_color
                     } else {
                         border_color
-                    }
-                })
+                    })
                 .stroke()
         };
 

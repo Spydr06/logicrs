@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    renderer::{vector::Vector2, Renderable, COLOR_THEME},
+    renderer::{vector::Vector2, Renderable, theme},
     simulator::{render_block_connector, render_line, Block, BlockID, Plot, SegmentID},
 };
 use std::cmp;
@@ -73,9 +73,9 @@ impl Renderable for Selection {
                 renderer
                     .rectangle(*position, size)
                     .set_line_width(1.)
-                    .set_color(unsafe { &COLOR_THEME.accent_bg_color })
+                    .set_color(&theme().accent_bg_color)
                     .fill_preserve()?
-                    .set_color(unsafe { &COLOR_THEME.accent_fg_color })
+                    .set_color(&theme().accent_fg_color)
                     .stroke()
                     .map(|_| ())
             }
